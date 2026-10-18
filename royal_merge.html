@@ -60,6 +60,22 @@ tr.me{background:#ffe9a8}
 .codex .lock img{filter:brightness(0) opacity(.3)}
 .codex small{display:block;color:#4f6e8c}
 .muted{color:#8a6a4a;font-size:13px}
+.btns{flex-wrap:wrap}
+@media (max-width:699px){.btn{padding:5px 8px;font-size:14px}}
+#chain{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) scale(.8);opacity:0;background:#fff3d6;border:2px solid #c0582b;color:#c0582b;border-radius:20px;padding:4px 14px;font-size:16px;white-space:nowrap;transition:opacity .2s,transform .2s;pointer-events:none;z-index:6;box-shadow:0 3px 0 #8a3a18}
+#chain.show{opacity:1;transform:translateX(-50%) scale(1)}
+#chain.pop{animation:cpop .35s}
+@keyframes cpop{0%{transform:translateX(-50%) scale(1.35)}100%{transform:translateX(-50%) scale(1)}}
+.diffs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.diffs button{font-family:inherit;background:#fff8e6;border:2px solid #e2c99a;border-radius:12px;padding:8px 6px 10px;cursor:pointer;font-size:19px;color:var(--ink)}
+.diffs button.on{border-color:var(--wood);background:#e6f0f7;box-shadow:0 3px 0 var(--wood-d)}
+.diffs small{display:block;font-size:12px;color:#4f6e8c}
+.mini{display:grid;gap:2px;width:58px;height:58px;margin:4px auto 6px}
+.mini i{background:#a6c443;border-radius:2px}
+.mini i.rock{background:#8d8d8d}
+.tabs{display:flex;gap:6px;justify-content:center;margin-bottom:8px}
+.tab{font-family:inherit;font-size:14px;padding:4px 10px;border-radius:10px;border:2px solid #d8ccb0;background:#fff8e6;cursor:pointer;color:var(--ink)}
+.tab.on{border-color:var(--wood);background:var(--wood);color:#fff}
 @media (min-width:700px){
   #hud{padding:16px 22px 0;gap:12px}
   .title{font-size:34px}
@@ -76,6 +92,7 @@ tr.me{background:#ffe9a8}
   .btn:active{box-shadow:0 1px 0 var(--wood-d)}
   #hint{font-size:16px}
   #unlock{top:180px}
+  #chain{font-size:20px;bottom:46px;padding:6px 18px}
 }
 </style>
 </head>
@@ -83,19 +100,21 @@ tr.me{background:#ffe9a8}
 <canvas id="c"></canvas>
 
 <div id="hud">
-  <div class="title">폰에서 왕까지<small>ROYAL MERGE 2048</small></div>
+  <div class="title">폰에서 왕까지<small id="sub">ROYAL MERGE 2048</small></div>
   <div class="scores">
     <div class="sbox top"><img id="topImg" alt=""><div><b>최고 병종</b><span id="topName" style="font-size:15px">견습병</span></div></div>
     <div class="sbox"><b>점수</b><span id="score">0</span></div>
     <div class="sbox"><b>최고</b><span id="best">0</span></div>
   </div>
   <div class="btns">
+    <button class="btn" id="bDiff">🎚️ 고수</button>
     <button class="btn" id="bNew">⚔️ 새 게임</button>
     <button class="btn" id="bRank">🏆 기록</button>
     <button class="btn" id="bCodex">📖 도감</button>
     <button class="btn" id="bMute">🔊</button>
   </div>
 </div>
+<div id="chain"></div>
 <div id="hint">← ↑ → ↓ / WASD 또는 스와이프로 부대를 움직이세요</div>
 <div id="unlock"><img id="unImg" alt=""><div><b id="unSub">새로운 병종 합류!</b><span id="unName"></span></div></div>
 
@@ -111,9 +130,30 @@ tr.me{background:#ffe9a8}
   </div>
 </div></div>
 
+<div class="modal" id="mClear"><div class="card">
+  <h2>🎉 클리어했습니다!</h2>
+  <img id="clearImg" alt="" style="width:110px;height:110px">
+  <p class="muted">왕이 즉위했습니다 · <span id="clearDiff"></span></p>
+  <p class="big" id="clearScore">0</p>
+  <input id="clearName" maxlength="12" placeholder="이름을 입력하세요">
+  <div class="row">
+    <button class="btn primary" id="cSave">🏆 점수 기록하고 나가기</button>
+    <button class="btn" id="cInf">♾️ 무한모드 이어하기</button>
+  </div>
+  <p class="muted" id="cInfNote">무한모드는 판이 막힐 때까지 계속돼요. 끝나면 그때 기록할 수 있어요.</p>
+</div></div>
+
+<div class="modal" id="mDiff"><div class="card">
+  <h2>🎚️ 난이도 선택</h2>
+  <div class="diffs" id="diffGrid"></div>
+  <p class="muted">난이도마다 진행 상황과 기록이 따로 저장돼요.</p>
+  <div class="row"><button class="btn" data-close>닫기</button></div>
+</div></div>
+
 <div class="modal" id="mRank"><div class="card">
   <h2>🏆 명예의 전당</h2>
-  <table><thead><tr><th>#</th><th>이름</th><th>병종</th><th>점수</th><th>날짜</th></tr></thead><tbody id="rankBody"></tbody></table>
+  <div class="tabs" id="rankTabs"></div>
+  <table><thead><tr><th>#</th><th>이름</th><th>병종</th><th>점수</th><th>최대콤보</th><th>날짜</th></tr></thead><tbody id="rankBody"></tbody></table>
   <p class="muted">기록은 이 브라우저에만 저장돼요.<br>방문 기록 삭제, 시크릿 모드, 다른 기기에서는 보이지 않아요.</p>
   <div class="row"><button class="btn primary" data-close>닫기</button></div>
 </div></div>
@@ -400,19 +440,20 @@ function buildUnit(g, lv) {
   g.scale.setScalar(lv === 8 ? 0.95 : lv >= 11 ? 1.14 : 1.08);
 }
 
-/* ---------- 디오라마 보드 (잔디 타일 + 흙 단면) ---------- */
+/* ---------- 난이도 & 디오라마 보드 (잔디 타일 + 흙 단면) ---------- */
 const CELL = 1.18, BASE_Y = 0.12;
-const cellPos = (r, c) => ({ x: (c - 1.5) * CELL, z: (r - 1.5) * CELL });
+const DIFFS = {
+  easy:   { n: '하수',   size: 6, rocks: 0, desc: '6×6 · 36칸' },
+  normal: { n: '중수',   size: 5, rocks: 0, desc: '5×5 · 25칸' },
+  hard:   { n: '고수',   size: 4, rocks: 0, desc: '4×4 · 16칸' },
+  master: { n: '초고수', size: 4, rocks: 1, desc: '4×4 + 바위 · 15칸' }
+};
+const DORDER = ['easy', 'normal', 'hard', 'master'];
+let diff = DIFFS[store.get(NS + 'diff', 'hard')] ? store.get(NS + 'diff', 'hard') : 'hard';
+let N = DIFFS[diff].size, BW = 0;
+const cellPos = (r, c) => ({ x: (c - (N - 1) / 2) * CELL, z: (r - (N - 1) / 2) * CELL });
 const clouds = [];
-const board = new THREE.Group(); scene.add(board);
-const BW = 6.3;
-mk(board, Box(BW, 0.8, BW), 0x9c5a35, 0, -0.48, 0, 0, 0, 0, 0).receiveShadow = true;      // 흙
-mk(board, Box(BW + 0.02, 0.3, BW + 0.02), 0x6e3820, 0, -0.95, 0, 0, 0, 0, 0);             // 아래 흙층
-mk(board, Box(BW + 0.06, 0.14, BW + 0.06), 0x7f9f2c, 0, -0.04, 0, 0, 0, 0, 0).receiveShadow = true; // 잔디 테두리
-for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-  const p = cellPos(r, c);
-  const s = mk(board, Box(1.1, 0.12, 1.1), (r + c) % 2 ? 0x98b83a : 0xa6c443, p.x, 0.06, p.z, 0, 0, 0, 0); s.receiveShadow = true;
-}
+let board = null;
 function tree(x, z, s = 1) {
   const g = new THREE.Group(); g.position.set(x, 0.03, z); g.scale.setScalar(s);
   mk(g, Cyl(0.05, 0.07, 0.3, 6), 0x7b5236, 0, 0.15, 0);
@@ -438,18 +479,45 @@ function fence(x, z, len, ry) {
   mk(g, Box(len, 0.03, 0.02), 0xb88a62, 0, 0.06, 0, 0, 0, 0, 0);
   board.add(g);
 }
-const E = BW / 2 - 0.38;
-cottage(-E + 0.05, -E + 0.05, 0.3, 0.9); cottage(E - 0.05, -E + 0.1, -0.4, 0.85);
-[[-E, -1.2, 0.8], [-E, 0.3, 0.7], [-E, 1.6, 0.75], [E, -1.6, 0.75], [E, -0.2, 0.8], [E, 1.3, 0.7],
- [-1.3, -E, 0.7], [0.1, -E, 0.8], [1.4, -E, 0.7]].forEach(([x, z, s]) => tree(x, z, s));
-fence(-1.4, E + 0.1, 1.6, 0); fence(1.4, E + 0.1, 1.6, 0);
-mk(board, Cyl(0.12, 0.12, 0.16, 10), 0xe3c164, -E + 0.05, 0.11, E, Math.PI / 2, 0, 0);   // 건초
-mk(board, Cyl(0.12, 0.12, 0.16, 10), 0xe3c164, E - 0.05, 0.11, E, Math.PI / 2, 0, 0);
-for (let i = 0; i < 18; i++) {
-  const side = i % 4, t = (Math.random() - 0.5) * (BW - 1);
-  const x = side < 2 ? (side ? E + 0.15 : -E - 0.15) : t, z = side < 2 ? t : (side === 2 ? -E - 0.15 : E + 0.25);
-  mk(board, Sph(0.035, 5, 4), [0xfff3a6, 0xffffff, 0xf4a6a6][i % 3], x, 0.05, z, 0, 0, 0, 0);
+function buildBoard() {
+  if (board) { scene.remove(board); board.traverse(o => o.geometry && o.geometry.dispose()); }
+  board = new THREE.Group(); scene.add(board);
+  BW = N * CELL + 1.58;
+  mk(board, Box(BW, 0.8, BW), 0x9c5a35, 0, -0.48, 0, 0, 0, 0, 0).receiveShadow = true;
+  mk(board, Box(BW + 0.02, 0.3, BW + 0.02), 0x6e3820, 0, -0.95, 0, 0, 0, 0, 0);
+  mk(board, Box(BW + 0.06, 0.14, BW + 0.06), 0x7f9f2c, 0, -0.04, 0, 0, 0, 0, 0).receiveShadow = true;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const p = cellPos(r, c);
+    mk(board, Box(1.1, 0.12, 1.1), (r + c) % 2 ? 0x98b83a : 0xa6c443, p.x, 0.06, p.z, 0, 0, 0, 0).receiveShadow = true;
+  }
+  const E = BW / 2 - 0.38, L = BW - 1.7;
+  cottage(-E + 0.05, -E + 0.05, 0.3, 0.9); cottage(E - 0.05, -E + 0.1, -0.4, 0.85);
+  const ks = N - 1;
+  for (let i = 0; i < ks; i++) {
+    const t = -L / 2 + (i + 0.5) * L / ks, s = 0.7 + (i % 3) * 0.05;
+    tree(-E, t + 0.2, s); tree(E, t - 0.1, s + 0.03); tree(t, -E, s);
+  }
+  fence(-BW * 0.22, E + 0.1, BW * 0.25, 0); fence(BW * 0.22, E + 0.1, BW * 0.25, 0);
+  mk(board, Cyl(0.12, 0.12, 0.16, 10), 0xe3c164, -E + 0.05, 0.11, E, Math.PI / 2, 0, 0);
+  mk(board, Cyl(0.12, 0.12, 0.16, 10), 0xe3c164, E - 0.05, 0.11, E, Math.PI / 2, 0, 0);
+  for (let i = 0; i < 6 * N; i++) {
+    const side = i % 4, t = (Math.random() - 0.5) * (BW - 1);
+    const x = side < 2 ? (side ? E + 0.15 : -E - 0.15) : t, z = side < 2 ? t : (side === 2 ? -E - 0.15 : E + 0.25);
+    mk(board, Sph(0.035, 5, 4), [0xfff3a6, 0xffffff, 0xf4a6a6][i % 3], x, 0.05, z, 0, 0, 0, 0);
+  }
+  const sb = BW / 2 + 0.6;
+  Object.assign(sun.shadow.camera, { left: -sb, right: sb, top: sb, bottom: -sb });
+  sun.shadow.camera.updateProjectionMatrix();
 }
+function makeRock() {
+  const g = new THREE.Group();
+  mk(g, new THREE.DodecahedronGeometry(0.36), 0x8d8d8d, 0, 0.28, 0, 0.3, 0.5, 0.2).scale.set(1, 0.85, 0.95);
+  mk(g, new THREE.DodecahedronGeometry(0.17), 0x9e9e9e, 0.3, 0.12, 0.2, 0.5, 0.2, 0);
+  mk(g, new THREE.DodecahedronGeometry(0.13), 0x7d7d7d, -0.3, 0.1, 0.18);
+  mk(g, Sph(0.17, 7, 5), 0x6fae3a, -0.08, 0.53, 0.04, 0, 0, 0, 0).scale.y = 0.4;
+  return g;
+}
+buildBoard();
 
 /* ---------- 숫자 라벨 ---------- */
 const labelTex = {};
@@ -624,21 +692,36 @@ const thumb = lv => thumbs[Math.min(lv, 12)] || '';
 
 /* ---------- 게임 상태 ---------- */
 const $ = id => document.getElementById(id);
-let grid, score = 0, best = store.get(NS + 'best', 0), busy = false, queued = null, gameOver = false, savedThisGame = false;
+const ROCK = { rock: true, level: -1 };
+let grid, score = 0, busy = false, queued = null, gameOver = false, savedThisGame = false;
+let chain = 0, maxCombo = 0, cleared = false, infinite = false, rockMeshes = [];
 let unlocked = store.get(NS + 'unlocked', 1);
-const inB = (r, c) => r >= 0 && r < 4 && c >= 0 && c < 4;
-const empty = () => [0, 1, 2, 3].map(() => [null, null, null, null]);
-function each(fn) { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (grid[r][c]) fn(grid[r][c], r, c); }
+(function migrate() { // 이전 버전(4×4 단일) 기록을 '고수'로 옮김
+  const o = store.get(NS + 'scores', null); if (o) { if (!store.get(NS + 'scores.hard', null)) store.set(NS + 'scores.hard', o); store.del(NS + 'scores'); }
+  const b = store.get(NS + 'best', null); if (b != null) { if (store.get(NS + 'best.hard', null) == null) store.set(NS + 'best.hard', b); store.del(NS + 'best'); }
+  const s = store.get(NS + 'state', null); if (s) { if (!store.get(NS + 'state.hard', null)) store.set(NS + 'state.hard', s); store.del(NS + 'state'); }
+})();
+const K = k => NS + k + '.' + diff;
+let best = store.get(K('best'), 0);
+const range = n => [...Array(n).keys()];
+const inB = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+const empty = () => range(N).map(() => Array(N).fill(null));
+function each(fn) { for (let r = 0; r < grid.length; r++) for (let c = 0; c < grid[r].length; c++) { const t = grid[r][c]; if (t && !t.rock) fn(t, r, c); } }
 function maxOnBoard() { let m = 1; each(t => { if (t.level > m) m = t.level; }); return m; }
+const chainMult = () => 1 + 0.05 * Math.min(Math.max(chain - 1, 0), 40); // 콤보 1당 +5%, 최대 ×3
 
 function place(lv, r, c) {
   const t = makeTile(lv), p = cellPos(r, c);
   t.r = r; t.c = c; t.grp.position.set(p.x, BASE_Y, p.z);
   scene.add(t.grp); grid[r][c] = t; return t;
 }
+function placeRock(r, c) {
+  const g = makeRock(), p = cellPos(r, c);
+  g.position.set(p.x, BASE_Y, p.z); scene.add(g); rockMeshes.push(g); grid[r][c] = ROCK;
+}
+function emptyCells() { const a = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!grid[r][c]) a.push([r, c]); return a; }
 function spawnRandom() {
-  const cells = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (!grid[r][c]) cells.push([r, c]);
-  if (!cells.length) return;
+  const cells = emptyCells(); if (!cells.length) return;
   const [r, c] = cells[Math.floor(Math.random() * cells.length)];
   const t = place(Math.random() < 0.9 ? 1 : 2, r, c);
   t.grp.position.y = 1.5; t.grp.scale.setScalar(0.4);
@@ -647,36 +730,63 @@ function spawnRandom() {
   sfxSpawn();
 }
 function canMove() {
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-    const t = grid[r][c]; if (!t) return true;
-    if (c < 3 && grid[r][c + 1] && grid[r][c + 1].level === t.level) return true;
-    if (r < 3 && grid[r + 1][c] && grid[r + 1][c].level === t.level) return true;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const t = grid[r][c]; if (!t) return true; if (t.rock) continue;
+    if (c < N - 1 && grid[r][c + 1] && grid[r][c + 1].level === t.level) return true;
+    if (r < N - 1 && grid[r + 1][c] && grid[r + 1][c].level === t.level) return true;
   }
   return false;
 }
-function saveState() { store.set(NS + 'state', { g: grid.map(row => row.map(t => t ? t.level : 0)), score, saved: savedThisGame }); }
-
-function updateHud() {
-  $('score').textContent = score;
-  if (score > best) { best = score; store.set(NS + 'best', best); }
-  $('best').textContent = best;
-  const m = maxOnBoard(); $('topImg').src = thumb(m); $('topName').textContent = unitOf(m).n;
+function saveState() {
+  store.set(K('state'), { g: grid.map(row => row.map(t => t ? (t.rock ? -1 : t.level) : 0)), score, saved: savedThisGame, chain, maxCombo, cleared, infinite });
 }
-
-function clearBoard() { if (grid) each(t => disposeTile(t)); grid = empty(); }
+function updateHud() {
+  $('score').textContent = score.toLocaleString();
+  if (score > best) { best = score; store.set(K('best'), best); }
+  $('best').textContent = best.toLocaleString();
+  const m = maxOnBoard(); $('topImg').src = thumb(m); $('topName').textContent = unitOf(m).n;
+  $('bDiff').textContent = '🎚️ ' + DIFFS[diff].n;
+  $('sub').textContent = 'ROYAL MERGE 2048 · ' + DIFFS[diff].n + (infinite ? ' · ♾️ 무한모드' : '');
+}
+function updateChain(pop) {
+  const el = $('chain');
+  if (chain >= 2) {
+    el.textContent = `🔥 ${chain} COMBO · 점수 ×${chainMult().toFixed(2)}`;
+    el.classList.add('show');
+    if (pop) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  } else el.classList.remove('show');
+}
+function clearBoard() {
+  if (grid) each(t => disposeTile(t));
+  rockMeshes.forEach(g => { scene.remove(g); g.traverse(o => o.geometry && o.geometry.dispose()); });
+  rockMeshes = []; grid = empty();
+}
 function newGame() {
   clearBoard(); score = 0; gameOver = false; savedThisGame = false; busy = false; queued = null;
-  spawnRandom(); spawnRandom(); updateHud(); saveState();
+  chain = 0; maxCombo = 0; cleared = false; infinite = false;
+  for (let i = 0; i < DIFFS[diff].rocks; i++) { const cs = emptyCells(); const [r, c] = cs[Math.floor(Math.random() * cs.length)]; placeRock(r, c); }
+  spawnRandom(); spawnRandom(); updateHud(); updateChain(); saveState();
 }
 function restore() {
-  const s = store.get(NS + 'state', null);
-  if (!s || !s.g) return false;
+  const s = store.get(K('state'), null);
+  if (!s || !s.g || s.g.length !== N) return false;
   clearBoard(); let n = 0;
-  s.g.forEach((row, r) => row.forEach((lv, c) => { if (lv) { place(lv, r, c); n++; } }));
+  s.g.forEach((row, r) => row.forEach((lv, c) => { if (lv === -1) placeRock(r, c); else if (lv) { place(lv, r, c); n++; } }));
   if (!n) return false;
-  score = s.score || 0; savedThisGame = !!s.saved; updateHud();
+  score = s.score || 0; savedThisGame = !!s.saved; chain = s.chain || 0; maxCombo = s.maxCombo || chain; cleared = !!s.cleared; infinite = !!s.infinite;
+  gameOver = false; updateHud(); updateChain();
   if (!canMove()) endGame();
   return true;
+}
+function switchDiff(d) {
+  closeM('mDiff');
+  if (d === diff) return;
+  if (busy) { setTimeout(() => switchDiff(d), 120); return; }
+  clearBoard();
+  diff = d; store.set(NS + 'diff', d); N = DIFFS[d].size;
+  best = store.get(K('best'), 0);
+  buildBoard(); resize();
+  if (!restore()) newGame();
 }
 
 /* ---------- 이동 ---------- */
@@ -685,18 +795,18 @@ function move(dir) {
   if (anyModal() || gameOver) return;
   if (busy) { queued = dir; return; }
   const [dr, dc] = DIRS[dir];
-  const rows = [0, 1, 2, 3], cols = [0, 1, 2, 3];
+  const rows = range(N), cols = range(N);
   if (dr === 1) rows.reverse(); if (dc === 1) cols.reverse();
   const slides = [], merges = [], mergedAt = new Set();
   for (const r of rows) for (const c of cols) {
-    const t = grid[r][c]; if (!t) continue;
+    const t = grid[r][c]; if (!t || t.rock) continue;
     let pr = r, pc = c, nr = r + dr, nc = c + dc;
     while (inB(nr, nc) && !grid[nr][nc]) { pr = nr; pc = nc; nr += dr; nc += dc; }
     const nx = inB(nr, nc) ? grid[nr][nc] : null;
-    if (nx && nx.level === t.level && !mergedAt.has(nr * 4 + nc)) {
+    if (nx && !nx.rock && nx.level === t.level && !mergedAt.has(nr * N + nc)) {
       grid[r][c] = null;
       const ph = { pending: true, level: t.level + 1, r: nr, c: nc, from: [t, nx] };
-      grid[nr][nc] = ph; mergedAt.add(nr * 4 + nc);
+      grid[nr][nc] = ph; mergedAt.add(nr * N + nc);
       slides.push({ t, r: nr, c: nc, merge: true }); merges.push(ph);
     } else if (pr !== r || pc !== c) {
       grid[r][c] = null; grid[pr][pc] = t; t.r = pr; t.c = pc;
@@ -706,9 +816,7 @@ function move(dir) {
   if (!slides.length) { shake(0.035); sfxBump(); return; }
   busy = true; sfxSlide();
   const lean = 0.38;
-  for (const s of slides) {
-    s.from = s.t.grp.position.clone(); s.to = cellPos(s.r, s.c);
-  }
+  for (const s of slides) { s.from = s.t.grp.position.clone(); s.to = cellPos(s.r, s.c); }
   tween(120, k => {
     for (const s of slides) {
       s.t.grp.position.x = s.from.x + (s.to.x - s.from.x) * k;
@@ -719,44 +827,56 @@ function move(dir) {
   }, () => afterSlide(slides, merges, dr, dc), eOutCubic);
 }
 function afterSlide(slides, merges, dr, dc) {
-  // 도착한 유닛은 반동으로 휘청
   for (const s of slides) {
     if (s.merge) continue;
     const t = s.t;
     tween(300, k => { const w = 0.38 * Math.cos(k * Math.PI * 3) * (1 - k); t.body.rotation.x = dr * w; t.body.rotation.z = -dc * w; });
     squash(t, 0.88, 200);
   }
-  let gained = 0, top = 0;
   const combo = merges.length;
+  // 콤보: 합체가 일어난 이동마다 그 합체 개수만큼 누적, 합체 없는 이동이면 0으로 초기화
+  // 점수 = 합친 값 × (1 + 0.05×(콤보-1)), 최대 ×3
+  if (combo) { chain += combo; maxCombo = Math.max(maxCombo, chain); } else chain = 0;
+  const mult = combo ? chainMult() : 1;
+  let gained = 0, top = 0, justCleared = false;
   for (const ph of merges) {
     disposeTile(ph.from[0]); disposeTile(ph.from[1]);
     const t = place(ph.level, ph.r, ph.c);
-    gained += Math.pow(2, ph.level); top = Math.max(top, ph.level);
-    impact(t, combo);
+    const pts = Math.round(Math.pow(2, ph.level) * mult);
+    gained += pts; top = Math.max(top, ph.level);
+    impact(t, combo, pts);
   }
   if (combo) {
     score += gained;
     hitStop = Math.min(0.12, 0.045 + top * 0.006) * (combo > 1 ? 1.25 : 1);
     shake((0.05 + top * 0.012) * (combo > 1 ? 1.4 : 1));
     if (navigator.vibrate) try { navigator.vibrate(14 + top * 3); } catch (e) {}
-    if (combo >= 2) showCombo(combo);
+    if (combo >= 2) showCombo(`+${combo} · ${chain} COMBO!`);
+    else if (chain >= 10 && chain % 10 === 0) showCombo(`${chain} COMBO!`);
     if (top > unlocked) { unlocked = top; store.set(NS + 'unlocked', unlocked); setTimeout(() => showUnlock(top), 180); }
+    if (top >= 11 && !cleared) { cleared = true; justCleared = true; }
   }
-  updateHud();
+  updateHud(); updateChain(combo > 0);
   tween(80, () => {}, () => {
     spawnRandom(); updateHud(); saveState(); busy = false;
-    if (!canMove()) { endGame(); return; }
+    const stuck = !canMove();
+    if (justCleared) {
+      if (stuck) { gameOver = true; store.del(K('state')); }
+      setTimeout(() => openClear(stuck), 1000);
+      return;
+    }
+    if (stuck) { endGame(); return; }
     if (queued) { const q = queued; queued = null; move(q); }
   });
 }
-function impact(t, combo) {
+function impact(t, combo, pts) {
   const lv = t.level, col = PL[uIdx(lv)], pos = t.grp.position;
   t.grp.scale.setScalar(1.5);
   tween(420, k => t.grp.scale.setScalar(1.5 - 0.5 * k), null, eOutElastic);
   squash(t, 0.55, 420);
   shockwave(pos, col);
   burst(pos, col, Math.min(40, 12 + lv * 2 + combo * 3));
-  floatText(pos, '+' + Math.pow(2, lv));
+  floatText(pos, '+' + pts.toLocaleString());
   sfxMerge(lv, combo);
 }
 
@@ -768,8 +888,8 @@ function floatText(pos, txt) {
   d.style.left = ((v3.x + 1) / 2 * innerWidth) + 'px'; d.style.top = ((1 - v3.y) / 2 * innerHeight) + 'px';
   document.body.appendChild(d); setTimeout(() => d.remove(), 1000);
 }
-function showCombo(n) {
-  const d = document.createElement('div'); d.className = 'combo'; d.textContent = `COMBO ×${n}!`;
+function showCombo(txt) {
+  const d = document.createElement('div'); d.className = 'combo'; d.textContent = txt;
   document.body.appendChild(d); setTimeout(() => d.remove(), 950);
 }
 let unTimer;
@@ -786,15 +906,13 @@ const anyModal = () => !!document.querySelector('.modal.open');
 const openM = id => $(id).classList.add('open');
 const closeM = id => $(id).classList.remove('open');
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').classList.remove('open'));
-let saveMode = 'over';
 function openSave(mode) {
-  saveMode = mode;
   const m = maxOnBoard(), u = unitOf(m);
-  $('saveTitle').textContent = mode === 'over' ? '⚔️ 전투 종료' : '새 게임을 시작할까요?';
+  $('saveTitle').textContent = mode === 'over' ? (infinite ? '♾️ 무한모드 종료' : '⚔️ 전투 종료') : '새 게임을 시작할까요?';
   $('saveScore').textContent = score.toLocaleString() + '점';
   $('saveUnit').innerHTML = '';
   const img = new Image(); img.src = thumb(m); img.style.cssText = 'width:52px;height:52px;vertical-align:middle';
-  $('saveUnit').append(img, ` 최고 병종: ${u.n}`);
+  $('saveUnit').append(img, ` 최고 병종: ${u.n} · ${DIFFS[diff].n} · 최대 콤보 ${maxCombo}`);
   $('nameIn').value = store.get('miloArcade.playerName', '');
   $('sSave').style.display = savedThisGame || score === 0 ? 'none' : '';
   $('sSave').textContent = mode === 'over' ? '🏆 기록 저장' : '🏆 기록 저장 후 새 게임';
@@ -802,28 +920,56 @@ function openSave(mode) {
   $('sCancel').style.display = mode === 'over' ? 'none' : '';
   openM('mSave');
 }
-function saveScore() {
-  const name = ($('nameIn').value || '').trim().slice(0, 12) || '무명용사';
+function openClear(stuck) {
+  $('clearImg').src = thumb(11);
+  $('clearScore').textContent = score.toLocaleString() + '점';
+  $('clearDiff').textContent = `${DIFFS[diff].n} · 최대 콤보 ${maxCombo}`;
+  $('clearName').value = store.get('miloArcade.playerName', '');
+  $('cInf').style.display = stuck ? 'none' : '';
+  $('cInfNote').style.display = stuck ? 'none' : '';
+  openM('mClear'); sfxUnlock();
+}
+function saveScore(inputId, mode) {
+  const name = ($(inputId).value || '').trim().slice(0, 12) || '무명용사';
   store.set('miloArcade.playerName', name);
-  const list = store.get(NS + 'scores', []);
-  const rec = { name, score, lv: maxOnBoard(), date: new Date().toISOString().slice(0, 10), t: Date.now() };
+  const list = store.get(K('scores'), []);
+  const rec = { name, score, lv: maxOnBoard(), mc: maxCombo, m: mode, date: new Date().toISOString().slice(0, 10), t: Date.now() };
   list.push(rec); list.sort((a, b) => b.score - a.score);
-  store.set(NS + 'scores', list.slice(0, 20));
+  store.set(K('scores'), list.slice(0, 20));
   savedThisGame = true; saveState();
   return rec.t;
 }
-function openRank(hi) {
-  const list = store.get(NS + 'scores', []), tb = $('rankBody'); tb.innerHTML = '';
-  if (!list.length) { const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = 5; td.textContent = '아직 기록이 없어요. 첫 전설이 되어보세요!'; }
+function openRank(hi, d = diff) {
+  const tabs = $('rankTabs'); tabs.innerHTML = '';
+  DORDER.forEach(k => {
+    const b = document.createElement('button'); b.className = 'tab' + (k === d ? ' on' : ''); b.textContent = DIFFS[k].n;
+    b.onclick = () => openRank(hi, k); tabs.appendChild(b);
+  });
+  const list = store.get(NS + 'scores.' + d, []), tb = $('rankBody'); tb.innerHTML = '';
+  if (!list.length) { const td = tb.insertRow().insertCell(); td.colSpan = 6; td.textContent = '아직 기록이 없어요. 첫 전설이 되어보세요!'; }
   list.forEach((r, i) => {
     const tr = tb.insertRow(); if (r.t === hi) tr.className = 'me';
     tr.insertCell().textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1;
-    tr.insertCell().textContent = r.name;
+    tr.insertCell().textContent = (r.m === 'clear' ? '👑 ' : r.m === 'inf' ? '♾️ ' : '') + r.name;
     const ic = tr.insertCell(); const im = new Image(); im.src = thumb(r.lv || 1); im.title = unitOf(r.lv || 1).n; ic.appendChild(im);
     tr.insertCell().textContent = (r.score || 0).toLocaleString();
+    tr.insertCell().textContent = r.mc != null ? r.mc : '-';
     tr.insertCell().textContent = (r.date || '').slice(5);
   });
   openM('mRank');
+}
+function openDiff() {
+  const g = $('diffGrid'); g.innerHTML = '';
+  DORDER.forEach(k => {
+    const D = DIFFS[k], b = document.createElement('button');
+    if (k === diff) b.className = 'on';
+    const mini = document.createElement('div'); mini.className = 'mini';
+    mini.style.gridTemplateColumns = `repeat(${D.size},1fr)`;
+    for (let i = 0; i < D.size * D.size; i++) { const c = document.createElement('i'); if (D.rocks && i === 5) c.className = 'rock'; mini.appendChild(c); }
+    const s = document.createElement('small'); s.textContent = D.desc;
+    b.append(mini, D.n, s); b.onclick = () => switchDiff(k); g.appendChild(b);
+  });
+  openM('mDiff');
 }
 function openCodex() {
   const g = $('codexGrid'); g.innerHTML = '';
@@ -838,13 +984,16 @@ function openCodex() {
   openM('mCodex');
 }
 function endGame() {
-  gameOver = true; sfxOver(); store.del(NS + 'state');
+  gameOver = true; sfxOver(); store.del(K('state'));
   setTimeout(() => openSave('over'), 750);
 }
-$('sSave').onclick = () => { const t = saveScore(); closeM('mSave'); newGame(); openRank(t); };
+$('sSave').onclick = () => { const t = saveScore('nameIn', infinite ? 'inf' : 'normal'); closeM('mSave'); newGame(); openRank(t); };
 $('sSkip').onclick = () => { closeM('mSave'); newGame(); };
 $('sCancel').onclick = () => closeM('mSave');
+$('cSave').onclick = () => { const t = saveScore('clearName', 'clear'); closeM('mClear'); newGame(); openRank(t); };
+$('cInf').onclick = () => { infinite = true; saveState(); updateHud(); closeM('mClear'); showCombo('♾️ 무한모드!'); };
 $('bNew').onclick = () => { ac(); if (score > 0 && !gameOver) openSave('new'); else newGame(); };
+$('bDiff').onclick = () => openDiff();
 $('bRank').onclick = () => openRank();
 $('bCodex').onclick = () => openCodex();
 const setMuteIcon = () => $('bMute').textContent = muted ? '🔇' : '🔊';
@@ -854,7 +1003,13 @@ setMuteIcon();
 /* ---------- 입력 ---------- */
 const KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', a: 'left', d: 'right', w: 'up', s: 'down', A: 'left', D: 'right', W: 'up', S: 'down' };
 window.addEventListener('keydown', e => {
-  if (e.target && e.target.tagName === 'INPUT') { if (e.key === 'Enter' && $('sSave').style.display !== 'none') $('sSave').click(); return; }
+  if (e.target && e.target.tagName === 'INPUT') {
+    if (e.key === 'Enter') {
+      if (e.target.id === 'clearName') $('cSave').click();
+      else if ($('sSave').style.display !== 'none') $('sSave').click();
+    }
+    return;
+  }
   const d = KEYS[e.key]; if (!d) return;
   e.preventDefault(); ac(); move(d);
 });
@@ -871,7 +1026,7 @@ document.addEventListener('touchmove', e => { if (!e.target.closest('.modal')) e
 /* ---------- 화면 크기 ---------- */
 function resize() {
   const w = innerWidth, h = innerHeight; renderer.setSize(w, h);
-  const asp = w / h, W0 = 7.0, H0 = 9.2;
+  const asp = w / h, W0 = BW + 0.7, H0 = BW * 1.46;
   let vw, vh; if (asp > W0 / H0) { vh = H0; vw = H0 * asp; } else { vw = W0; vh = W0 / asp; }
   camera.left = -vw / 2; camera.right = vw / 2; const f = asp < 0.8 ? 0.56 : 0.54; camera.top = vh * f; camera.bottom = -vh * (1 - f);
   camera.updateProjectionMatrix();
@@ -904,7 +1059,7 @@ function loop(now) {
 if (!restore()) newGame();
 requestAnimationFrame(loop);
 // 테스트/디버그용 훅
-window.__rm = { move, get grid() { return grid; }, get score() { return score; }, place, clearBoard, updateHud };
+window.__rm = { move, get grid() { return grid; }, get score() { return score; }, get chain() { return chain; }, get maxCombo() { return maxCombo; }, place, placeRock, clearBoard, updateHud, switchDiff, openClear, set cleared(v) { cleared = v; } };
 })();
 </script>
 </body>
