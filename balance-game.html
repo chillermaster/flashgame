@@ -77,6 +77,12 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
 }
 .save-row button{margin-top:0;font-size:1.3rem;padding:5px 16px;}
 .saved{color:var(--calm);font-size:1.2rem;margin-top:10px;font-weight:700;}
+.share-title{margin-top:16px;font-size:1.2rem;font-weight:700;}
+.copy-msg{font-size:1.05rem;margin-top:6px;min-height:1.2em;color:var(--muted);}
+.copy-msg.ok{color:var(--calm);}
+.copy-msg.err{color:var(--accent);}
+.copy-line{display:block;width:100%;margin-top:6px;font:inherit;font-size:.95rem;padding:5px 8px;border:2px dashed var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);-webkit-user-select:text;user-select:text;}
+.copy-line.hidden{display:none;}
 .board-title{margin-top:16px;font-size:1.45rem;font-weight:700;}
 .board{list-style:none;margin:6px 0 0;padding:0;font-size:1.15rem;}
 .board li{
@@ -119,6 +125,13 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
         <button id="saveBtn" type="button">기록 남기기</button>
       </div>
       <div id="savedMsg" class="saved hidden">전당에 이름을 올렸어요</div>
+      <div class="share-title">블로그 댓글에 점수 자랑하기</div>
+      <div id="shareRow" class="save-row">
+        <input id="shareName" maxlength="10" placeholder="닉네임" autocomplete="off" enterkeyhint="done" aria-label="댓글 닉네임">
+        <button id="copyBtn" type="button">점수 복사</button>
+      </div>
+      <div id="copyMsg" class="copy-msg" role="status" aria-live="polite"></div>
+      <input id="copyLine" class="copy-line hidden" readonly aria-label="복사할 점수">
       <button id="retryBtn" type="button">다시 하기</button>
       <div class="board-title">균형의 전당</div>
       <ol id="board" class="board"></ol>
@@ -231,6 +244,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
     if (saved || !lastRun) return;
     const name = ($('nameIn').value.trim() || '이름 없는 곡예사').slice(0, 10);
     store.set(NKEY, name);
+    if (!$('shareName').value.trim()) $('shareName').value = cleanName(name);
     const list = getBoard();
     const e = { name, score:Math.floor(lastRun.score), time:Math.round(lastRun.time * 10) / 10, mult:lastRun.mult, d:Date.now() };
     list.push(e);
@@ -242,6 +256,77 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
     renderBoard($('board'), top.indexOf(e)); renderBoard($('board0'), -1);
   }
   renderBoard($('board0'), -1);
+
+  // ---------- 점수 인증코드 (HMAC-SHA256, 순수 JS) ----------
+  const SC_K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  function scSha256(bytes){
+    const m=Array.from(bytes), l=m.length*8; m.push(0x80);
+    while(m.length%64!==56) m.push(0);
+    for(let i=7;i>=0;i--) m.push(i>=4?0:(l>>>(i*8))&255);
+    let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    const w=new Array(64), r=(x,n)=>(x>>>n)|(x<<(32-n));
+    for(let o=0;o<m.length;o+=64){
+      for(let i=0;i<16;i++) w[i]=(m[o+4*i]<<24)|(m[o+4*i+1]<<16)|(m[o+4*i+2]<<8)|m[o+4*i+3];
+      for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];
+        w[i]=(w[i-16]+(r(a,7)^r(a,18)^(a>>>3))+w[i-7]+(r(b,17)^r(b,19)^(b>>>10)))|0;}
+      let [a,b,c,d,e,f,g,h]=H;
+      for(let i=0;i<64;i++){
+        const t1=(h+(r(e,6)^r(e,11)^r(e,25))+((e&f)^(~e&g))+SC_K[i]+w[i])|0;
+        const t2=((r(a,2)^r(a,13)^r(a,22))+((a&b)^(a&c)^(b&c)))|0;
+        h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;}
+      H=[H[0]+a,H[1]+b,H[2]+c,H[3]+d,H[4]+e,H[5]+f,H[6]+g,H[7]+h].map(x=>x|0);
+    }
+    const out=[]; H.forEach(x=>out.push((x>>>24)&255,(x>>>16)&255,(x>>>8)&255,x&255)); return out;
+  }
+  function scHmac(key,msg){
+    const enc=new TextEncoder(); let k=Array.from(enc.encode(key));
+    if(k.length>64) k=scSha256(k); while(k.length<64) k.push(0);
+    const inner=scSha256(k.map(x=>x^0x36).concat(Array.from(enc.encode(msg))));
+    return scSha256(k.map(x=>x^0x5c).concat(inner));
+  }
+  const SC_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function scCode(key,msg){ return scHmac(key,msg).slice(0,8).map(b=>SC_ABC[b%32]).join(''); }
+
+  // ---------- 점수 복사 (블로그 댓글 인증용) ----------
+  const GAME_ID = 'balance', GAME_TITLE = '흔들흔들 균형왕';
+  const SC_KEY = ['B5yrgLfN', 'R8uIStyL', 'MrGO24HA', 't5PTKXqO'].join('');
+  function cleanName(s) { return String(s).replace(/[\[\]|#\r\n]/g, '').trim().slice(0, 10); }
+  function stampOf(ms) {
+    const d = new Date(ms), p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  function scoreLine(name) {
+    const sc = Math.floor(lastRun.score), sec = Math.floor(lastRun.time), st = stampOf(lastRun.at);
+    const c = scCode(SC_KEY, [GAME_ID, name, sc, st, sec].join('|'));
+    return `[${name}] ${GAME_TITLE} ${sc.toLocaleString('en-US')}점 · ${st} · ${Math.floor(sec / 60)}분 ${sec % 60}초 #${c.slice(0, 4)}-${c.slice(4)}`;
+  }
+  function copyMsg(t, cls) { const el = $('copyMsg'); el.textContent = t || ''; el.className = 'copy-msg' + (cls ? ' ' + cls : ''); }
+  async function copyText(t) {
+    try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return true; } } catch (e) {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:absolute;left:-9999px;top:0;';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch (e) { return false; }
+  }
+  async function copyScore() {
+    if (!lastRun) return;
+    const name = cleanName($('shareName').value);
+    if (!name) { copyMsg('닉네임을 먼저 입력해 주세요', 'err'); $('shareName').focus(); return; }
+    store.set(NKEY, name);
+    const line = scoreLine(name);
+    $('shareName').blur();
+    if (await copyText(line)) {
+      $('copyLine').classList.add('hidden');
+      copyMsg('복사했어요. 댓글 이름을 닉네임과 똑같이 써서 붙여넣어 주세요', 'ok');
+    } else {
+      const f = $('copyLine'); f.value = line; f.classList.remove('hidden'); f.focus(); f.select();
+      copyMsg('자동 복사가 막혔어요. 아래 줄을 길게 눌러 직접 복사해 주세요', 'err');
+    }
+  }
+  $('copyBtn').addEventListener('click', copyScore);
+  $('shareName').addEventListener('input', () => copyMsg(''));
 
   // ---------- 입력 ----------
   const keys = { l:false, r:false };
@@ -283,7 +368,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
 
   window.addEventListener('keydown', e => {
     if (isField(e.target)) {          // 이름 입력 중에는 게임 키 무시, Enter는 저장
-      if (e.key === 'Enter') { e.preventDefault(); saveScore(); }
+      if (e.key === 'Enter') { e.preventDefault(); if (e.target.id === 'shareName') copyScore(); else if (e.target.id === 'nameIn') saveScore(); }
       return;
     }
     const k = e.key;
@@ -340,12 +425,14 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
       `점수 <b>${Math.floor(S.score).toLocaleString()}점</b>${newScore ? ' <span class="record">신기록!</span>' : ''}<br>` +
       `최고 배수 <b>×${S.maxMult}</b><br>` +
       `<span class="es">최고 ${Math.floor(nb.score).toLocaleString()}점 · ${nb.time.toFixed(1)}초</span>`;
-    lastRun = { score:S.score, time:S.t, mult:S.maxMult }; saved = false;
+    lastRun = { score:S.score, time:S.t, mult:S.maxMult, at:Date.now() }; saved = false;
     const list = getBoard();
     const qualifies = S.score >= 1 && (list.length < 10 || Math.floor(S.score) > list[list.length - 1].score);
     $('saveRow').classList.toggle('hidden', !qualifies);
     $('savedMsg').classList.add('hidden');
     $('nameIn').value = store.get(NKEY, '');
+    $('shareName').value = store.get(NKEY, '');
+    $('copyLine').classList.add('hidden'); copyMsg('');
     renderBoard($('board'), -1);
     const btn = $('retryBtn'); btn.disabled = true;
     $('over').classList.remove('hidden');
