@@ -39,7 +39,11 @@
   .btnRow { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
   #copyBox { width:100%; max-width:300px; font-family:inherit; font-size:16px; line-height:1.2; padding:6px;
     border:1.2px solid var(--ink); border-radius:4px; resize:none; color:var(--ink); background:var(--paper); }
-  input, textarea { -webkit-user-select:text; user-select:text; }
+  /* 휴대폰: 더블탭 확대·글자 선택·길게 누르기 메뉴·튕김 스크롤 막기 */
+  html, body { -webkit-touch-callout:none; overscroll-behavior:none; -webkit-text-size-adjust:100%; }
+  body, #wrap { touch-action:manipulation; }
+  * { -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  input, textarea { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
   input { font-family:inherit; font-size:22px; width:140px; padding:2px 8px; border:none;
     border-bottom:1.2px solid var(--ink); background:transparent; color:var(--ink); text-align:center; }
   ol { list-style:none; width:100%; max-width:290px; font-size:19px; line-height:1.15; margin-top:4px; }
@@ -496,6 +500,23 @@ cv.addEventListener('pointerdown',e=>{
 cv.addEventListener('pointermove',e=>{ if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,sideOf(e)); });
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>ptrs.delete(e.pointerId)));
 cv.addEventListener('contextmenu',e=>e.preventDefault());
+// 휴대폰에서 좌우를 빠르게 연타할 때 더블탭으로 인식돼 글자 선택이 잡히거나 화면이 확대·스크롤되는 것 막기
+(function(){
+  const isField=t=>t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA');
+  const block=e=>{ if(e.cancelable) e.preventDefault(); };
+  // 게임 화면 안의 터치는 브라우저 기본 동작(확대·선택·스크롤)을 전부 끔. 조작은 pointer 이벤트가 따로 처리함
+  ['touchstart','touchmove','touchend'].forEach(n=>cv.addEventListener(n,block,{passive:false}));
+  cv.addEventListener('dblclick',block);
+  // 게임 화면 바깥 여백이나 글자 위를 빠르게 두 번 눌러도 확대·선택이 일어나지 않게
+  let lastEnd=0;
+  document.addEventListener('touchend',e=>{ const now=Date.now();
+    if(now-lastEnd<400&&!isField(e.target)&&!e.target.closest('button')) block(e); lastEnd=now; },{passive:false});
+  document.addEventListener('dblclick',e=>{ if(!isField(e.target)) block(e); });
+  document.addEventListener('selectstart',e=>{ if(!isField(e.target)) block(e); });
+  document.addEventListener('gesturestart',block,{passive:false});
+  // 혹시 잡힌 선택 영역은 바로 풀기
+  document.addEventListener('touchstart',e=>{ if(!isField(e.target)){ const s=window.getSelection&&window.getSelection(); if(s&&s.rangeCount&&String(s)) s.removeAllRanges(); } },{passive:true});
+})();
 
 // ---------- 점수 인증 (HMAC-SHA256, 순수 JS) ----------
 const AR_SECRET='ar1-5186fda2597249e4cec25fabe51769e2';
