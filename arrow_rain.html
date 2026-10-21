@@ -36,7 +36,10 @@
   button:hover { background:#f2f2f2; }
   button:focus-visible, input:focus-visible { outline:1.5px dashed var(--ink); outline-offset:3px; }
   button.primary { font-size:30px; padding:4px 34px 8px; border-width:1.6px; }
-  #saveRow { display:flex; gap:8px; align-items:center; }
+  .btnRow { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  #copyBox { width:100%; max-width:300px; font-family:inherit; font-size:16px; line-height:1.2; padding:6px;
+    border:1.2px solid var(--ink); border-radius:4px; resize:none; color:var(--ink); background:var(--paper); }
+  input, textarea { -webkit-user-select:text; user-select:text; }
   input { font-family:inherit; font-size:22px; width:140px; padding:2px 8px; border:none;
     border-bottom:1.2px solid var(--ink); background:transparent; color:var(--ink); text-align:center; }
   ol { list-style:none; width:100%; max-width:290px; font-size:19px; line-height:1.15; margin-top:4px; }
@@ -75,8 +78,11 @@
     <div class="line" id="oBest"></div>
     <div class="kicker" id="oRank" style="font-size:24px"></div>
     <div class="line soft" id="oNext"></div>
-    <div id="saveRow"><input id="nameIn" maxlength="10" placeholder="이름" autocomplete="off"><button id="saveBtn">기록 남기기</button></div>
+    <input id="nameIn" maxlength="10" placeholder="이름" autocomplete="off">
+    <div class="btnRow"><button id="saveBtn">기록 남기기</button><button id="copyBtn">점수 복사</button></div>
     <div id="savedMsg" class="line hidden">성벽에 이름을 새겼어요</div>
+    <div id="copyMsg" class="line hidden"></div>
+    <textarea id="copyBox" class="hidden" rows="3" readonly aria-label="복사할 점수"></textarea>
     <button id="againBtn" class="primary">다시 하기</button>
     <div class="hint">Space 또는 Enter로 바로 다시</div>
     <div class="board-title">명예의 성벽</div>
@@ -463,6 +469,7 @@ function inputDir(){
 }
 window.addEventListener('keydown',e=>{
   const tag=(document.activeElement && document.activeElement.tagName)||'';
+  if(tag==='TEXTAREA') return;
   if(tag==='INPUT'){ if(e.key==='Enter'){ e.preventDefault(); saveScore(); } return; }
   const k=e.key;
   if(k==='ArrowLeft'||k==='a'||k==='A'){ keys.l=1; e.preventDefault(); }
@@ -490,6 +497,53 @@ cv.addEventListener('pointermove',e=>{ if(ptrs.has(e.pointerId)) ptrs.set(e.poin
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>ptrs.delete(e.pointerId)));
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 
+// ---------- 점수 인증 (HMAC-SHA256, 순수 JS) ----------
+const AR_SECRET='ar1-5186fda2597249e4cec25fabe51769e2';
+const SHA_K=new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0xfc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x6ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+function sha256(bytes){
+  const H=new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+  const l=bytes.length, n=((l+9+63)>>6)<<6, m=new Uint8Array(n);
+  m.set(bytes); m[l]=0x80;
+  const dv=new DataView(m.buffer), bits=l*8;
+  dv.setUint32(n-8,Math.floor(bits/4294967296)); dv.setUint32(n-4,bits>>>0);
+  const w=new Uint32Array(64);
+  for(let i=0;i<n;i+=64){
+    for(let j=0;j<16;j++) w[j]=dv.getUint32(i+j*4);
+    for(let j=16;j<64;j++){
+      const a=w[j-15], b=w[j-2];
+      const s0=((a>>>7)|(a<<25))^((a>>>18)|(a<<14))^(a>>>3);
+      const s1=((b>>>17)|(b<<15))^((b>>>19)|(b<<13))^(b>>>10);
+      w[j]=(w[j-16]+s0+w[j-7]+s1)|0;
+    }
+    let a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(let j=0;j<64;j++){
+      const S1=((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7));
+      const t1=(h+S1+((e&f)^(~e&g))+SHA_K[j]+w[j])|0;
+      const S0=((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10));
+      const t2=(S0+((a&b)^(a&c)^(b&c)))|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
+    }
+    H[0]+=a; H[1]+=b; H[2]+=c; H[3]+=d; H[4]+=e; H[5]+=f; H[6]+=g; H[7]+=h;
+  }
+  const out=new Uint8Array(32), od=new DataView(out.buffer);
+  for(let i=0;i<8;i++) od.setUint32(i*4,H[i]);
+  return out;
+}
+function hmacHex(keyStr,msgStr){
+  const enc=new TextEncoder();
+  let k=enc.encode(keyStr); if(k.length>64) k=sha256(k);
+  const kp=new Uint8Array(64); kp.set(k);
+  const msg=enc.encode(msgStr);
+  const inner=new Uint8Array(64+msg.length), outer=new Uint8Array(96);
+  for(let i=0;i<64;i++){ inner[i]=kp[i]^0x36; outer[i]=kp[i]^0x5c; }
+  inner.set(msg,64); outer.set(sha256(inner),64);
+  return Array.from(sha256(outer),x=>x.toString(16).padStart(2,'0')).join('');
+}
+function arCode(name,score,tenths,coins,rank,ymd){
+  const h=hmacHex(AR_SECRET,['AR1',name,score,tenths,coins,rank,ymd].join('|')).slice(0,12).toUpperCase();
+  return 'AR1-'+h.slice(0,4)+'-'+h.slice(4,8)+'-'+h.slice(8,12);
+}
+
 // ---------- 화면 전환 & 기록 ----------
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getBoard(){ const l=store.get(KEY,[]); return Array.isArray(l)?l:[]; }
@@ -507,8 +561,12 @@ function start(){
 }
 function showOver(){
   state='over'; overShown=true; overAt=performance.now();
-  const sc=score(), tm=t, list=getBoard();
-  lastRun={score:sc,time:tm}; saved=false;
+  const sc=score(), tenths=Math.floor(t*10), tm=tenths/10, list=getBoard();
+  const now=new Date(), riNow=rankIndex(tm);
+  lastRun={score:sc, time:tm, tenths, coins, rank: riNow>=0?RANKS[riNow].n:'없음',
+           ymd: now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate(),
+           dateText: now.getFullYear()+'. '+(now.getMonth()+1)+'. '+now.getDate()+'.'};
+  saved=false;
   $('oTime').textContent=tm.toFixed(1)+'초';
   $('oScore').textContent=sc+'점 (금화 '+coins+'개)';
   const best=list.length?list[0].score:0;
@@ -518,27 +576,59 @@ function showOver(){
   const nx=RANKS.find(r=>r.t>tm);
   $('oNext').textContent= nx ? nx.n+'까지 '+(nx.t-tm).toFixed(1)+'초 남았어요' : '모든 등급을 넘었어요. 이제 기록과의 싸움';
   const qualifies = sc>0 && (list.length<10 || sc>list[list.length-1].score);
-  $('saveRow').classList.toggle('hidden',!qualifies);
+  $('saveBtn').classList.toggle('hidden',!qualifies);
   $('savedMsg').classList.add('hidden');
+  $('copyMsg').classList.add('hidden'); $('copyBox').classList.add('hidden');
   $('nameIn').value=store.get(NKEY,'');
   renderBoard($('board'),-1);
   $('over').classList.remove('hidden');
 }
+function cleanName(v){
+  const n=String(v||'').replace(/[|\r\n\t🔐🏹]/g,' ').replace(/\s+/g,' ').trim().slice(0,10);
+  return n||'이름 없는 기사';
+}
+function scoreLine(name,r){
+  const code=arCode(name,r.score,r.tenths,r.coins,r.rank,r.ymd);
+  return '🏹 [화살비] 이름: '+name+' | 등급: '+r.rank+' | 점수: '+r.score.toLocaleString('en-US')+'점 | 버틴 시간: '
+    +(r.tenths/10).toFixed(1)+'초 | 금화: '+r.coins+'개 ('+r.dateText+') 🔐 '+code;
+}
+function legacyCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px';
+  document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,text.length);
+  let ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta); return ok;
+}
+async function copyScore(){
+  if(!lastRun) return;
+  const name=cleanName($('nameIn').value);
+  $('nameIn').value=name; store.set(NKEY,name);
+  const text=scoreLine(name,lastRun);
+  let ok=false;
+  try{ if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); ok=true; } }catch(e){}
+  if(!ok) ok=legacyCopy(text);
+  const msg=$('copyMsg'), box=$('copyBox');
+  msg.classList.remove('hidden');
+  if(ok){ msg.textContent='복사했어요. 블로그 댓글에 붙여 넣어 주세요'; box.classList.add('hidden'); }
+  else { msg.textContent='자동 복사가 막혔어요. 아래 글을 길게 눌러 직접 복사해 주세요';
+    box.value=text; box.classList.remove('hidden'); box.focus(); box.select(); }
+}
 function saveScore(){
   if(saved || !lastRun) return;
-  const name=($('nameIn').value.trim()||'이름 없는 기사').slice(0,10);
+  const name=cleanName($('nameIn').value);
   store.set(NKEY,name);
   const list=getBoard();
   const e={name, score:lastRun.score, time:Math.round(lastRun.time*10)/10, d:Date.now()};
   list.push(e); list.sort((a,b)=>b.score-a.score);
   const top=list.slice(0,10); store.set(KEY,top); saved=true;
-  $('saveRow').classList.add('hidden'); $('savedMsg').classList.remove('hidden');
+  $('saveBtn').classList.add('hidden'); $('savedMsg').classList.remove('hidden');
   $('nameIn').blur();
   renderBoard($('board'),top.indexOf(e)); renderBoard($('board0'),-1);
 }
 $('startBtn').addEventListener('click',e=>{ e.currentTarget.blur(); start(); });
 $('againBtn').addEventListener('click',e=>{ e.currentTarget.blur(); start(); });
 $('saveBtn').addEventListener('click',e=>{ e.currentTarget.blur(); saveScore(); });
+$('copyBtn').addEventListener('click',e=>{ e.currentTarget.blur(); copyScore(); });
 renderBoard($('board0'),-1);
 })();
 </script>
