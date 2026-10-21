@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>폰에서 왕까지 · Royal Merge 2048</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<!-- Pretendard (SIL Open Font License 1.1) https://github.com/orioncactus/pretendard -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <style>
 :root{--ink:#2f2a26;--wood:#4f6e8c;--wood-d:#334a60;--parch:#fbf3e1;--gold:#f3c95a}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;font-family:'Jua',system-ui,sans-serif;color:var(--ink);
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',system-ui,'Malgun Gothic',sans-serif;font-weight:500;letter-spacing:-0.01em;color:var(--ink);
   touch-action:none;user-select:none;-webkit-user-select:none;
   background:radial-gradient(ellipse at 50% 55%,#5cc3b8 0%,rgba(92,195,184,0) 60%),linear-gradient(160deg,#2a8f9f 0%,#3aa8ac 50%,#78c9ae 100%)}
 #c{position:fixed;inset:0;display:block}
@@ -60,6 +60,16 @@ tr.me{background:#ffe9a8}
 .codex .lock img{filter:brightness(0) opacity(.3)}
 .codex small{display:block;color:#4f6e8c}
 .muted{color:#8a6a4a;font-size:13px}
+.title{font-weight:800;letter-spacing:-0.02em}
+.title small{font-weight:600;letter-spacing:.06em}
+.sbox span{font-weight:800}
+.btn,.tab,.diffs button{font-weight:700}
+.card h2{font-weight:800!important}
+.big{font-weight:800}
+.float,.combo{font-weight:900}
+#unlock span,#chain{font-weight:700}
+#cCopyMsg,#sCopyMsg{margin-top:6px;min-height:1em}
+.copybox{width:100%;height:88px;font-family:inherit;font-size:14px;margin-top:6px;border:2px solid var(--wood);border-radius:8px;padding:6px;resize:none;user-select:text;-webkit-user-select:text}
 .btns{flex-wrap:wrap}
 @media (max-width:699px){.btn{padding:5px 8px;font-size:14px}}
 #chain{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) scale(.8);opacity:0;background:#fff3d6;border:2px solid #c0582b;color:#c0582b;border-radius:20px;padding:4px 14px;font-size:16px;white-space:nowrap;transition:opacity .2s,transform .2s;pointer-events:none;z-index:6;box-shadow:0 3px 0 #8a3a18}
@@ -128,6 +138,8 @@ tr.me{background:#ffe9a8}
     <button class="btn" id="sSkip">저장 없이 새 게임</button>
     <button class="btn" id="sCancel">계속 하기</button>
   </div>
+  <div class="row"><button class="btn" id="sCopy">📋 기록 복사 (댓글용)</button></div>
+  <div class="muted" id="sCopyMsg"></div>
 </div></div>
 
 <div class="modal" id="mClear"><div class="card">
@@ -140,6 +152,8 @@ tr.me{background:#ffe9a8}
     <button class="btn primary" id="cSave">🏆 점수 기록하고 나가기</button>
     <button class="btn" id="cInf">♾️ 무한모드 이어하기</button>
   </div>
+  <div class="row"><button class="btn" id="cCopy">📋 기록 복사 (댓글용)</button></div>
+  <div class="muted" id="cCopyMsg"></div>
   <p class="muted" id="cInfNote">무한모드는 판이 막힐 때까지 계속돼요. 끝나면 그때 기록할 수 있어요.</p>
 </div></div>
 
@@ -918,6 +932,7 @@ function openSave(mode) {
   $('sSave').textContent = mode === 'over' ? '🏆 기록 저장' : '🏆 기록 저장 후 새 게임';
   $('sSkip').textContent = mode === 'over' ? '다시 하기' : '저장 없이 새 게임';
   $('sCancel').style.display = mode === 'over' ? 'none' : '';
+  $('sCopyMsg').innerHTML = '';
   openM('mSave');
 }
 function openClear(stuck) {
@@ -927,7 +942,31 @@ function openClear(stuck) {
   $('clearName').value = store.get('miloArcade.playerName', '');
   $('cInf').style.display = stuck ? 'none' : '';
   $('cInfNote').style.display = stuck ? 'none' : '';
+  $('cCopyMsg').innerHTML = '';
   openM('mClear'); sfxUnlock();
+}
+function recordText(inputId, mode) {
+  const name = ($(inputId).value || '').trim().slice(0, 12) || '무명용사', u = unitOf(maxOnBoard()), D = DIFFS[diff].n;
+  const head = mode === 'clear' ? `👑 [폰에서 왕까지] ${D} 클리어!` : infinite ? `♾️ [폰에서 왕까지] ${D} 무한모드 결과` : `⚔️ [폰에서 왕까지] ${D} 전투 기록`;
+  return `${head}\n이름: ${name} | 점수: ${score.toLocaleString()}점 | 최고 병종: ${u.n} | 최대 콤보: ${maxCombo}\n(${new Date().toLocaleDateString('ko-KR')})`;
+}
+async function copyRecord(inputId, mode, msgId) {
+  const txt = recordText(inputId, mode), m = $(msgId);
+  let ok = false;
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(txt); ok = true; } } catch (e) {}
+  if (!ok) {
+    try {
+      const ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove();
+    } catch (e) {}
+  }
+  m.innerHTML = '';
+  if (ok) m.textContent = '✅ 복사됐어요! 블로그 댓글창에 붙여넣기(Ctrl+V) 하세요.';
+  else {
+    m.append('자동 복사가 막혀 있어요. 아래 글을 선택해서 복사해 주세요.');
+    const ta = document.createElement('textarea'); ta.className = 'copybox'; ta.readOnly = true; ta.value = txt;
+    m.appendChild(ta); ta.focus(); ta.select();
+  }
 }
 function saveScore(inputId, mode) {
   const name = ($(inputId).value || '').trim().slice(0, 12) || '무명용사';
@@ -990,6 +1029,8 @@ function endGame() {
 $('sSave').onclick = () => { const t = saveScore('nameIn', infinite ? 'inf' : 'normal'); closeM('mSave'); newGame(); openRank(t); };
 $('sSkip').onclick = () => { closeM('mSave'); newGame(); };
 $('sCancel').onclick = () => closeM('mSave');
+$('cCopy').onclick = () => copyRecord('clearName', 'clear', 'cCopyMsg');
+$('sCopy').onclick = () => copyRecord('nameIn', infinite ? 'inf' : 'normal', 'sCopyMsg');
 $('cSave').onclick = () => { const t = saveScore('clearName', 'clear'); closeM('mClear'); newGame(); openRank(t); };
 $('cInf').onclick = () => { infinite = true; saveState(); updateHud(); closeM('mClear'); showCombo('♾️ 무한모드!'); };
 $('bNew').onclick = () => { ac(); if (score > 0 && !gameOver) openSave('new'); else newGame(); };
@@ -1003,6 +1044,7 @@ setMuteIcon();
 /* ---------- 입력 ---------- */
 const KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', a: 'left', d: 'right', w: 'up', s: 'down', A: 'left', D: 'right', W: 'up', S: 'down' };
 window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'TEXTAREA') return;
   if (e.target && e.target.tagName === 'INPUT') {
     if (e.key === 'Enter') {
       if (e.target.id === 'clearName') $('cSave').click();
