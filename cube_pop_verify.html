@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>큐브팡 · 진위검사기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+:root{--ink:#22293b;--tray:#2b3550;--tray-d:#1d2439;--paper:#e6eef5;--ok:#2e7d32;--bad:#c62828;--warn:#e08a00;--dup:#6a1b9a}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);background:var(--paper);min-height:100vh;padding:20px 14px}
+.wrap{max-width:960px;margin:0 auto;background:#fff;border:3px solid var(--tray);border-radius:18px;box-shadow:0 8px 0 var(--tray-d);padding:18px 20px}
+h1{margin:0 0 4px;font-size:24px;font-weight:800}
+.sub{color:#5d6880;font-size:14px;margin-bottom:12px}
+textarea{width:100%;height:170px;font-family:inherit;font-size:14px;padding:10px;border:2px solid var(--tray);border-radius:12px;resize:vertical;background:#fff}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+button{font-family:inherit;font-weight:700;font-size:14px;padding:7px 14px;border:2px solid var(--tray);border-radius:12px;background:#fff;box-shadow:0 3px 0 var(--tray);cursor:pointer;color:var(--ink)}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--tray)}
+button.on{background:var(--tray);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;margin-top:6px}
+.card{background:#fff;border:2px solid #d6dde8;border-left-width:8px;border-radius:12px;padding:10px 12px;cursor:pointer}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.st{font-weight:800;font-size:15px}
+.rank{font-weight:800;color:var(--tray);font-size:13px}
+.nm{font-size:18px;font-weight:800;margin:4px 0 2px}
+.sc{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
+.meta{font-size:13px;color:#5d6880;margin-top:2px;line-height:1.5}
+.why{margin-top:6px;font-size:12px;padding:5px 8px;border-radius:8px;background:#fff5e6;color:#8a5a00}
+.raw{display:none;margin-top:8px;font-size:12px;white-space:pre-line;background:#f2f5fa;border-radius:8px;padding:6px 8px;word-break:break-all}
+.card.open .raw{display:block}
+.empty{padding:20px;text-align:center;color:#5d6880}
+.note{font-size:13px;color:#5d6880;line-height:1.7;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔐 큐브팡 · 진위검사기</h1>
+  <div class="sub">댓글을 통째로 붙여넣으면 기록만 골라 검사해요. 카드를 누르면 원문이 펼쳐져요.</div>
+  <textarea id="inp" placeholder="🧊 [큐브팡] 스테이지 7 도달&#10;이름: 루카 | 점수: 61,250점 | 최대 콤보: 8 | 최대 덩어리: 15 | 방해석: 12개&#10;플레이 시간: 6분 42초 (2026. 10. 24.)&#10;🔐 CP2-XXXX-XXXX-XXXX"></textarea>
+  <div class="bar" id="stBar"></div>
+  <div class="cards" id="out"></div>
+  <div class="note">
+    ✅ <b>진짜</b>: 인증코드 일치 · ❌ <b>가짜</b>: 이름·점수·스테이지·콤보·덩어리·방해석·시간·날짜 중 하나라도 수정됨 · ⚠️ <b>의심</b>: 코드는 맞지만 게임상 나오기 힘든 값 · 🔁 <b>중복</b>: 같은 코드가 두 번 이상<br>
+    의심 기준: 점수가 도달 스테이지의 점수 구간을 벗어남 · 스테이지 3 이전인데 방해석 기록 · 플레이 시간이 너무 짧음 · 콤보·덩어리 값이 규칙상 불가능
+  </div>
+</div>
+<script>
+/* ---------- 인증코드: HMAC-SHA256 (순수 JS) ---------- */
+const SIG = (() => {
+  const K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+  const ror = (x, n) => (x >>> n) | (x << (32 - n));
+  function sha256(msg) {
+    const l = msg.length, padded = ((l + 9 + 63) >> 6) << 6, buf = new Uint8Array(padded);
+    buf.set(msg); buf[l] = 0x80;
+    const dv = new DataView(buf.buffer);
+    dv.setUint32(padded - 4, (l * 8) >>> 0); dv.setUint32(padded - 8, Math.floor(l / 0x20000000));
+    const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19], w = new Uint32Array(64);
+    for (let o = 0; o < padded; o += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const s0 = ror(w[i - 15], 7) ^ ror(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = ror(w[i - 2], 17) ^ ror(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      let [a, b, c, d, e, f, g, hh] = h;
+      for (let i = 0; i < 64; i++) {
+        const t1 = (hh + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+        const t2 = ((ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+        hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      h[0] = (h[0] + a) | 0; h[1] = (h[1] + b) | 0; h[2] = (h[2] + c) | 0; h[3] = (h[3] + d) | 0;
+      h[4] = (h[4] + e) | 0; h[5] = (h[5] + f) | 0; h[6] = (h[6] + g) | 0; h[7] = (h[7] + hh) | 0;
+    }
+    const out = new Uint8Array(32), odv = new DataView(out.buffer);
+    h.forEach((v, i) => odv.setUint32(i * 4, v >>> 0));
+    return out;
+  }
+  const enc = s => new TextEncoder().encode(s);
+  const fromHex = hx => new Uint8Array(hx.match(/../g).map(x => parseInt(x, 16)));
+  const toHex = b => Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+  function hmac(key, msg) {
+    if (key.length > 64) key = sha256(key);
+    const k = new Uint8Array(64); k.set(key);
+    const ip = new Uint8Array(64 + msg.length), op = new Uint8Array(96);
+    for (let i = 0; i < 64; i++) { ip[i] = k[i] ^ 0x36; op[i] = k[i] ^ 0x5c; }
+    ip.set(msg, 64); op.set(sha256(ip), 64);
+    return sha256(op);
+  }
+  const code8 = bytes => { const x = toHex(bytes).slice(0, 8).toUpperCase(); return x.slice(0, 4) + '-' + x.slice(4); };
+  return { sha256, hmac, enc, fromHex, toHex, code8 };
+})();
+const CP_KEY = "cp-mDsLH624-6u7TWhbYz76szA_QwUUIJuQ";
+const B32 = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function cpCode(payload) {
+  const h = SIG.hmac(SIG.enc(CP_KEY), SIG.enc(payload));
+  let bits = ''; for (let i = 0; i < 8; i++) bits += h[i].toString(2).padStart(8, '0');
+  let c = ''; for (let i = 0; i < 12; i++) c += B32[parseInt(bits.substr(i * 5, 5), 2)];
+  return `CP2-${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8)}`;
+}
+const TARGETS = [4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000];
+const targetFor = s => s <= 8 ? TARGETS[s - 1] : 18000 + 2500 * (s - 8);
+const sumT = s => { let t = 0; for (let i = 1; i <= s; i++) t += targetFor(i); return t; };
+const RE = /\[큐브팡\]\s*스테이지\s*(\d+)\s*도달\s*이름:\s*(.+?)\s*\|\s*점수:\s*([\d,]+)점\s*\|\s*최대 콤보:\s*(\d+)\s*\|\s*최대 덩어리:\s*(\d+)\s*\|\s*방해석:\s*(\d+)개\s*플레이 시간:\s*(?:(\d+)분\s*)?(\d+)초\s*\(\s*(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*\)\s*🔐\s*(CP2-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/gi;
+const ST = { ok: ['✅ 진짜', 'var(--ok)'], warn: ['⚠️ 의심', 'var(--warn)'], bad: ['❌ 가짜', 'var(--bad)'], dup: ['🔁 중복', 'var(--dup)'] };
+let fSt = 'all', recs = [];
+const fmtTimeKo = s => { const m = Math.floor(s / 60); return m ? `${m}분 ${s % 60}초` : `${s % 60}초`; };
+
+function plausible(r) {
+  const why = [], s = r.stage;
+  if (s < 1) return ['스테이지 값이 잘못됨'];
+  if (r.score < sumT(s - 1) || r.score >= sumT(s)) why.push(`스테이지 ${s}의 점수 구간(${sumT(s - 1).toLocaleString()}~${(sumT(s) - 1).toLocaleString()})을 벗어남`);
+  if (r.stones > 0 && s < 3) why.push('스테이지 3 이전에는 방해석이 없음');
+  if (r.sec < (s - 1) * 1.5) why.push('플레이 시간이 너무 짧음');
+  if (r.combo > r.sec * 1.5 + 3) why.push('플레이 시간에 비해 콤보가 너무 큼');
+  if (r.big > 80 || (s > 1 && r.big < 3)) why.push('최대 덩어리 값이 불가능');
+  if (r.combo > 0 && r.big < 5) why.push('5개 이상 덩어리 없이 콤보가 생김');
+  return why;
+}
+function parse(txt) {
+  const out = [], seen = {}; let m; RE.lastIndex = 0;
+  while ((m = RE.exec(txt))) {
+    const [raw, stage, name, sc, combo, big, stones, mi, se, y, mo, d, code] = m;
+    const r = { raw, stage: +stage, name: name.trim(), score: parseInt(sc.replace(/,/g, ''), 10), combo: +combo, big: +big, stones: +stones,
+      sec: (+(mi || 0)) * 60 + (+se), date: `${y}. ${parseInt(mo, 10)}. ${parseInt(d, 10)}.`, code: code.toUpperCase(), why: [] };
+    const exp = cpCode(`CP2|${r.name}|${r.score}|${r.stage}|${r.combo}|${r.big}|${r.stones}|${r.sec}|${r.date}`);
+    if (exp !== r.code) { r.st = 'bad'; r.why = ['인증코드 불일치 — 내용이 수정됐어요']; }
+    else { r.why = plausible(r); r.st = r.why.length ? 'warn' : 'ok'; }
+    if (r.st !== 'bad') { if (seen[r.code]) { r.st = 'dup'; r.why = ['같은 기록이 위에 이미 있어요']; } seen[r.code] = 1; }
+    out.push(r);
+  }
+  return out;
+}
+function render() {
+  const el = document.getElementById('stBar'); el.innerHTML = '';
+  [['all', `모두 ${recs.length}`], ...Object.keys(ST).map(k => [k, `${ST[k][0]} ${recs.filter(r => r.st === k).length}`])].forEach(([k, label]) => {
+    const b = document.createElement('button'); b.className = k === fSt ? 'on' : ''; b.textContent = label; b.onclick = () => { fSt = k; render(); }; el.appendChild(b);
+  });
+  const list = recs.filter(r => fSt === 'all' || r.st === fSt)
+    .sort((a, b) => (Object.keys(ST).indexOf(a.st) - Object.keys(ST).indexOf(b.st)) || (b.score - a.score));
+  const out = document.getElementById('out'); out.innerHTML = '';
+  if (!list.length) { out.innerHTML = '<div class="empty">' + (recs.length ? '조건에 맞는 기록이 없어요.' : '댓글을 붙여넣으면 여기에 결과가 나와요.') + '</div>'; return; }
+  let rk = 0;
+  list.forEach(r => {
+    const c = document.createElement('div'); c.className = 'card'; c.style.borderLeftColor = ST[r.st][1];
+    c.innerHTML = `<div class="top"><span class="st" style="color:${ST[r.st][1]}">${ST[r.st][0]}</span><span class="rank"></span></div><div class="nm"></div><div class="sc"></div><div class="meta"></div>`;
+    if (r.st === 'ok') c.querySelector('.rank').textContent = `${++rk}위`;
+    c.querySelector('.nm').textContent = r.name;
+    c.querySelector('.sc').textContent = r.score.toLocaleString() + '점';
+    c.querySelector('.meta').textContent = `스테이지 ${r.stage} · 콤보 ${r.combo} · 덩어리 ${r.big} · 방해석 ${r.stones}개 · ${fmtTimeKo(r.sec)} · ${r.date}`;
+    if (r.why.length) { const w = document.createElement('div'); w.className = 'why'; w.textContent = r.why.join(' / '); c.appendChild(w); }
+    const raw = document.createElement('div'); raw.className = 'raw'; raw.textContent = r.raw; c.appendChild(raw);
+    c.onclick = () => c.classList.toggle('open');
+    out.appendChild(c);
+  });
+}
+let t;
+document.getElementById('inp').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { recs = parse(e.target.value); render(); }, 150); });
+render();
+</script>
+</body>
+</html>
