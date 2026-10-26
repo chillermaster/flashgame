@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>석양의 총잡이 · 점수 검증기</title><style>
+:root{--bg:#2b1f27;--card:#392832;--text:#fff0c9;--gold:#ffd36b;--ok:#7fe0a0;--bad:#ff8a7a;--warn:#ffc35a;color-scheme:dark}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fbeedb;--card:#fff8ea;--text:#392832;--gold:#b0661e;--ok:#1d8a4a;--bad:#c0392b;--warn:#a86a00;color-scheme:light}}
+*{box-sizing:border-box}html,body{touch-action:manipulation}body{margin:0;padding:20px;padding-top:calc(20px + env(safe-area-inset-top,0px));background:var(--bg);color:var(--text);font-family:system-ui,"Malgun Gothic",sans-serif}
+.box{max-width:720px;margin:0 auto;background:var(--card);border-radius:16px;padding:18px}h1{margin:0 0 12px;font-size:1.3rem;color:var(--gold)}
+textarea{width:100%;min-height:150px;border-radius:10px;border:1px solid #e7c58b;padding:10px;font:inherit;background:#fff4d8;color:#392832}
+button{margin-top:10px;padding:12px 18px;border:0;border-radius:10px;font-weight:800;background:var(--gold);color:#392832;cursor:pointer}
+.r{margin-top:10px;padding:10px;border-radius:10px;border:1px solid #f8dca044;line-height:1.5;word-break:break-all}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}small{opacity:.75}
+</style></head><body><div class="box"><h1>🔫 석양의 총잡이 · 점수 검증기</h1>
+<p><small>블로그 댓글에서 기록을 여러 줄 붙여넣어도 한 줄씩 검증합니다.</small></p>
+<textarea id="in" placeholder="[석양의 총잡이 기록] 이름 / 3라운드 / 0.215초 / SG-XXXXXXX"></textarea>
+<button id="go">검증하기</button><div id="out"></div></div>
+<script>
+const cpuTimes=[760,700,640,590,530,460,370,290,220,165];
+function makeCode(name,r,ms){const p=`SG2|${name.trim()}|${r}|${ms}`;let h=2166136261;for(let i=0;i<p.length;i++){h^=p.charCodeAt(i);h=Math.imul(h,16777619)}return 'SG-'+(h>>>0).toString(36).toUpperCase().padStart(7,'0')}
+const esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+document.getElementById('go').onclick=()=>{
+ const out=document.getElementById('out');out.innerHTML='';
+ const re=/\[석양의 총잡이 기록\]\s*(.+?)\s*\/\s*(\d+)라운드\s*\/\s*(\d+\.\d{3})초\s*\/\s*(SG-[0-9A-Z]+)/g;
+ let m,n=0;const txt=document.getElementById('in').value;
+ while((m=re.exec(txt))){n++;
+  const [,name,rs,ss,code]=m,r=+rs,ms=Math.round(parseFloat(ss)*1000);
+  const valid=makeCode(name,r,ms)===code.toUpperCase();
+  const notes=[];
+  if(r<1||r>10)notes.push('<span class="bad">라운드 범위 오류(1~10)</span>');
+  else if(ms>=cpuTimes[r-1])notes.push(`<span class="bad">${r}라운드 CPU(${cpuTimes[r-1]}ms)보다 느려 승리 불가</span>`);
+  if(ms<100)notes.push('<span class="warn">100ms 미만 · 반응이 아닌 예측 발사 가능성</span>');
+  const d=document.createElement('div');d.className='r';
+  d.innerHTML=`<b class="${valid?'ok':'bad'}">${valid?'✅ 검증 성공':'❌ 검증 실패'}</b> · ${esc(name)} / ${r}라운드 / ${ss}초 / ${esc(code)}${notes.length?'<br>'+notes.join('<br>'):''}`;
+  out.appendChild(d)}
+ if(!n)out.innerHTML='<div class="r bad">기록 형식을 찾지 못했습니다.</div>';
+};
+</script></body></html>
