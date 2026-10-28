@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>아발론 스트라이커 점수 검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Song+Myung&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0c0e22;--lapis:#23306b;--gold:#e6b84a;--gold-d:#9c6f1f;--rubric:#c23a2b;--vellum:#eadfba;color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{touch-action:manipulation}
+body{margin:0;background:radial-gradient(ellipse at 50% 0%,#1a2050 0,var(--ink) 70%) fixed;color:var(--vellum);font-family:'Song Myung','Nanum Myeongjo',serif;min-height:100vh}
+.w{max-width:620px;margin:0 auto;padding:22px 16px 40px}
+h1{font-weight:400;font-size:clamp(24px,6vw,34px);color:var(--gold);margin:0;text-shadow:2px 2px 0 var(--rubric),4px 4px 0 #000}
+.en{font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.15em;margin:.7em 0 1.2em;color:#b9b08f}
+p{line-height:1.65;font-size:15px;color:#d8cfae}
+textarea{width:100%;height:12em;font:13px/1.5 monospace;background:#05061299;color:var(--vellum);border:0;padding:10px;box-shadow:0 -3px 0 0 var(--gold-d),0 3px 0 0 var(--gold-d),-3px 0 0 0 var(--gold-d),3px 0 0 0 var(--gold-d);resize:vertical}
+textarea:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+.row{display:flex;gap:10px;margin:14px 0}
+button{font:inherit;font-size:16px;border:0;padding:.55em 1.2em;color:#fff;background:var(--lapis);cursor:pointer;touch-action:manipulation;box-shadow:0 -3px 0 0 #000,0 3px 0 0 #000,-3px 0 0 0 #000,3px 0 0 0 #000,inset 0 -3px 0 #0006}
+button.pri{background:var(--rubric)}
+.vres{margin-top:10px;padding:14px 16px;background:#0a0d24;box-shadow:0 -3px 0 0 var(--c),0 3px 0 0 var(--c),-3px 0 0 0 var(--c),3px 0 0 0 var(--c)}
+.vres.ok{--c:#6cc35e}.vres.bad{--c:#c23a2b}
+.verdict{font-size:20px;margin-bottom:8px}.ok .verdict{color:#bff0b5}.bad .verdict{color:#ffb0a2}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;font-size:15px}dt{color:#b9b08f}dd{margin:0}
+ul{margin:10px 0 0;padding-left:1.2em;font-size:14px;line-height:1.6}li.x{color:#ffb0a2}li.w{color:#ffe08a}
+details{margin-top:22px;font-size:14px;color:#b9b08f;line-height:1.6}summary{cursor:pointer;color:var(--vellum)}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>아발론 스트라이커 점수 검증기</h1>
+  <div class="en">AVALON STRIKER · SCORE CHECK</div>
+  <p>블로그 댓글에 올라온 점수 인증 글을 통째로 붙여넣으세요. 검증코드의 서명과 본문 내용을 함께 대조합니다.</p>
+  <textarea id="vin" placeholder="🏰 아발론 스트라이커 점수 인증&#10;👤 플레이어: …&#10;🔐 검증코드: AS1.…"></textarea>
+  <div class="row"><button class="pri" id="vgo">검증하기</button><button id="vclr">지우기</button></div>
+  <div id="vout" aria-live="polite"></div>
+  <details><summary>무엇을 확인하나요?</summary>
+  검증코드 속 기록(이름, 영웅, 점수, 도달 스테이지, 클리어 여부, 이어하기, 플레이 시간, 격파 수, 미스, 폭탄 사용, 최대 코인 체인, 날짜)이 게임이 만든 서명과 일치하는지 봅니다. 한 글자라도 바뀌면 서명이 깨집니다. 본문에 적힌 점수·이름·스테이지가 코드와 다른지, 플레이 시간에 비해 점수나 진행이 비정상적인지도 함께 알려 줍니다.
+  </details>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.floor(n).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const HEROES=['기사','마법사','궁수','대장장이','도적','성녀 (숨겨진 영웅)'];
+const STAGES=['성문 앞 평원','안개의 늪','고목의 숲','서리 산맥','풍차 언덕','용암 대장간','버려진 수도원','폭풍의 바다','마법사의 탑','마왕성'];
+const SALT='avalon-striker/luca/v1#3d8e-51ac';
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b)}
+function readCode(text){const m=/AS1\.([A-Za-z0-9_-]+)\.([0-9A-Z]{22})/.exec(text);if(!m)return{err:'검증코드를 찾지 못했습니다. AS1. 로 시작하는 코드가 들어 있는지 확인하세요.'};
+ let p;try{p=b64d(m[1])}catch(e){return{err:'코드가 깨져 있어 읽을 수 없습니다.'}}
+ const f=p.split('~');if(f.length!==14||f[0]!=='1')return{err:'형식이 맞지 않는 코드입니다.'};
+ const r={name:f[1],h:+f[2],score:+f[3],stage:+f[4],clear:f[5]==='1',cont:+f[6],secs:+f[7],kills:+f[8],miss:+f[9],bombs:+f[10],chain:+f[11],date:f[12],nonce:f[13]};
+ return{r,valid:sign(p)===m[2],code:m[0]}}
+const fmtTime=s=>Math.floor(s/60)+'분 '+(s%60)+'초';
+const fmtDate=d=>/^\d{8}$/.test(d)?d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8):d;
+function verify(text){
+ const out=$('vout'),res=readCode(text);
+ if(res.err){out.innerHTML=`<div class="vres bad"><div class="verdict">확인할 수 없음</div><div>${esc(res.err)}</div></div>`;return}
+ const r=res.r,bad=[],warn=[],body=text.replace(res.code,'');
+ if(!res.valid)bad.push('서명이 맞지 않습니다. 코드의 일부가 바뀌었거나 직접 만든 가짜 코드입니다.');
+ if(!(r.h>=0&&r.h<6))bad.push('알 수 없는 영웅 값입니다.');
+ if(!(r.stage>=1&&r.stage<=10))bad.push('스테이지 값이 범위를 벗어났습니다.');
+ if(r.clear&&r.stage!==10)bad.push('클리어 기록인데 도달 스테이지가 10이 아닙니다.');
+ const ms=/점수\s*[:：]\s*([\d,]+)/.exec(body);if(ms){const v=+ms[1].replace(/,/g,'');if(v!==r.score)bad.push('본문에 적힌 점수('+fmt(v)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.')}
+ const mn=/플레이어\s*[:：]\s*(.+)/.exec(body);if(mn&&mn[1].trim()!==r.name)warn.push('본문의 플레이어 이름이 코드 속 이름과 다릅니다.');
+ const mst=/STAGE\s*(\d+)/i.exec(body);if(mst&&+mst[1]!==r.stage)warn.push('본문의 스테이지 표기가 코드와 다릅니다.');
+ if(r.secs>0&&r.score/r.secs>8000)warn.push('플레이 시간에 비해 점수가 비정상적으로 높습니다.');
+ if(r.stage>1&&r.secs<(r.stage-1)*95)warn.push('도달 스테이지에 비해 플레이 시간이 너무 짧습니다.');
+ if(r.clear&&r.secs<950)warn.push('전 스테이지 클리어치고는 플레이 시간이 너무 짧습니다.');
+ if(r.cont>0&&r.miss<r.cont*3)warn.push('이어하기 횟수에 비해 미스 횟수가 적습니다.');
+ if(r.secs>0&&r.kills/r.secs>6)warn.push('플레이 시간에 비해 격파 수가 비정상적으로 많습니다.');
+ const ok=res.valid&&!bad.length;
+ out.innerHTML=`<div class="vres ${ok?'ok':'bad'}"><div class="verdict">${ok?(warn.length?'✔ 진짜 코드 (주의 사항 있음)':'✔ 진짜 기록입니다'):'✘ 위조 또는 변조 의심'}</div>
+ <dl><dt>플레이어</dt><dd>${esc(r.name)}</dd><dt>영웅</dt><dd>${HEROES[r.h]||'?'}</dd><dt>점수</dt><dd>${fmt(r.score)}</dd>
+ <dt>도달</dt><dd>${r.clear?'STAGE 10 · ALL CLEAR':'STAGE '+r.stage+' · '+esc(STAGES[r.stage-1]||'?')}</dd><dt>이어하기</dt><dd>${r.cont}회</dd>
+ <dt>미스 / 폭탄</dt><dd>${r.miss}회 / ${r.bombs}회</dd><dt>최대 코인 체인</dt><dd>${fmt(r.chain)}</dd><dt>격파</dt><dd>${fmt(r.kills)}</dd>
+ <dt>플레이 시간</dt><dd>${fmtTime(r.secs)}</dd><dt>날짜</dt><dd>${esc(fmtDate(r.date))}</dd></dl>
+ ${bad.length||warn.length?`<ul>${bad.map(s=>`<li class="x">${esc(s)}</li>`).join('')}${warn.map(s=>`<li class="w">${esc(s)}</li>`).join('')}</ul>`:''}</div>`;
+}
+$('vgo').addEventListener('click',()=>verify($('vin').value));
+$('vclr').addEventListener('click',()=>{$('vin').value='';$('vout').innerHTML=''});
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('textarea,button'))return;const n=Date.now();if(n-lt<350)e.preventDefault();lt=n},{passive:false});
+})();
+</script>
+</body>
+</html>
