@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>환무 점수 검증기</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 70% 10%,#3a2a4e,#14161f 60%);color:#efe6d2;font-family:'Gowun Dodum','Malgun Gothic',sans-serif;display:flex;justify-content:center;padding:20px;touch-action:manipulation}
+.card{width:min(560px,100%);background:#1a1b28;border:2px solid #3a3346;border-radius:6px 22px 6px 22px;padding:22px}
+h1{font-family:'Black Han Sans',sans-serif;margin:0 0 4px;font-size:30px}h1 b{color:#d8432e}
+p{color:#cfc6b4;font-size:14px;margin:0 0 14px}
+textarea{width:100%;height:220px;background:#0b0c14;color:#e8e0cf;border:1px solid #3a3346;border-radius:4px;padding:10px;font-size:13px;font-family:inherit}
+button{margin-top:12px;width:100%;font-family:'Black Han Sans',sans-serif;font-size:20px;padding:12px;border:none;border-radius:4px 16px 4px 16px;background:#d8432e;color:#fff;cursor:pointer;box-shadow:0 4px 0 #7a2014}
+#out{margin-top:16px}
+.verdict{font-family:'Black Han Sans',sans-serif;font-size:26px;padding:12px 14px;border-radius:4px 14px 4px 14px;margin-bottom:12px}
+.ok{background:rgba(63,179,154,.2);color:#6fe0c4;border:1px solid #3fb39a}
+.bad{background:rgba(216,67,46,.18);color:#ff7a66;border:1px solid #d8432e}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:6px 4px;border-bottom:1px solid #2a2a38}td:last-child{text-align:right;font-family:'Black Han Sans',sans-serif}
+ul{margin:10px 0 0;padding-left:18px;font-size:13px;color:#ffb0a0}
+</style>
+</head>
+<body>
+<div class="card">
+ <h1><b>幻武</b> 환무 점수 검증기</h1>
+ <p>게임 종료 화면에서 복사한 기록 전체를 붙여넣고 검증하세요.</p>
+ <textarea id="in" placeholder="[환무 幻武 : 미스틱 스트라이크]&#10;이름: ...&#10;점수: ...&#10;..."></textarea>
+ <button id="go">검증하기</button>
+ <div id="out"></div>
+</div>
+<script>
+const VER='HW1', SALT='hwanmu-mystic-strike::chillermaster::flashgame';
+function cyrb53(str,seed){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
+function makeCode(r){const s=[VER,r.name,r.score,r.stage,r.clear?1:0,r.sec,r.maxCombo,r.kills,r.crits,r.hitS,r.killS,r.linkS,r.timeS].join('|');const a=cyrb53(s+SALT,7).toString(36).toUpperCase().padStart(11,'0');const b=cyrb53(SALT+s,13).toString(36).toUpperCase().padStart(4,'0').slice(-4);return 'HW-'+a.slice(0,6)+'-'+a.slice(6)+'-'+b;}
+// 스테이지별 누적 한도 (게임 설정과 동일)
+const KMAX=[8,18,29,40,50];           // 누적 최대 처치 수 (보스 소환 포함)
+const TLIM=[70,80,85,90,120];          // 스테이지 제한 시간(초)
+const comma=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function parse(t){
+ const g=(re)=>{const m=t.match(re);return m?m:null;};
+ const name=g(/이름:\s*(.+)/),score=g(/점수:\s*([\d,]+)/),stage=g(/도달:\s*(\d+)스테이지(\s*\(완주\))?/),time=g(/플레이시간:\s*(\d+):(\d+)/),
+  mc=g(/최대콤보:\s*(\d+)/),kills=g(/처치:\s*(\d+)\s*$/m),crits=g(/치명타:\s*(\d+)/),br=g(/점수내역:\s*타격\s*(\d+)\s*\/\s*처치\s*(\d+)\s*\/\s*연계\s*(\d+)\s*\/\s*시간\s*(\d+)/),code=g(/검증코드:\s*(HW-[A-Z0-9-]+)/);
+ if(!name||!score||!stage||!time||!mc||!kills||!crits||!br||!code)return null;
+ return{name:name[1].trim(),score:+score[1].replace(/,/g,''),stage:+stage[1],clear:!!stage[2],sec:+time[1]*60+ +time[2],maxCombo:+mc[1],kills:+kills[1],crits:+crits[1],hitS:+br[1],killS:+br[2],linkS:+br[3],timeS:+br[4],code:code[1].trim()};
+}
+document.getElementById('go').onclick=()=>{
+ const out=document.getElementById('out');const r=parse(document.getElementById('in').value);
+ if(!r){out.innerHTML='<div class="verdict bad">형식 오류</div><p>기록의 일부 줄이 빠졌거나 수정되었습니다. 게임에서 복사한 내용을 그대로 붙여넣으세요.</p>';return;}
+ const issues=[];
+ if(makeCode(r)!==r.code)issues.push('검증코드가 기록 내용과 일치하지 않습니다.');
+ if(r.hitS+r.killS+r.linkS+r.timeS!==r.score)issues.push('점수내역의 합이 총점과 다릅니다.');
+ if(r.stage<1||r.stage>5)issues.push('존재하지 않는 스테이지입니다.');
+ if(r.clear&&r.stage!==5)issues.push('완주 표시는 5스테이지에서만 가능합니다.');
+ if(r.stage>=1&&r.stage<=5){
+  if(r.kills>KMAX[r.stage-1])issues.push('도달 스테이지에 비해 처치 수가 너무 많습니다.');
+  const tmax=TLIM.slice(0,r.stage).reduce((a,b)=>a+b,0);if(r.sec>tmax)issues.push('플레이 시간이 제한 시간 합계를 넘습니다.');
+  const cleared=r.clear?5:r.stage-1;let tb=0;for(let i=0;i<cleared;i++)tb+=TLIM[i]*30*(i+1);if(r.timeS>tb)issues.push('시간 보너스가 가능한 최대치를 넘습니다.');
+ }
+ if(r.crits>0&&r.maxCombo===0)issues.push('연타 기록 없이 치명타가 있습니다.');
+ const ok=issues.length===0;
+ const rows=[['이름',esc(r.name)],['점수',comma(r.score)],['도달',r.stage+'스테이지'+(r.clear?' (완주)':'')],['플레이 시간',Math.floor(r.sec/60)+'분 '+(r.sec%60)+'초'],['최대 콤보',r.maxCombo],['처치',r.kills],['치명타',r.crits],['타격 / 처치 / 연계 / 시간',`${comma(r.hitS)} / ${comma(r.killS)} / ${comma(r.linkS)} / ${comma(r.timeS)}`],['검증코드',esc(r.code)]];
+ out.innerHTML=`<div class="verdict ${ok?'ok':'bad'}">${ok?'정상 기록입니다':'조작이 의심됩니다'}</div><table>${rows.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('')}</table>${ok?'':'<ul>'+issues.map(i=>'<li>'+i+'</li>').join('')+'</ul>'}`;
+};
+</script>
+</body>
+</html>
