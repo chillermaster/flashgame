@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>블리츠 아레나 점수 검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+:root{--kh:#c9b88a;--hz:#f2b134;--gm:#1b2023;--pan:#161b18;--ln:#3a4236;--tx:#ece6d6;--mu:#9a9580;--ok:#8fbf4a;--rd:#d9483b}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--gm);color:var(--tx);font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto;padding:22px 16px 40px}
+.card{background:var(--pan);border:2px solid var(--ln);padding:20px;position:relative}
+.card::before{content:"";position:absolute;left:-2px;right:-2px;top:-2px;height:8px;background:repeating-linear-gradient(135deg,var(--hz) 0 10px,#1b2023 10px 20px)}
+h1{margin:6px 0 4px;font-family:"Black Han Sans",sans-serif;font-weight:400;font-size:34px;color:var(--kh)}
+p{color:var(--mu);font-size:13.5px;line-height:1.6;margin:0 0 12px}
+textarea{width:100%;height:220px;background:#101310;color:#dfe8cf;border:2px solid var(--ln);padding:10px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical}
+textarea:focus{outline:none;border-color:var(--hz)}
+button{width:100%;margin-top:10px;padding:13px;border:0;background:var(--hz);color:#1b1608;font-family:"Black Han Sans",sans-serif;font-size:20px;cursor:pointer}
+button.sec{background:#20261f;color:var(--tx);border:2px solid var(--ln);font-family:inherit;font-size:14px;font-weight:700;padding:10px}
+button:focus-visible{outline:3px solid var(--hz);outline-offset:2px}
+#out{margin-top:16px}
+.verdict{font-family:"Black Han Sans",sans-serif;font-size:26px;padding:12px 14px;border:2px solid}
+.verdict.ok{color:var(--ok);border-color:var(--ok);background:rgba(143,191,74,.08)}
+.verdict.bad{color:var(--rd);border-color:var(--rd);background:rgba(217,72,59,.08)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+td{padding:6px 2px;border-bottom:1px solid var(--ln)}
+td:last-child{text-align:right;font-weight:700;color:var(--kh)}
+ul{margin:10px 0 0;padding-left:18px;color:#e6a399;font-size:13.5px;line-height:1.6}
+.calc{margin-top:10px;font-size:12.5px;color:var(--mu);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>블리츠 아레나 점수 검증기</h1>
+<p>게임 종료 화면에서 복사한 기록을 그대로 붙여넣으세요. 이름·점수·킬 수 등 한 글자라도 바뀌면 검증에 실패합니다.</p>
+<textarea id="in" placeholder="🔫 블리츠 아레나 점수 인증&#10;👤 플레이어: ...&#10;...&#10;🔐 검증코드: ..."></textarea>
+<button id="v">검증하기</button>
+<button id="clr" class="sec">지우기</button>
+<div id="out"></div>
+</div></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const DIFFS={easy:{n:'쉬움',mul:1},normal:{n:'보통',mul:1.3},hard:{n:'어려움',mul:1.6}};
+const MATCH=180,KILL_GOAL=25;
+function calcScore(k,d,hs,mk,gk,t,dk){const base=k*100+hs*30+mk*50+gk*40-d*40;const tb=k>=KILL_GOAL?Math.max(0,MATCH-t)*5:0;return Math.max(0,Math.round((base+tb)*DIFFS[dk].mul));}
+const SALT='blitz-arena/luca/v1#7c2f-a913';
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);const x=(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase();return x.slice(0,5)+'-'+x.slice(5,10)+'-'+x.slice(10,15)+'-'+x.slice(15,22);}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n.toLocaleString('ko-KR');
+const g=(t,re)=>{const m=t.match(re);return m?m[1].trim():null;};
+function verify(){const t=$('in').value.replace(/\r/g,'');const out=$('out');
+ if(!t.trim()){out.innerHTML='<div class="verdict bad">기록이 비어 있습니다</div><ul><li>게임 종료 화면의 “기록 복사” 버튼으로 복사한 내용을 붙여넣으세요.</li></ul>';return;}
+ const f={name:g(t,/플레이어:[ \t]*(.+)/),diff:g(t,/난이도:[ \t]*(쉬움|보통|어려움)/),score:g(t,/점수:[ \t]*([\d,]+)/),k:g(t,/킬:[ \t]*(\d+)[ \t]*\/[ \t]*데스/),d:g(t,/데스:[ \t]*(\d+)/),hs:g(t,/헤드샷:[ \t]*(\d+)/),mk:g(t,/근접킬:[ \t]*(\d+)/),gk:g(t,/수류탄킬:[ \t]*(\d+)/),sec:g(t,/플레이 시간:.*\((\d+)초\)/),date:g(t,/날짜:[ \t]*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/),code:g(t,/검증코드:[ \t]*([A-Z0-9-]+)/)};
+ const lab={name:'플레이어',diff:'난이도',score:'점수',k:'킬',d:'데스',hs:'헤드샷',mk:'근접킬',gk:'수류탄킬',sec:'플레이 시간',date:'날짜',code:'검증코드'};
+ const miss=Object.keys(f).filter(k=>f[k]===null);
+ if(miss.length){out.innerHTML='<div class="verdict bad">기록 형식이 맞지 않습니다</div><ul>'+miss.map(k=>'<li>'+lab[k]+' 항목을 찾을 수 없습니다.</li>').join('')+'</ul>';return;}
+ const dk=Object.keys(DIFFS).find(k=>DIFFS[k].n===f.diff);
+ const k=+f.k,d=+f.d,hs=+f.hs,mk=+f.mk,gk=+f.gk,sec=+f.sec,score=+f.score.replace(/,/g,'');
+ const errs=[];
+ const calc=calcScore(k,d,hs,mk,gk,sec,dk);
+ if(calc!==score)errs.push('점수가 기록된 전투 내역과 맞지 않습니다 (계산값 '+fmt(calc)+'점).');
+ if(hs>k)errs.push('헤드샷 수가 킬 수보다 많습니다.');
+ if(mk+gk>k)errs.push('근접킬과 수류탄킬의 합이 킬 수보다 많습니다.');
+ if(sec>MATCH)errs.push('플레이 시간이 경기 시간 3분을 넘습니다.');
+ if(k<KILL_GOAL&&sec!==MATCH)errs.push('25킬 미만인데 경기가 3분 전에 끝났습니다.');
+ const code=sign([f.name,dk,k,d,hs,mk,gk,sec,score,f.date].join('|'));
+ if(code!==f.code)errs.push('검증코드가 일치하지 않습니다. 기록 내용이 수정되었을 수 있습니다.');
+ const ok=!errs.length;
+ const tb=k>=KILL_GOAL?Math.max(0,MATCH-sec)*5:0;
+ out.innerHTML='<div class="verdict '+(ok?'ok':'bad')+'">'+(ok?'✅ 진짜 기록입니다':'❌ 검증 실패')+'</div>'+(ok?'':'<ul>'+errs.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul>')+
+ '<table><tr><td>플레이어</td><td>'+esc(f.name)+'</td></tr><tr><td>난이도</td><td>'+esc(f.diff)+' (×'+DIFFS[dk].mul+')</td></tr><tr><td>점수</td><td>'+fmt(score)+'</td></tr><tr><td>킬 / 데스</td><td>'+k+' / '+d+'</td></tr><tr><td>헤드샷 / 근접킬 / 수류탄킬</td><td>'+hs+' / '+mk+' / '+gk+'</td></tr><tr><td>플레이 시간</td><td>'+Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')+'</td></tr><tr><td>날짜</td><td>'+esc(f.date)+'</td></tr></table>'+
+ '<div class="calc">계산: (킬 '+k+'×100 + 헤드샷 '+hs+'×30 + 근접 '+mk+'×50 + 수류탄 '+gk+'×40 − 데스 '+d+'×40'+(tb?' + 조기달성 '+tb:'')+') × '+DIFFS[dk].mul+' = '+fmt(calc)+'</div>';}
+$('v').addEventListener('click',verify);
+$('clr').addEventListener('click',()=>{$('in').value='';$('out').innerHTML='';});
+let lt=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lt<350&&e.cancelable&&e.target.tagName!=='TEXTAREA')e.preventDefault();lt=n;},{passive:false});
+document.addEventListener('dblclick',e=>{if(e.target.tagName!=='TEXTAREA')e.preventDefault();});
+window.__verify=verify;
+})();
+</script>
+</body>
+</html>
