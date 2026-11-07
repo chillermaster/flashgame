@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>화살비 3D 점수검증기</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#e9e2f5;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;color:#3b2f4a;display:flex;justify-content:center;padding:16px;touch-action:manipulation}
+.card{background:#fffaf2;border-radius:20px;padding:20px;width:100%;max-width:520px;box-shadow:0 6px 0 #0002;height:fit-content}
+h1{margin:0 0 4px;font-size:22px;color:#7a3b5c;text-align:center}
+.sub{text-align:center;font-size:13px;color:#7d6f8c;margin-bottom:14px}
+textarea{width:100%;height:210px;border:2px solid #d7c9ea;border-radius:12px;padding:10px;font-size:14px;font-family:inherit;resize:vertical}
+button{width:100%;margin-top:10px;padding:13px;font-size:17px;font-weight:800;border:none;border-radius:14px;background:#7c6bc4;color:#fff;box-shadow:0 4px 0 #54479a;cursor:pointer}
+button.clr{background:#c9bedc;box-shadow:0 4px 0 #9d90b5;color:#3b2f4a;font-size:14px;padding:9px}
+#out{margin-top:16px}
+.verdict{padding:14px;border-radius:14px;text-align:center;font-weight:900;font-size:19px;margin-bottom:10px}
+.ok{background:#d4f5dd;color:#1f7a3a}.bad{background:#ffd9df;color:#a8243f}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 8px;border-bottom:1px solid #eadff5}
+td:first-child{color:#7d6f8c;width:38%}
+.chk{font-size:13px;line-height:1.8;background:#f1eafa;border-radius:12px;padding:10px 12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🏹 화살비 3D 점수검증기</h1>
+  <div class="sub">게임 종료 후 복사한 기록을 그대로 붙여넣으세요</div>
+  <textarea id="inp" placeholder="[화살비 3D : 일곱 갈래 길]&#10;이름: ...&#10;생존시간: ...&#10;..."></textarea>
+  <button id="go">검증하기</button>
+  <button class="clr" id="clr">지우기</button>
+  <div id="out"></div>
+</div>
+<script>
+function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
+function makeCode(p){const s='AR3D|7LANE|chillermaster|'+p;const a=cyrb53(s,77).toString(36).padStart(11,'0'),b=cyrb53(s,7).toString(36).padStart(11,'0');const c=(a.slice(-6)+b.slice(-6)).toUpperCase();return c.slice(0,4)+'-'+c.slice(4,8)+'-'+c.slice(8,12);}
+function speedAt(t){return 16+34*(1-Math.exp(-t/90))+0.06*t;}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function verify(){
+  const v=document.getElementById('inp').value;const out=document.getElementById('out');
+  const g=re=>{const m=v.match(re);return m?m:null;};
+  const mName=g(/이름:\s*(.+)/),mTime=g(/생존시간:\s*(\d+):(\d{2})\.(\d{2})/),mScore=g(/점수:\s*([\d,]+)/),
+        mGem=g(/보석:\s*(\d+)/),mNear=g(/아슬아슬:\s*(\d+)/),mHit=g(/피격:\s*(\d+)/),mSpd=g(/최고배속:\s*x?([\d.]+)/),
+        mDate=g(/일시:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/),mCode=g(/검증코드:\s*([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i);
+  if(!(mName&&mTime&&mScore&&mGem&&mNear&&mHit&&mSpd&&mDate&&mCode)){out.innerHTML='<div class="verdict bad">⚠ 기록 형식을 읽을 수 없습니다</div><div class="chk">게임에서 복사한 기록 전체를 수정 없이 붙여넣어 주세요.</div>';return;}
+  const name=mName[1].trim(),cs=(+mTime[1])*6000+(+mTime[2])*100+(+mTime[3]),sc=+mScore[1].replace(/,/g,''),
+        gems=+mGem[1],near=+mNear[1],hits=+mHit[1],spd=mSpd[1],ds=mDate[1],code=mCode[1].toUpperCase();
+  const expCode=makeCode([name,cs,sc,gems,near,hits,spd,ds].join('|'));
+  const expScore=Math.floor(cs/10)+gems*50+near*5;
+  const expSpd=(speedAt(cs/100)/16).toFixed(2);
+  const c1=expCode===code,c2=expScore===sc,c3=expSpd===spd,c4=+mTime[2]<60;
+  const ok=c1&&c2&&c3&&c4;
+  const fmt=n=>n.toLocaleString();
+  out.innerHTML=`<div class="verdict ${ok?'ok':'bad'}">${ok?'✅ 정상 기록입니다':'❌ 위조·변조가 의심됩니다'}</div>
+  <table>
+    <tr><td>이름</td><td><b>${esc(name)}</b></td></tr>
+    <tr><td>생존시간</td><td><b>${esc(mTime[1]+':'+mTime[2]+'.'+mTime[3])}</b></td></tr>
+    <tr><td>점수</td><td><b>${fmt(sc)}</b></td></tr>
+    <tr><td>보석 / 아슬아슬 / 피격</td><td>${gems} / ${near} / ${hits}</td></tr>
+    <tr><td>최고배속</td><td>x${esc(spd)}</td></tr>
+    <tr><td>일시</td><td>${esc(ds)}</td></tr>
+  </table>
+  <div class="chk">
+    ${c1?'✅':'❌'} 검증코드 일치<br>
+    ${c2?'✅':'❌'} 점수 계산 일치 (생존 0.1초×1 + 보석×50 + 아슬아슬×5 = ${fmt(expScore)})<br>
+    ${c3?'✅':'❌'} 생존시간 대비 최고배속 일치 (x${expSpd})<br>
+    ${c4?'✅':'❌'} 시간 형식 정상
+  </div>`;
+}
+document.getElementById('go').onclick=verify;
+document.getElementById('clr').onclick=()=>{document.getElementById('inp').value='';document.getElementById('out').innerHTML='';};
+</script>
+</body>
+</html>
