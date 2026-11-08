@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>로웬 방위전 점수 검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#23180f;--gold:#e3b54a;--gold-d:#94661a;--royal-d:#1b2d58;--blood:#a8382b}
+*{box-sizing:border-box}
+html{touch-action:manipulation}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#cfe6f2 0,#8fb8d0 70%) fixed;color:var(--ink);font-family:'Gowun Batang',serif}
+.w{max-width:640px;margin:0 auto;padding:22px 16px 40px}
+.card{background:linear-gradient(#fbf1da,#efdcae);border:3px solid #5e3c1b;border-radius:14px;box-shadow:0 0 0 2px var(--gold) inset,0 10px 30px #0004;padding:20px 18px}
+h1{margin:0;font-size:clamp(24px,6vw,32px);color:var(--royal-d);text-shadow:2px 2px 0 var(--gold)}
+.en{font-family:Cinzel,serif;font-weight:900;font-size:11px;letter-spacing:.28em;color:var(--gold-d);margin:.5em 0 1em}
+p{line-height:1.65;font-size:15px;color:#4a3420}
+textarea{width:100%;height:13em;font:13px/1.5 monospace;background:#23180f;color:#fbefd2;border:2px solid #5e3c1b;border-radius:10px;padding:10px;resize:vertical}
+textarea:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.row{display:flex;gap:10px;margin:14px 0}
+button{font:inherit;font-weight:700;font-size:16px;padding:.6em 1.3em;border-radius:11px;border:2px solid #5e3c1b;background:#fffaf0;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 #5e3c1b;touch-action:manipulation}
+button.pri{background:linear-gradient(#ffe48f,#e3b54a)}
+.vres{margin-top:10px;padding:14px 16px;border-radius:12px;background:#fffaf0;border:3px solid var(--c)}
+.vres.ok{--c:#4f8f3a}.vres.bad{--c:#a8382b}
+.verdict{font-size:20px;font-weight:700;margin-bottom:8px}.ok .verdict{color:#3f7a2c}.bad .verdict{color:#a8382b}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;font-size:15px}dt{color:#6b5236}dd{margin:0;font-weight:700}
+ul{margin:10px 0 0;padding-left:1.2em;font-size:14px;line-height:1.6}li.x{color:#a8382b}li.w{color:#a5670f}
+details{margin-top:20px;font-size:14px;color:#4a3420;line-height:1.65}summary{cursor:pointer;font-weight:700;color:#7a2a1c}
+</style>
+</head>
+<body>
+<div class="w"><div class="card">
+ <h1>로웬 방위전 점수 검증기</h1>
+ <div class="en">ROWEN BASTION · SCORE CHECK</div>
+ <p>블로그 댓글에 올라온 점수 인증 글을 통째로 붙여넣으세요. 검증코드의 서명을 확인하고, 기록으로 점수를 다시 계산해 대조합니다.</p>
+ <textarea id="vin" placeholder="🏰 로웬 방위전 점수 인증&#10;👤 수호자: …&#10;🔐 검증코드: RB2.…"></textarea>
+ <div class="row"><button class="pri" id="vgo">검증하기</button><button id="vclr">지우기</button></div>
+ <div id="vout" aria-live="polite"></div>
+ <details><summary>무엇을 확인하나요?</summary>
+ 검증코드 속 기록(이름, 난이도, 점수, 완주 여부, 막아낸 스테이지, 전투 시간, 처치 수, 보스 처치, 남은 내구도, 무손실 스테이지, 최고 등급, 소환·합성 횟수, 날짜)이 게임이 만든 서명과 일치하는지 봅니다. 한 글자라도 바뀌면 서명이 깨집니다.<br>
+ 또한 기록만으로 점수를 다시 계산해 코드 속 점수와 맞는지, 규칙상 불가능한 값(도달 스테이지보다 많은 보스 처치, 최대치를 넘는 내구도, 소환보다 많은 합성 등)이 없는지, 본문에 적힌 점수·이름·난이도가 코드와 같은지 함께 확인합니다.
+ </details>
+</div></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.floor(n).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 버전별 규칙: RB1 = 50스테이지판, RB2 = 100스테이지판
+const DIFFS=[{n:'수습 기사',castle:30,sc:.6},{n:'정예 기사',castle:20,sc:1},{n:'전설의 영웅',castle:15,sc:1.7}];
+const TIER_BONUS=[0,0,60,180,450,1100,2600,6000,14000];
+const TIERS=['일반','고급','희귀','레어','유니크','신화','전설','유일'];
+const TERR=['하르딘 평원','엘름 고목숲','실버린 강','붉은 사구','회색이빨 산맥','검은물 늪','폭풍 해안','서리왕관 빙하','재의 산 이그니르','검은 첨탑 심연'];
+const VER={
+ '1':{max:50,per:5,cnt:s=>Math.round(9+s*.34),calc:o=>{let s=o.cleared*o.cleared*12+o.kills*4+o.bossKills*800+o.perfect*120+(TIER_BONUS[o.maxTier]||0)+o.hp*150;if(o.win)s+=25000+Math.max(0,2700-o.secs)*4;return s}},
+ '2':{max:100,per:10,cnt:s=>Math.round(10+s*.22),calc:o=>{let s=o.cleared*o.cleared*6+o.kills*3+o.bossKills*600+o.perfect*80+(TIER_BONUS[o.maxTier]||0)+o.hp*150;if(o.win)s+=30000+Math.max(0,6000-o.secs)*3;return s}}};
+function maxKillsTo(V,s){let k=0;for(let i=1;i<=Math.min(V.max,s);i++)k+=V.cnt(i)*3+40;return k}
+function calcScore(V,o){const D=DIFFS[o.diff]||DIFFS[1];return Math.round(V.calc(o)*D.sc)}
+const SALT='rowen-bastion/luca/v1#3f8a-d27c';
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b)}
+function readCode(text){const m=/RB([12])\.([A-Za-z0-9_-]+)\.([0-9A-Z]{22})/.exec(text);if(!m)return{err:'검증코드를 찾지 못했습니다. RB2. (또는 RB1.) 로 시작하는 코드가 들어 있는지 확인하세요.'};
+ let p;try{p=b64d(m[2])}catch(e){return{err:'코드가 깨져 있어 읽을 수 없습니다.'}}
+ const f=p.split('~');if(f.length!==17||f[0]!==m[1])return{err:'형식이 맞지 않는 코드입니다.'};
+ const n=k=>+f[k];
+ const r={name:f[1],diff:n(2),score:n(3),win:f[4]==='1',cleared:n(5),secs:n(6),kills:n(7),bossKills:n(8),hp:n(9),perfect:n(10),maxTier:n(11),summons:n(12),merges:n(13),seed:f[14],date:f[15],nonce:f[16]};
+ return{r,valid:sign(p)===m[3],code:m[0],V:VER[m[1]],ver:m[1]}}
+const fmtTime=s=>Math.floor(s/60)+'분 '+(s%60)+'초';
+const fmtDate=d=>/^\d{8}$/.test(d)?d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8):d;
+function verify(text){
+ const out=$('vout'),res=readCode(text);
+ if(res.err){out.innerHTML=`<div class="vres bad"><div class="verdict">확인할 수 없음</div><div>${esc(res.err)}</div></div>`;return}
+ const r=res.r,V=res.V,MAX=V.max,bad=[],warn=[],body=text.replace(res.code,''),D=DIFFS[r.diff];
+ if(!res.valid)bad.push('서명이 맞지 않습니다. 코드의 일부가 바뀌었거나 직접 만든 가짜 코드입니다.');
+ const ints=[r.diff,r.score,r.cleared,r.secs,r.kills,r.bossKills,r.hp,r.perfect,r.maxTier,r.summons,r.merges];
+ if(ints.some(v=>!Number.isInteger(v)||v<0))bad.push('숫자가 아니거나 음수인 값이 있습니다.');
+ if(!D)bad.push('알 수 없는 난이도 값입니다.');
+ else{
+  if(r.cleared>MAX)bad.push(`막아낸 스테이지가 ${MAX}을 넘습니다.`);
+  if(r.win&&r.cleared!==MAX)bad.push(`완주 기록인데 막아낸 스테이지가 ${MAX}이 아닙니다.`);
+  if(r.win&&r.hp<1)bad.push('완주 기록인데 성채 내구도가 0입니다.');
+  if(!r.win&&r.hp!==0)bad.push('함락 기록인데 성채 내구도가 남아 있습니다.');
+  if(!r.win&&r.cleared>=MAX)bad.push(`함락 기록인데 ${MAX}스테이지를 모두 막았다고 되어 있습니다.`);
+  if(r.hp>D.castle+55)bad.push('성채 내구도가 가능한 최대치를 넘습니다.');
+  const bossCap=Math.min(MAX/5,Math.floor((r.cleared+1)/5));if(r.bossKills>bossCap)bad.push(`보스 처치(${r.bossKills})가 도달한 스테이지에서 가능한 수(${bossCap})를 넘습니다.`);
+  if(r.perfect>r.cleared)bad.push('무손실 스테이지가 막아낸 스테이지보다 많습니다.');
+  if(r.kills>maxKillsTo(V,r.cleared+1))bad.push('처치 수가 도달한 스테이지에서 나올 수 있는 마물 수를 넘습니다.');
+  if(r.maxTier<1||r.maxTier>8)bad.push('최고 등급 값이 범위를 벗어났습니다.');
+  if(r.merges*2>r.summons+r.cleared)bad.push('합성 횟수가 소환 횟수에 비해 지나치게 많습니다.');
+  if(r.summons<1)bad.push('소환 기록이 없습니다.');
+  const calc=calcScore(V,r);if(calc!==r.score)bad.push('기록으로 다시 계산한 점수('+fmt(calc)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.');
+  if(r.cleared>0&&r.secs<r.cleared*12)warn.push('막아낸 스테이지에 비해 전투 시간이 지나치게 짧습니다.');
+  if(r.cleared>3&&r.kills<r.cleared*5)warn.push('막아낸 스테이지에 비해 처치 수가 지나치게 적습니다.');
+  const md=/난이도\s*[:：]\s*([^(\n]+)/.exec(body);if(md&&md[1].trim()!==D.n)warn.push('본문의 난이도 표기가 코드와 다릅니다.');
+  if(res.ver==='1')warn.push('이전 버전(50스테이지판) 기록입니다. 100스테이지판과 점수 기준이 다릅니다.');
+ }
+ const ms=/점수\s*[:：]\s*([\d,]+)/.exec(body);if(ms){const v=+ms[1].replace(/,/g,'');if(v!==r.score)bad.push('본문에 적힌 점수('+fmt(v)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.')}
+ const mn=/수호자\s*[:：]\s*(.+)/.exec(body);if(mn&&mn[1].trim()!==r.name)warn.push('본문의 수호자 이름이 코드 속 이름과 다릅니다.');
+ const ok=res.valid&&!bad.length;const reach=r.win?MAX+'스테이지 완전 방어':`스테이지 ${Math.min(MAX,r.cleared+1)}에서 함락`;const ter=TERR[Math.min(9,Math.floor(Math.min(MAX-1,r.win?MAX-1:r.cleared)/V.per))];
+ out.innerHTML=`<div class="vres ${ok?'ok':'bad'}"><div class="verdict">${ok?(warn.length?'✔ 진짜 코드 (주의 사항 있음)':'✔ 진짜 기록입니다'):'✘ 위조 또는 변조 의심'}</div>
+ <dl><dt>수호자</dt><dd>${esc(r.name)}</dd><dt>난이도</dt><dd>${D?D.n+' (×'+D.sc+')':'?'}</dd><dt>점수</dt><dd>${fmt(r.score)}</dd>
+ <dt>결과</dt><dd>${esc(reach)}</dd><dt>막아낸 스테이지</dt><dd>${r.cleared} / ${MAX} · ${esc(ter)}</dd><dt>전투 시간</dt><dd>${fmtTime(r.secs)}</dd>
+ <dt>처치</dt><dd>${fmt(r.kills)} · 보스 ${r.bossKills}</dd><dt>무손실 / 내구도</dt><dd>${r.perfect} / ${r.hp}</dd>
+ <dt>최고 등급</dt><dd>${TIERS[r.maxTier-1]||'?'}</dd><dt>소환 / 합성</dt><dd>${r.summons} / ${r.merges}</dd>
+ <dt>날짜</dt><dd>${esc(fmtDate(r.date))}</dd></dl>
+ ${bad.length||warn.length?`<ul>${bad.map(s=>`<li class="x">${esc(s)}</li>`).join('')}${warn.map(s=>`<li class="w">${esc(s)}</li>`).join('')}</ul>`:''}</div>`;
+}
+$('vgo').addEventListener('click',()=>verify($('vin').value));
+$('vclr').addEventListener('click',()=>{$('vin').value='';$('vout').innerHTML=''});
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('textarea'))return;const n=Date.now();if(n-lt<350)e.preventDefault();lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+})();
+</script>
+</body>
+</html>
