@@ -36,7 +36,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .pill.env{border-color:#e3b54a;color:#ffe9b0}.pill.warn{border-color:#ff6a5a;color:#ffd0c8}
 #slots{position:absolute;top:calc(env(safe-area-inset-top,0px) + 58px);left:8px;display:flex;flex-direction:column;gap:3px}
 #slots .row{display:flex;gap:3px}
-.slot{width:26px;height:26px;border-radius:7px;background:#23180fcc;border:1.5px solid #8a6a3a;display:grid;place-items:center;font-size:14px;position:relative}
+.slot{pointer-events:auto;cursor:help;width:26px;height:26px;border-radius:7px;background:#23180fcc;border:1.5px solid #8a6a3a;display:grid;place-items:center;font-size:14px;position:relative}
 .slot b{position:absolute;right:-3px;bottom:-4px;font-size:9px;color:#fff;background:#4a2e14;border-radius:5px;padding:0 3px;line-height:12px;font-family:'Cinzel',serif}
 .slot.evo{border-color:var(--gold);box-shadow:0 0 6px var(--gold)}.slot.p{border-radius:50%;width:22px;height:22px;font-size:12px}
 #bossBar{position:absolute;top:calc(env(safe-area-inset-top,0px) + 128px);left:50%;transform:translateX(-50%);width:min(86vw,460px);text-align:center;color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 2px #000}
@@ -122,8 +122,17 @@ table.fx{border-collapse:collapse;width:100%;font-size:12.5px}table.fx td,table.
 #pauseBox{width:min(90vw,340px);padding:16px;text-align:center}
 #pauseBox h2{margin:0 0 10px}
 .tog{display:flex;justify-content:space-between;align-items:center;padding:6px 2px;font-size:14px;font-weight:700}
+#tip{position:fixed;z-index:9;max-width:260px;background:#1c1630f2;color:#f6ecff;border:1.5px solid var(--gold);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5;pointer-events:none;box-shadow:0 6px 18px #0008}
+#tip b{color:#ffe9a8;font-size:14px}#tip .tg{display:inline-block;font-size:11px;border-radius:5px;padding:0 5px;margin-left:4px;background:#3a2a6a;color:#e0d0ff}
+#tip .st{color:#c8d8ff}#tip .ev{color:#ffd88a;margin-top:3px}#tip .ok{color:#8aff9a}#tip .no{color:#ff9a8a}
+.chWrap{display:flex;flex-direction:column;height:100%;min-height:0}
+.chWrap .det{flex:none;margin:0 0 6px}.chList{flex:1;overflow-y:auto;min-height:0;padding-right:2px;-webkit-overflow-scrolling:touch}
+#tabBody.noscroll{overflow:hidden;display:flex;flex-direction:column}
+.det .meta{font-size:12px;color:#5a4a36;margin-top:3px}
+.opt.new{border-color:#4f8f3a;background:#f2fbe8}.opt.pas{border-color:#4a7ab0;background:#eef5ff}.opt.evo{border-color:#d9a83a;background:linear-gradient(#fff6d8,#ffeab0);box-shadow:0 0 0 2px #f0c860}
+.opt .tag.pas{background:#cfe0f8}.opt .tag.go{background:#f6c040;color:#3a2200}
 @media (prefers-reduced-motion:reduce){.fl{animation-duration:.01s}}
-@media (min-width:760px) and (min-height:560px){#sheet{width:600px;margin:0 auto}#prepCard{left:calc(50% - 300px)}}
+@media (min-width:760px) and (min-height:500px){#sheet{width:min(900px,96vw);margin:0 auto}#prepCard{left:calc(50% - min(450px,48vw))}.chWrap{flex-direction:row;gap:10px}.chWrap .det{width:300px;margin:0;overflow-y:auto}}
 </style>
 </head>
 <body>
@@ -140,6 +149,7 @@ table.fx{border-collapse:collapse;width:100%;font-size:12.5px}table.fx td,table.
  <div id="banner"></div>
 </div>
 <div id="joy"><i></i></div>
+<div id="tip" class="hidden"></div>
 <div id="sPrep" class="screen">
  <div id="prepHead"><h1>균열의 30분</h1><p>ROWEN SURVIVORS</p></div>
  <div id="prepCard"><b id="pcName"></b><span id="pcSub"></span></div>
@@ -731,7 +741,7 @@ function fireW(G,w){const s=w.s,D=w.d,P=G.p;G.stat.fire=(G.stat.fire||0)+1;
    for(let i=0;i<n;i++){const a=a0+(n>1?(i-(n-1)/2)*(D.evo_?.7:.45):0);later(G,i*.06,()=>lineHit(G,w,P.x,P.z,a,s.r*s.area,s.w*s.area))}break}
   case 'proj':{const n=s.amt;for(let i=0;i<n;i++)later(G,(s.gap||0)*i*(D.aim==='radial'||s.spread?0:1),()=>{let a=aimDir(G,w,s,i);if(s.spread)a+=(n>1?(i-(n-1)/2)/(n-1):0)*s.spread*(n>3?1.6:1)*.9;
    if(D.aim==='face'&&!s.spread&&n>1)a+=(G.rng()-.5)*.25;const o={dmg:s.dmg,el:D.el,pierce:s.pierce,life:s.life,r:s.r*s.area,vis:D.vis,st:stOf(w,s),hc:s.hc,boom:s.boom,bounce:s.bounce,ex:s.ex?s.ex*s.area:0,split:s.split,home:D.aim==='home'};
-   const p=mkProj(G,w,P.x,P.z,a,s.spd,o);if(D.aim==='lob'){p.vx=(G.rng()-.5)*.7*s.spd+P.mx*2;p.vz=-s.spd*.95;p.g=s.spd*1.15}if(s.boom){p.out=s.life*.5;p.life=s.life*2.5}
+   const p=mkProj(G,w,P.x,P.z,a,s.spd,o);if(D.aim==='lob'){p.vx=(G.rng()-.5)*.7*s.spd+P.mx*2;p.vz=-s.spd*.95;p.g=s.spd*1.15}if(s.boom){p.out=p.out0=s.life*.5;p.hov=.5;p.spd0=s.spd;p.a0=Math.atan2(p.vz,p.vx);p.life=s.life*.5+.5+6}
    G.pr.push(p)});w.ang+=.37;break}
   case 'rain':{const tg=densest(G,13*P.st.range);if(!tg)break;const cx=tg.x,cz=tg.z,R=s.spread*s.area;
    for(let i=0;i<s.amt;i++){const a=G.rng()*TAU,rr=Math.sqrt(G.rng())*R,x=cx+Math.cos(a)*rr,z=cz+Math.sin(a)*rr;later(G,.25+i*.6/s.amt,()=>{ev(G,{k:'arrow',x,z});const st=stOf(w,s);query(G,x,z,s.r*Math.sqrt(s.area),e=>{hitE(G,e,s.dmg,D.el,st)})})}break}
@@ -773,8 +783,9 @@ function updWeapons(G,dt){const P=G.p;
 function updProj(G,dt){const P=G.p,BX=14,BZ=17;
  for(const p of G.pr){if(p.dead)continue;p.ox=p.x;p.oz=p.z;p.t+=dt;p.life-=dt;if(p.life<=0){p.dead=1;if(p.ex)explode(G,p);continue}
   if(p.home){p.ht=(p.ht||0)-dt;if(p.ht<=0){p.ht=.25;p.tg=nearest(G,p.x,p.z,9)}if(p.tg&&!p.tg.dead){const a=Math.atan2(p.tg.z-p.z,p.tg.x-p.x),ca=Math.atan2(p.vz,p.vx);let d=a-ca;d=Math.atan2(Math.sin(d),Math.cos(d));const na=ca+clamp(d,-7*dt,7*dt),sp=Math.hypot(p.vx,p.vz);p.vx=Math.cos(na)*sp;p.vz=Math.sin(na)*sp}}
-  if(p.boom){p.out-=dt;if(p.out<=0){const dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz)||1,sp=Math.hypot(p.vx,p.vz);if(d<.8){p.dead=1;continue}const k=Math.min(1,dt*6);p.vx+=(dx/d*sp-p.vx)*k;p.vz+=(dz/d*sp-p.vz)*k}
-   else{p.vx*=1-dt*.9;p.vz*=1-dt*.9}}
+  if(p.boom){if(p.out>0){p.out-=dt;const k=Math.max(0,p.out/p.out0)*1.6;p.vx=Math.cos(p.a0)*p.spd0*k;p.vz=Math.sin(p.a0)*p.spd0*k}
+   else if(p.hov>0){p.hov-=dt;p.vx=p.vz=0;p.hc=Math.min(p.hc,.22)}
+   else{const dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz)||1;if(d<.8){p.dead=1;continue}const sp=p.spd0*1.3;p.vx=dx/d*sp;p.vz=dz/d*sp}}
   if(p.g)p.vz+=p.g*dt;
   p.x+=p.vx*dt;p.z+=p.vz*dt;
   if(p.bounce){if(p.x<P.x-BX&&p.vx<0||p.x>P.x+BX&&p.vx>0)p.vx=-p.vx;if(p.z<P.z-BZ&&p.vz<0||p.z>P.z+BZ&&p.vz>0)p.vz=-p.vz}
@@ -810,15 +821,14 @@ function updBullets(G,dt){const P=G.p;
 function updPick(G,dt){const P=G.p,mr=P.st.magnet;let xpCnt=0;
  for(const k of G.pk){if(k.dead)continue;const dx=P.x-k.x,dz=P.z-k.z,d2=dx*dx+dz*dz;if(k.k==='xp')xpCnt++;
   if(k.k==='crate'){if(d2<1.1*1.1){k.dead=1;openCrate(G,k)}continue}
-  if(!k.mag&&(d2<mr*mr||(k.k==='xp'&&G.magAll)))k.mag=1;
-  if(k.mag){const d=Math.sqrt(d2)||1,sp=14+(k.ms=(k.ms||0)+dt*20);k.x+=dx/d*Math.min(d,sp*dt);k.z+=dz/d*Math.min(d,sp*dt)}
+  if(!k.mag&&d2<mr*mr)k.mag=1;
+  if(k.mag){const d=Math.sqrt(d2)||1,sp=14+(k.ms=(k.ms||0)+dt*(d>12?60:20));k.x+=dx/d*Math.min(d,sp*dt);k.z+=dz/d*Math.min(d,sp*dt)}
   if(d2<.7*.7){k.dead=1;collect(G,k)}}
- G.magAll=0;
  if(xpCnt>450){for(const k of G.pk)if(!k.dead&&k.k==='xp'&&!k.mag&&Math.hypot(P.x-k.x,P.z-k.z)>25){k.dead=1;G.lostXp+=k.v;if(--xpCnt<=380)break}}
  if(G.pk.length>60)G.pk=G.pk.filter(k=>!k.dead)}
 function collect(G,k){const P=G.p;
  switch(k.k){case 'xp':gainXp(G,k.v);break;case 'gold':addGold(G,k.v);ev(G,{k:'coin'});break;case 'meat':healP(G,35);ev(G,{k:'heal',v:35});break;
-  case 'mag':G.magAll=1;ev(G,{k:'pick',n:'자석'});break;case 'bell':query(G,P.x,P.z,16,e=>{if(!e.boss&&!e.elite)hitE(G,e,1e7,'holy',{rx:1,noCrit:1})});ev(G,{k:'bell'});break;
+  case 'mag':for(const o of G.pk)if(!o.dead&&o.k==='xp')o.mag=1;if(G.lostXp>0){G.pk.push({k:'xp',x:P.x+3,z:P.z,v:G.lostXp,mag:1});G.lostXp=0}ev(G,{k:'pick',n:'자석'});break;case 'bell':query(G,P.x,P.z,16,e=>{if(!e.boss&&!e.elite)hitE(G,e,1e7,'holy',{rx:1,noCrit:1})});ev(G,{k:'bell'});break;
   case 'clock':G.freezeT=7;ev(G,{k:'clock'});break;case 'chest':openChest(G,!!k.big);break}}
 function openCrate(G,k){const r=G.rng();let it;if(r<.42&&!G.C.hunger)it='meat';else if(r<.68)it='goldbag';else if(r<.8)it='mag';else if(r<.9)it='clock';else it='bell';
  if(it==='goldbag'){addGold(G,10+Math.floor(G.t/60));ev(G,{k:'coin'})}else G.pk.push({k:it,x:k.x,z:k.z});ev(G,{k:'crate',x:k.x,z:k.z})}
@@ -1228,32 +1238,38 @@ function upText(D,lv){if(lv<=1)return D.d;const u=D.up[lv-2],b=D.b,o=[];for(cons
  else if(k==='area')o.push('범위 +'+Math.round(v*100)+'%');else if(k==='cd')o.push('쿨타임 -'+Math.round(-v/b.cd*100)+'%');else if(k==='pierce')o.push('관통 +'+v);else if(k==='spd')o.push('속도 +'+Math.round(v*100)+'%');
  else if(k==='dur'||k==='life')o.push('지속 +'+v+'초');else if(k==='psn')o.push('중독 +'+v);else if(k==='burn')o.push('화상 강화');else if(k==='chill')o.push('빙결 강화');else if(k==='jumps')o.push('튕김 +'+v);else if(k==='stun')o.push('기절 +'+v+'초');else if(k==='crit')o.push('치명타 +'+Math.round(v*100)+'%p')}return o.join(', ')}
 function evoHint(D){if(!D.evo)return'';const p=PI[D.evo[0]],e=EVOS[D.evo[1]];return`진화: Lv8 + ${p.ic}${p.n} → ${e.ic}${e.n}`}
-function optHTML(o,i){const P=G.p;let ic,nm,tag,desc,hint='';
- if(o.t==='w'||o.t==='nw'){const w=P.w.find(x=>x.id===o.id),D=w?w.d:WEAPONS[o.id],lv=w?w.lv+1:1;ic=D.ic;nm=D.n;tag=w?`<span class="tag">Lv ${lv}</span>`:'<span class="tag new">새 무기</span>';desc=upText(D,lv);hint=D.evo_?'':evoHint(D);if(lv===8&&D.evo&&P.ps.some(p=>p.id===D.evo[0]))hint='보물상자에서 진화할 수 있습니다!'}
- else if(o.t==='p'||o.t==='np'){const d=PI[o.id],p=P.ps.find(x=>x.id===o.id),lv=p?p.lv+1:1;ic=d.ic;nm=d.n;tag=p?`<span class="tag">Lv ${lv}/${d.max}</span>`:'<span class="tag new">새 보조</span>';desc=d.d;
-  const evs=P.w.filter(w=>!w.d.evo_&&w.d.evo&&w.d.evo[0]===o.id);if(evs.length)hint='진화 재료: '+evs.map(w=>w.d.n).join(', ')}
+function optHTML(o,i){const P=G.p;let ic,nm,tag,desc,hint='',cls='';
+ if(o.t==='w'||o.t==='nw'){const w=P.w.find(x=>x.id===o.id),D=w?w.d:WEAPONS[o.id],lv=w?w.lv+1:1;ic=D.ic;nm=D.n;tag=w?`<span class="tag">무기 Lv ${lv}/8</span>`:'<span class="tag new">새 무기</span>';desc=upText(D,lv);hint=D.evo_?'':evoHint(D);if(!w)cls='new';
+  const has=D.evo&&!D.evo_&&P.ps.some(p=>p.id===D.evo[0]);if(w&&has){cls='evo';if(lv===8){tag+='<span class="tag go">진화 준비 완료</span>';hint='8레벨 달성! 다음 보물상자에서 '+EVOS[D.evo[1]].n+'(으)로 진화합니다.'}else tag+='<span class="tag go">진화 짝 보유</span>'}else if(!w&&has){cls='evo';tag+='<span class="tag go">진화 짝 보유</span>'}}
+ else if(o.t==='p'||o.t==='np'){const d=PI[o.id],p=P.ps.find(x=>x.id===o.id),lv=p?p.lv+1:1;ic=d.ic;nm=d.n;tag=p?`<span class="tag pas">보조 Lv ${lv}/${d.max}</span>`:'<span class="tag pas">새 보조</span>';desc=d.d;cls='pas';
+  const evs=P.w.filter(w=>!w.d.evo_&&w.d.evo&&w.d.evo[0]===o.id);if(evs.length){hint='진화 재료: '+evs.map(w=>`${w.d.n}(Lv${w.lv}/8)`).join(', ')+(p?'':' — 1레벨만 있어도 됩니다');if(!p){cls='evo';tag+='<span class="tag go">진화 재료</span>'}}}
  else if(o.t==='gold'){ic='🪙';nm='금화';tag='';desc='골드 +25'}else{ic='🍖';nm='고기';tag='';desc='체력 30 회복'}
- return`<button class="opt" data-i="${i}"><i>${ic}</i><span><b>${esc(nm)}</b>${tag}<small>${esc(desc)}</small>${hint?`<small style="color:#7a4a10">${esc(hint)}</small>`:''}</span></button>`}
+ return`<button class="opt ${cls||''}" data-i="${i}"><i>${ic}</i><span><b>${esc(nm)}</b>${tag}<small>${esc(desc)}</small>${hint?`<small style="color:#7a4a10">${esc(hint)}</small>`:''}</span></button>`}
 /* ---------- 준비 화면 ---------- */
+function updPrepCard(){const ch=CI[selChar],mp=MAPS.find(m=>m.id===selMap);$('pcName').textContent=ch.n;$('pcSub').textContent=`${(ch.race?RACES[ch.race].n+' 마물':CLASSES[ch.cls].n)} · ${mp.ic} ${mp.n} · 시련 ${selCurses.size}개`}
+function charDet(ch){const D=WEAPONS[ch.w];let tod='';if(ch.race){const t=TOD_RACE[ch.race]||{};tod=Object.keys(t).map(k=>{const p=PHASES.find(p=>p.id===k);return`${p.ic}${p.n} 공격 ${t[k]>1?'+':''}${Math.round((t[k]-1)*100)}%`}).join(', ')}
+ else{tod=PHASES.filter(p=>TOD[p.id].cls[ch.cls]).map(p=>{const o=TOD[p.id].cls[ch.cls],k=Object.keys(o)[0],v=o[k],nm={speed:'투사체 속도',regen:'재생',crit:'치명타',cd:'쿨타임',status:'상태이상'}[k];return`${p.ic}${p.n} ${nm} ${v>0?'+':''}${k==='regen'?v:Math.round(v*100)+(k==='crit'?'%p':'%')}`}).join(', ')}
+ const fav=MAPS.filter(m=>m.cls&&m.cls[ch.cls]).map(m=>m.ic+m.n).join(', ');
+ return`<h3>${esc(ch.n)}${ch.u?' <small style="color:#8a5d16">유일</small>':''}</h3><div class="meta">${ch.race?RACES[ch.race].ic+' '+RACES[ch.race].n+' 마물':CLASSES[ch.cls].ic+' '+CLASSES[ch.cls].n}</div>${esc(ch.d)}<br>시작 무기: ${D.ic} <b>${esc(D.n)}</b> (${EL[D.el].ic}${EL[D.el].n}) — ${esc(D.d)}<br><small style="color:#6b4a26">${esc(evoHint(D))}</small>${tod?`<div class="meta">시간대: ${esc(tod)}</div>`:''}${fav?`<div class="meta">유리한 지형: ${esc(fav)}</div>`:''}`}
 function renderPrep(){document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('on',t.dataset.t===prepTab));
- const ch=CI[selChar],mp=MAPS.find(m=>m.id===selMap);$('pcName').textContent=ch.n;$('pcSub').textContent=`${(ch.race?RACES[ch.race].n+' 마물':CLASSES[ch.cls].n)} · ${mp.ic} ${mp.n} · 시련 ${selCurses.size}개`;
+ updPrepCard();const ch=CI[selChar];
  $('csTab').textContent='×'+curseMult(CURSES.map(c=>selCurses.has(c.id))).toFixed(2);let h='';
  if(prepTab==='ch'){const groups=[['knight','기사 · 은빛 서약 기사단'],['rogue','도적 · 잿빛 망토 길드'],['archer','궁수 · 녹엽 순찰대'],['mage','법사 · 별탑 학회'],['shaman','주술사 · 늪뿌리 부족'],['priest','사제 · 새벽 성당'],['monster','마물 · 맹약 편에 선 짐승들']];
-  const D=WEAPONS[ch.w];h+=`<div class="det"><h3>${esc(ch.n)}${ch.u?' <small style="color:#8a5d16">유일</small>':''}</h3>${esc(ch.d)}<br>시작 무기: ${D.ic} <b>${esc(D.n)}</b> — ${esc(D.d)}<br><small style="color:#6b4a26">${esc(evoHint(D))}</small></div>`;
-  for(const[k,n]of groups){h+=`<div class="sec">${CLASSES[k].ic} ${n}</div><div class="grid">`;for(const c of CHARS.filter(c=>c.cls===k))h+=`<button class="cc ${c.id===selChar?'on':''}" data-c="${c.id}">${c.u?'<span class="u">유일</span>':''}<i>${c.race?RACES[c.race].ic:WEAPONS[c.w].ic}</i>${esc(c.n)}</button>`;h+='</div>'}}
+  h+=`<div class="chWrap"><div class="det" id="chDet">${charDet(ch)}</div><div class="chList">`;
+  for(const[k,n]of groups){h+=`<div class="sec">${CLASSES[k].ic} ${n}</div><div class="grid">`;for(const c of CHARS.filter(c=>c.cls===k))h+=`<button class="cc ${c.id===selChar?'on':''}" data-c="${c.id}">${c.u?'<span class="u">유일</span>':''}<i>${c.race?RACES[c.race].ic:WEAPONS[c.w].ic}</i>${esc(c.n)}</button>`;h+='</div>'}h+='</div></div>'}
  else if(prepTab==='mp'){for(const m of MAPS){const ms=[...new Set(m.sp.map(s=>MI[s[0]].n))].slice(0,7).join(', ');const e=EVENTS[m.ev];
   h+=`<button class="mp ${m.id===selMap?'on':''}" data-m="${m.id}"><i>${m.ic}</i><span><b>${esc(m.n)}</b><small>${esc(m.l)}</small><small>🌀 ${m.hzN?'지형 타일: '+esc(m.hzN)+' · ':''}환경 이벤트: ${esc(e.n)} (${esc(e.d)})</small><div class="mons">마물: ${esc(ms)} · 정예: ${m.elite.map(i=>MI[i].n).join(', ')}<br>10분: ${esc(BOSSES[m.mid].n)} · 20분: ${esc(BOSSES[m.lord].n)} · 30분: 말레크</div></span></button>`}}
  else if(prepTab==='cs'){const mult=curseMult(CURSES.map(c=>selCurses.has(c.id)));h+=`<div id="csHead">시련 <span class="num big">${selCurses.size}</span>개 · 점수 <span class="num big">×${mult.toFixed(2)}</span><button class="btn" id="csClr" style="margin-left:auto;padding:5px 10px">모두 해제</button></div>
   <div style="font-size:12.5px;margin-bottom:8px;color:#4a3a2a">게임 난이도는 하나뿐입니다. 시련을 고를수록 어려워지고, 점수 배율이 올라갑니다.</div><div id="csGrid">`;
   for(const c of CURSES)h+=`<button class="cs ${selCurses.has(c.id)?'on':''}" data-s="${c.id}"><i>${c.ic}</i><span><b>${esc(c.n)}</b>${esc(c.d)}</span><em class="num">+${c.w.toFixed(2)}</em></button>`;h+='</div>'}
- $('tabBody').innerHTML=h;$('tabBody').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{selChar=b.dataset.c;sfx('click');savePrep();prepPreview();renderPrep()});
+ const tb=$('tabBody');tb.classList.toggle('noscroll',prepTab==='ch');tb.innerHTML=h;tb.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{selChar=b.dataset.c;sfx('click');savePrep();prepPreview();tb.querySelectorAll('[data-c]').forEach(x=>x.classList.toggle('on',x===b));$('chDet').innerHTML=charDet(CI[selChar]);updPrepCard()});
  $('tabBody').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{selMap=b.dataset.m;sfx('click');savePrep();prepPreview();renderPrep()});
  $('tabBody').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const id=b.dataset.s;selCurses.has(id)?selCurses.delete(id):selCurses.add(id);sfx('click');savePrep();const st=$('tabBody').scrollTop;renderPrep();$('tabBody').scrollTop=st});
  const cl=$('csClr');if(cl)cl.onclick=()=>{selCurses.clear();savePrep();renderPrep()}}
 function savePrep(){LS.set('rs_prep',{ch:selChar,mp:selMap,cs:[...selCurses]})}
 document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>{initAudio();if(t.dataset.t==='cx'){openCodex();return}prepTab=t.dataset.t;$('tabBody').scrollTop=0;renderPrep()});
 let PG=null;function prepPreview(){PG=newGame({char:selChar,map:selMap,seed:1});setMap(PG.mi);setPlayerModel(PG.ch);clearBosses()}
-function toPrep(){state='prep';G=null;paused=false;['hud','sLvl','sChest','sPause','sRes'].forEach(id=>$(id).classList.add('hidden'));$('sPrep').classList.remove('hidden');prepPreview();renderPrep()}
+function toPrep(){hideTip();state='prep';G=null;paused=false;['hud','sLvl','sChest','sPause','sRes'].forEach(id=>$(id).classList.add('hidden'));$('sPrep').classList.remove('hidden');prepPreview();renderPrep()}
 $('goB').onclick=()=>{initAudio();sfx('click');LS.set('rs_name',$('iName').value.trim());startRun()};
 /* ---------- 진행 ---------- */
 function startRun(){const seed=(Math.random()*2**31)>>>0;G=newGame({char:selChar,map:selMap,curses:[...selCurses],seed});setMap(G.mi);setPlayerModel(G.ch);clearBosses();
@@ -1263,7 +1279,7 @@ function startRun(){const seed=(Math.random()*2**31)>>>0;G=newGame({char:selChar
 function togglePause(force){if(state!=='play'||!G||G.over)return;paused=force===true?true:!paused;$('sPause').classList.toggle('hidden',!paused);if(paused)fillPause()}
 function fillPause(){const P=G.p,s=P.st;$('sndB').textContent=sndOn?'켜짐':'꺼짐';$('dmgB').textContent=showDmg?'켜짐':'꺼짐';
  $('pauseInfo').innerHTML=`${esc(G.ch.n)} · ${G.mp.ic} ${esc(G.mp.n)} · 시련 ${G.cm.filter(Boolean).length}개 (×${G.mult.toFixed(2)})<br>공격력 ×${s.might.toFixed(2)} · 범위 ×${s.area.toFixed(2)} · 쿨타임 ×${s.cd.toFixed(2)} · 투사체 +${s.amt}<br>방어 ${s.armor} · 재생 ${s.regen.toFixed(1)}/초 · 치명 ${Math.round(s.crit*100)}% · 부활 ${P.rev}`+
- '<br>'+P.w.map(w=>`${w.d.ic}${esc(w.d.n)}${w.d.evo_?'':' Lv'+w.lv}`).join(' · ')}
+ '<br><small>왼쪽 위 아이콘에 마우스를 올리거나 눌러 보면 무기·보조 설명이 보입니다.</small><br>'+P.w.map(w=>`${w.d.ic}${esc(w.d.n)}${w.d.evo_?'':' Lv'+w.lv}`).join(' · ')}
 $('pauseB').onclick=()=>togglePause();$('resumeB').onclick=()=>togglePause();$('sndB').onclick=()=>{sndOn=!sndOn;LS.set('rs_snd',sndOn);fillPause()};$('dmgB').onclick=()=>{showDmg=!showDmg;LS.set('rs_dmg',showDmg);fillPause()};
 $('quitB').onclick=()=>{if(!G)return;paused=false;$('sPause').classList.add('hidden');G.over={win:0,quit:1};overT=.3};$('cxB2').onclick=()=>openCodex();
 /* 레벨업 */
@@ -1289,9 +1305,21 @@ function updHud(dt){const P=G.p;$('xpfill').style.width=Math.min(100,P.xp/needXp
  const sp=$('stepP');const nx=(G.step+1)*180-t;if(t<FINAL_T&&nx<15){sp.classList.remove('hidden');sp.textContent=nx<=0?'':'⚠ 균열 확장 '+Math.ceil(nx)+'초'}else if(t<FINAL_T&&FINAL_T-t<30){sp.classList.remove('hidden');sp.textContent='👁 말레크 강림까지 '+Math.ceil(FINAL_T-t)+'초'}else sp.classList.add('hidden');
  const boss=G.en.find(e=>e.boss&&!e.dead);if(boss){$('bossBar').classList.remove('hidden');$('bossName').textContent=boss.boss.n+(boss.boss.final?` · ${boss.phase}단계`+(boss.phase===1?' (물리 반감)':boss.phase===2?' (마법 반감)':''):'')+(boss.shellT>0?' · 껍질':'')+(boss.tents>0?' · 촉수 보호':'');$('bossFill').style.width=Math.max(0,boss.hp/boss.mhp*100)+'%'}else $('bossBar').classList.add('hidden');
  const key=P.w.map(w=>w.id+w.lv).join()+'|'+P.ps.map(p=>p.id+p.lv).join();if(key!==slotKey){slotKey=key;
-  $('slotW').innerHTML=P.w.map(w=>`<span class="slot ${w.d.evo_?'evo':''}" title="${esc(w.d.n)}">${w.d.ic}<b>${w.d.evo_?'★':w.lv}</b></span>`).join('');$('slotP').innerHTML=P.ps.map(p=>`<span class="slot p" title="${esc(p.d.n)}">${p.d.ic}<b>${p.lv}</b></span>`).join('')}
+  $('slotW').innerHTML=P.w.map(w=>`<span class="slot ${w.d.evo_?'evo':''}" data-k="w" data-id="${w.id}">${w.d.ic}<b>${w.d.evo_?'★':w.lv}</b></span>`).join('');$('slotP').innerHTML=P.ps.map(p=>`<span class="slot p" data-k="p" data-id="${p.id}">${p.d.ic}<b>${p.lv}</b></span>`).join('')}
  if(bannerT>0){bannerT-=dt;if(bannerT<=0)$('banner').classList.remove('on')}
  const v=$('vig');const low=P.hp/P.mhp<.3;v.style.boxShadow=P.hurtT>0?'inset 0 0 70px 10px #ff202088':low?'inset 0 0 60px 6px #ff202044':'inset 0 0 0 0 #0000'}
+/* ---------- 보유 스킬 툴팁 ---------- */
+function statLine(w){const s=w.s,D=w.d,o=[];if(s.dmg)o.push('피해 '+Math.round(s.dmg));if(s.cd&&D.k!=='aura'&&D.k!=='trail')o.push('쿨타임 '+s.cd.toFixed(2)+'초');else if(D.k==='aura')o.push('0.5초마다');
+ if(s.amt&&D.k!=='aura'&&D.k!=='trail')o.push((D.k==='rain'?'화살 ':'개수 ')+s.amt);if(s.pierce>1)o.push('관통 '+s.pierce);if(s.pierce<0)o.push('무한 관통');if(s.area&&Math.abs(s.area-1)>.01)o.push('범위 ×'+s.area.toFixed(2));if(s.dur)o.push('지속 '+s.dur.toFixed(1)+'초');return o.join(' · ')}
+function tipHTML(kind,id){const P=G.p;if(kind==='w'){const w=P.w.find(x=>x.id===id);if(!w)return'';const D=w.d;let h=`${D.ic} <b>${esc(D.n)}</b><span class="tg">${D.evo_?'★ 진화 무기':'Lv '+w.lv+'/8'}</span><span class="tg">${EL[D.el].ic}${EL[D.el].n}</span><br>${esc(D.d)}<div class="st">${statLine(w)}</div>`;
+  if(!D.evo_){const p=PI[D.evo[0]],has=P.ps.some(q=>q.id===p.id),E=EVOS[D.evo[1]];h+=`<div class="ev">진화 → ${E.ic} ${esc(E.n)}<br>조건: 무기 Lv8 <span class="${w.lv>=8?'ok':'no'}">${w.lv>=8?'✔':'('+w.lv+'/8)'}</span> + ${p.ic}${esc(p.n)} <span class="${has?'ok':'no'}">${has?'✔ 보유':'✘ 미보유'}</span><br>둘 다 갖추면 보물상자에서 진화</div>`}return h}
+ const p=P.ps.find(x=>x.id===id);if(!p)return'';const d=p.d,ws=WPN_IDS.filter(k=>WEAPONS[k].evo[0]===id);let h=`${d.ic} <b>${esc(d.n)}</b><span class="tg">Lv ${p.lv}/${d.max}</span><br>${esc(d.d)} (단계마다)`;
+ if(ws.length)h+=`<div class="ev">진화 짝: ${ws.map(k=>{const own=P.w.find(w=>w.id===k);return`${WEAPONS[k].ic}${esc(WEAPONS[k].n)}${own?` <span class="ok">(보유 Lv${own.lv})</span>`:''}`}).join(', ')}</div>`;return h}
+let tipT=0;function showTip(el){const k=el.dataset.k,id=el.dataset.id;if(!k||!G)return;const t=$('tip');t.innerHTML=tipHTML(k,id);t.classList.remove('hidden');const r=el.getBoundingClientRect();let x=r.right+8,y=r.top;t.style.left='0px';t.style.top='0px';
+ const tw=t.offsetWidth,th=t.offsetHeight;if(x+tw>innerWidth-6)x=Math.max(6,r.left);if(x===r.left)y=r.bottom+6;if(y+th>innerHeight-6)y=innerHeight-th-6;t.style.left=x+'px';t.style.top=y+'px';tipT=performance.now()}
+function hideTip(){$('tip').classList.add('hidden')}
+$('slots').addEventListener('pointerover',e=>{const s=e.target.closest('.slot');if(s&&e.pointerType==='mouse')showTip(s)});$('slots').addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&e.target.closest('.slot'))hideTip()});
+$('slots').addEventListener('click',e=>{const s=e.target.closest('.slot');if(!s)return;if(!$('tip').classList.contains('hidden')&&$('tip').dataset.cur===s.dataset.k+s.dataset.id){hideTip();$('tip').dataset.cur='';return}showTip(s);$('tip').dataset.cur=s.dataset.k+s.dataset.id;clearTimeout(window._tipTO);window._tipTO=setTimeout(()=>{if(performance.now()-tipT>2900)hideTip()},3000)});
 /* ---------- 이벤트 → 연출 ---------- */
 let floatN=0;const RX_N={melt:'증기 폭발',overload:'과부하',super:'마비',purify:'정화',plague:'역병'};
 function floatText(x,y,z,t,cls){if(floatN>18)return;const[sx,sy]=worldToScreen(x,y,z);if(sx<0||sy<0||sx>innerWidth||sy>innerHeight)return;const d=document.createElement('div');d.className='fl '+(cls||'');d.textContent=t;d.style.left=sx+'px';d.style.top=sy+'px';$('floats').appendChild(d);floatN++;setTimeout(()=>{d.remove();floatN--},700)}
@@ -1329,7 +1357,7 @@ function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length
 function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
 function b64e(s){const b=new TextEncoder().encode(s);let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function playerName(){return($('iName').value.trim().replace(/[~\n\r]/g,'')||'무명의 수호자').slice(0,12)}
-function showResult(){if(resShown)return;resShown=true;state='result';const r=finalRecord(G),score=calcScore(r),name=playerName();
+function showResult(){hideTip();if(resShown)return;resShown=true;state='result';const r=finalRecord(G),score=calcScore(r),name=playerName();
  const dt=new Date(),ds=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0'),nonce=Math.random().toString(36).slice(2,8);
  const payload=['1',name,G.ch.id,G.mp.id,maskStr(G.cm),score,r.win,r.secs,r.clear,r.kills,r.lvl,r.gold,r.evos,r.mid,r.lord,r.elites,G.seed,ds,nonce].join('~');
  const code='RS1.'+b64e(payload)+'.'+sign(payload);const best=LS.get('rs_best',0);let nb=false;if(score>best){LS.set('rs_best',score);nb=true}
@@ -1364,7 +1392,7 @@ function openCodex(){$('cxTabs').innerHTML=CX_TABS.map(([k,n])=>`<button class="
 $('cxClose').onclick=()=>$('sCodex').classList.add('hidden');
 function codexHTML(t){let h='';
  if(t==='w'){h+='<div class="t">무기는 8레벨까지 오릅니다. 무기 칸은 6개입니다. ※ 표시는 지면 장판이라 하늘의 적에게 닿지 않습니다.</div>';for(const id of WPN_IDS){const D=WEAPONS[id];h+=`<div class="cx">${D.ic} <b>${esc(D.n)}</b> <span class="t">${EL[D.el].ic}${EL[D.el].n}${(D.k==='zone'||D.k==='trail')?' ※':''}</span><br>${esc(D.d)}<br><span class="t">${esc(evoHint(D))}</span></div>`}}
- else if(t==='e'){h+='<div class="t">무기가 8레벨이고 짝이 되는 보조 아이템을 가지고 있을 때, 정예·보스가 떨어뜨린 보물상자를 열면 진화합니다.</div>';for(const id of WPN_IDS){const D=WEAPONS[id],E=EVOS[D.evo[1]],p=PI[D.evo[0]];h+=`<div class="cx">${D.ic} ${esc(D.n)} + ${p.ic} ${esc(p.n)} → ${E.ic} <b>${esc(E.n)}</b><br>${esc(E.d)}</div>`}}
+ else if(t==='e'){h+='<div class="t">무기가 8레벨이고 짝이 되는 보조 아이템을 가지고 있을 때(보조는 1레벨이면 충분), 정예·보스가 떨어뜨린 보물상자를 열면 진화합니다. 진화 무기는 레벨업 선택지에 나오지 않고 보물상자에서만 얻습니다.</div>';for(const id of WPN_IDS){const D=WEAPONS[id],E=EVOS[D.evo[1]],p=PI[D.evo[0]];h+=`<div class="cx">${D.ic} ${esc(D.n)} + ${p.ic} ${esc(p.n)} → ${E.ic} <b>${esc(E.n)}</b><br>${esc(E.d)}</div>`}}
  else if(t==='p'){for(const p of PASSIVES){const ws=WPN_IDS.filter(id=>WEAPONS[id].evo[0]===p.id).map(id=>WEAPONS[id].n);h+=`<div class="cx">${p.ic} <b>${esc(p.n)}</b> <span class="t">최대 ${p.max}단계</span><br>${esc(p.d)}${ws.length?`<br><span class="t">진화 재료: ${esc(ws.join(', '))}</span>`:''}</div>`}}
  else if(t==='rx'){h+=`<h3>원소 반응</h3><div class="cx">🔥+❄️ <b>증기 폭발</b> — 화상과 서리가 만나면 주변에 큰 화염 피해</div><div class="cx">⚡+🔥 <b>과부하</b> — 감전과 화상이 만나면 폭발하며 밀쳐냄</div><div class="cx">⚡+❄️ <b>마비</b> — 감전과 서리가 만나면 주변 마물이 1초간 멈춤</div><div class="cx">✨+🌑 <b>정화</b> — 저주받은 적을 신성으로 치면 2배 피해</div><div class="cx">☠️ <b>역병</b> — 중독 6중첩 이상인 적이 쓰러지면 독이 옆으로 번짐</div>
   <div class="cx">🌑 <b>저주</b> 받은 적은 피해를 25% 더 받고, ⚡ <b>감전</b>된 적은 15% 더 받습니다.</div><h3>종족 상성</h3><table class="fx"><tr><th>종족</th><th>잘 통함</th><th>잘 안 통함</th></tr>`;
