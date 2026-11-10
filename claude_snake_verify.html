@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>용이 되고픈 뱀 — 점수검증기</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3a3550;--cream:#fffaf0;--line:#e9dcc4;--green:#5cbf6a;--red:#ff6b6b;--sky:#cfeefa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:linear-gradient(#cfeefa,#e8f6df);font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 30px);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-family:'Jua',sans-serif;font-size:32px;text-align:center}
+h1 em{font-style:normal;color:var(--green)}
+.sub{text-align:center;color:#7a7290;font-size:14px;margin:4px 0 16px}
+.card{background:var(--cream);border:3px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 6px 0 rgba(58,53,80,.14);margin-bottom:16px}
+textarea{width:100%;min-height:150px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--line);border-radius:14px;padding:10px;background:#fff;color:var(--ink);resize:vertical;outline:none}
+textarea:focus{border-color:var(--green)}
+.btns{display:flex;gap:8px;margin-top:10px}
+button{flex:1;font:19px 'Jua',sans-serif;padding:12px;border:0;border-radius:14px;background:var(--green);color:#fff;box-shadow:0 4px 0 #3f9e4f;cursor:pointer;touch-action:manipulation}
+button.sub{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:0 4px 0 var(--line)}
+button:active{transform:translateY(3px);box-shadow:none}
+.hint{font-size:13px;color:#7a7290;margin-top:8px;line-height:1.6}
+h2{font-family:'Jua',sans-serif;font-size:21px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+.tw{overflow-x:auto}
+th,td{padding:7px 6px;border-bottom:2px solid #f1e7d4;text-align:center;white-space:nowrap}
+th{font-family:'Jua',sans-serif;font-weight:normal;color:#7a7290}
+td.n{text-align:left;font-family:'Jua',sans-serif}
+.medal{font-size:18px}
+.res{border:2px solid var(--line);border-radius:16px;padding:12px;margin-top:10px;background:#fff}
+.res.ok{border-color:#9bdca5}.res.bad{border-color:#ffb3b3;background:#fff6f6}
+.res h3{font-family:'Jua',sans-serif;font-size:18px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tag{font-size:14px;padding:2px 10px;border-radius:10px;color:#fff;background:var(--green)}
+.bad .tag{background:var(--red)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:14px;margin-top:8px}
+dt{color:#7a7290}dd{font-family:'Jua',sans-serif;text-align:right}
+ul{margin:8px 0 0 18px;font-size:13px;color:#c0392b;line-height:1.6}
+a{color:#7c62c9}
+.empty{text-align:center;color:#9a92ad;font-size:14px;padding:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐍 용이 되고픈 <em>뱀</em></h1>
+  <div class="sub">점수검증기 · 댓글 여러 개를 한꺼번에 붙여넣으면 순위표가 만들어져요</div>
+
+  <div class="card">
+    <textarea id="inp" placeholder="블로그 댓글의 기록 인증 내용을 붙여넣으세요.&#10;(여러 명의 기록을 한 번에 붙여넣어도 됩니다)"></textarea>
+    <div class="btns"><button id="go">검증하기</button><button class="sub" id="clr">지우기</button></div>
+    <div class="hint">✔ 검증코드(SA1.…)만 들어 있으면 됩니다. 댓글 본문의 숫자를 고쳐도 검증코드 안의 실제 기록으로 판정해요.<br>🎮 게임 바로가기: <a href="https://chillermaster.github.io/flashgame/claude_snake.html" target="_blank" rel="noopener">용이 되고픈 뱀</a></div>
+  </div>
+
+  <div class="card" id="rankCard" style="display:none">
+    <h2>🏆 순위표 <small style="font-size:13px;color:#7a7290">(생존 시간 → 점수 순)</small></h2>
+    <div class="tw"><table><thead><tr><th>순위</th><th>이름</th><th>생존 시간</th><th>단계</th><th>점수</th><th>날짜</th></tr></thead><tbody id="rank"></tbody></table></div>
+  </div>
+
+  <div class="card" id="detCard" style="display:none">
+    <h2>🔍 상세 검증 결과</h2>
+    <div id="det"></div>
+  </div>
+</div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const SALT='snake-ascend/luca/v1#3e91-a7d0';
+const STAGES=['새싹 지렁이','풀숲 뱀','산호 뱀','파도 뱀','자수정 뱀','용암 뱀','서리 이무기','황금 이무기','무지개 용','전설의 천룡'];
+const STAGE_SEC=30,MAXLEN=40,PT_FRUIT=10,PT_GOLD=30;
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder().decode(u)}
+const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const fmtK=tn=>{const m=Math.floor(tn/600),s=(tn%600)/10;return(m?m+'분 ':'')+s.toFixed(1)+'초'};
+
+function check(code){
+ const errs=[];const m=code.match(/^SA1\.([A-Za-z0-9_-]+)\.([A-Z0-9]{22})$/);
+ if(!m)return{ok:false,errs:['검증코드 형식이 올바르지 않습니다'],code};
+ let payload;try{payload=b64d(m[1])}catch(e){return{ok:false,errs:['검증코드를 해독할 수 없습니다'],code}}
+ if(sign(payload)!==m[2])errs.push('서명 불일치 — 코드가 변조되었습니다');
+ const f=payload.split('~');
+ if(f.length!==17||f[0]!=='3')return{ok:false,errs:errs.concat('기록 구조가 올바르지 않습니다 (구버전 기록일 수 있음)'),code};
+ const [ ,name,...rest]=f;const n=rest.slice(0,13).map(Number);
+ const [tn,stg,score,len,maxLen,grown,fruits,gold,herbs,shUsed,cut,cause,ticks]=n;const ds=rest[13],nonce=rest[14];
+ if(n.some(v=>!Number.isInteger(v)||v<0))errs.push('숫자 값이 올바르지 않습니다');
+ const sec=tn/10;
+ if(stg!==Math.min(9,Math.floor(tn/(STAGE_SEC*10))))errs.push('도달 단계와 생존 시간이 맞지 않습니다');
+ if(score!==fruits*PT_FRUIT+gold*PT_GOLD)errs.push('점수가 열매·황금비늘 수와 맞지 않습니다');
+ if(grown>fruits)errs.push('성장 횟수가 열매 수보다 많습니다');
+ if(len!==3+grown-cut)errs.push('최종 길이 = 3 + 성장 − 잘린 꼬리 공식이 맞지 않습니다');
+ if(maxLen<len||maxLen>Math.min(MAXLEN,3+grown)||len>MAXLEN)errs.push('길이 값이 비정상입니다 (상한 '+MAXLEN+'칸)');
+ if(grown<fruits&&maxLen<MAXLEN)errs.push('최대 길이 전인데 성장하지 않은 열매가 있습니다');
+ if(shUsed>gold)errs.push('보호막 사용 횟수가 황금비늘 수보다 많습니다');
+ if(cut>0&&shUsed===0)errs.push('보호막 없이 꼬리가 잘렸습니다');
+ if(cause>1)errs.push('탈락 사유 값이 비정상입니다');
+ if(fruits+gold+herbs>ticks)errs.push('먹은 아이템 수가 이동 횟수보다 많습니다');
+ if(ticks>sec*1000/85+3)errs.push('이동 횟수가 최고 속도 한계를 넘습니다');
+ if(ticks<sec*1000/336-3)errs.push('이동 횟수가 너무 적습니다 (시간 조작 의심)');
+ if(sec>16*(fruits+gold+1)+1)errs.push('허기 규칙상 불가능한 생존 시간입니다');
+ if(!/^\d{8}$/.test(ds))errs.push('날짜 형식 오류');
+ else{const d=new Date(+ds.slice(0,4),+ds.slice(4,6)-1,+ds.slice(6));if(d.getTime()>Date.now()+86400000)errs.push('미래 날짜의 기록입니다')}
+ return{ok:!errs.length,errs,code,name,tn,stg,score,grown,len,maxLen,fruits,gold,herbs,shUsed,cut,cause,ticks,ds,nonce}}
+
+function run(){
+ const txt=$('inp').value;const codes=[...new Set((txt.match(/SA1\.[A-Za-z0-9_-]+\.[A-Z0-9]{22}/g)||[]))];
+ const det=$('det');$('detCard').style.display='block';
+ if(!codes.length){det.innerHTML='<div class="empty">검증코드(SA1.…)를 찾지 못했어요</div>';$('rankCard').style.display='none';return}
+ const seen=new Set();const res=codes.map(c=>{const r=check(c);if(r.nonce){if(seen.has(r.nonce)){r.ok=false;r.errs.push('같은 기록이 중복 제출되었습니다')}seen.add(r.nonce)}return r});
+ det.innerHTML=res.map(r=>{
+  if(!r.name)return`<div class="res bad"><h3><span>알 수 없는 기록</span><span class="tag">무효</span></h3><ul>${r.errs.map(e=>'<li>'+esc(e)+'</li>').join('')}</ul></div>`;
+  const rows=[['생존 시간',fmtK(r.tn)],['점수',r.score],['도달 단계',(r.stg+1)+'단계 · '+(STAGES[r.stg]||'?')],['최종 길이',r.len+'칸 (최대 '+r.maxLen+')'],['열매 / 황금비늘 / 느림버섯',r.fruits+' / '+r.gold+' / '+r.herbs],['보호막 사용',r.shUsed+'회 · 잘린 꼬리 '+r.cut+'칸'],['탈락 사유',r.cause?'굶주림':'몸통 충돌'],['이동 횟수',r.ticks],['날짜',r.ds.slice(0,4)+'-'+r.ds.slice(4,6)+'-'+r.ds.slice(6)]];
+  return`<div class="res ${r.ok?'ok':'bad'}"><h3><span>👤 ${esc(r.name)}</span><span class="tag">${r.ok?'✔ 정상 기록':'✖ 무효'}</span></h3>
+  <dl>${rows.map(([a,b])=>`<dt>${a}</dt><dd>${esc(b)}</dd>`).join('')}</dl>${r.errs.length?'<ul>'+r.errs.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul>':''}</div>`}).join('');
+ const good=res.filter(r=>r.ok).sort((a,b)=>b.tn-a.tn||b.score-a.score);
+ $('rankCard').style.display=good.length?'block':'none';
+ $('rank').innerHTML=good.map((r,i)=>`<tr><td class="medal">${['🥇','🥈','🥉'][i]||i+1}</td><td class="n">${esc(r.name)}</td><td>${fmtK(r.tn)}</td><td>${r.stg+1} ${STAGES[r.stg]}</td><td>${r.score}</td><td>${r.ds.slice(4,6)}/${r.ds.slice(6)}</td></tr>`).join('')}
+$('go').addEventListener('click',run);
+$('clr').addEventListener('click',()=>{$('inp').value='';$('detCard').style.display='none';$('rankCard').style.display='none'});
+let lt=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lt<350&&e.target.tagName!=='TEXTAREA')e.preventDefault();lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+['gesturestart','gesturechange'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+</script>
+</body>
+</html>
