@@ -73,7 +73,7 @@ pre#rec{text-align:left;white-space:pre-wrap;word-break:break-all;font:12px/1.5 
   <div class="row">
     <div class="chip" id="hTime">0:00.0</div>
     <div class="chip" id="hStageBox"><div id="hStage">1단계 · 새싹 지렁이</div><div class="bar"><i id="hProg"></i></div></div>
-    <div class="chip" id="hSide"><span id="hLen">📏 3</span><span id="hShield">🛡 0</span></div>
+    <div class="chip" id="hSide"><span id="hScore">⭐ 0</span><span id="hLen">📏 3</span><span id="hShield">🛡 0</span></div>
     <button id="pauseBtn" aria-label="일시정지">⏸</button>
   </div>
   <div class="row" id="hungerRow">
@@ -99,13 +99,13 @@ pre#rec{text-align:left;white-space:pre-wrap;word-break:break-all;font:12px/1.5 
     <button class="big" id="btnStart">시작하기</button>
     <div class="best" id="bestLine"></div>
     <div class="rules">
-      ⏱ <b>오래 버틸수록 순위가 높아요.</b> 기록 = 생존 시간<br>
+      ⏱ <b>오래 버틸수록 순위가 높아요.</b> 기록 = 생존 시간 (같으면 점수)<br>
       🎮 방향키 / WASD · 모바일은 스와이프 또는 화면 패드<br>
-      🍎 <b>열매</b> — 몸 +1칸, 허기 회복<br>
-      ✨ <b>황금비늘</b> — 보호막 +1 (몸에 부딪히면 꼬리가 잘리고 생존)<br>
+      🍎 <b>열매</b> — 점수 +10, 몸 +1칸(최대 40칸), 허기 회복<br>
+      ✨ <b>황금비늘</b> — 점수 +30, 보호막 +1 (몸에 부딪히면 꼬리가 잘리고 생존)<br>
       🍄 <b>느림버섯</b> — 5초간 이동속도 감소<br>
       🍽 허기 게이지가 바닥나면 탈락 · 머리가 몸에 닿아도 탈락<br>
-      🌀 벽 끝은 반대편으로 이어져요<br>
+      🧱 벽에 닿으면 넓은 쪽으로 자동으로 꺾여요<br>
       🐉 <b>30초마다 진화</b> — 색과 모양이 바뀌고 빨라져요 (10단계)
     </div>
   </div>
@@ -147,7 +147,7 @@ document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
 
 /* ---------- 설정 ---------- */
-const N=17,HALF=(N-1)/2,STAGE_SEC=30;
+const COLS=6,ROWS=8,HX=(COLS-1)/2,HZ=(ROWS-1)/2,STAGE_SEC=30,MAXLEN=40,PT_FRUIT=10,PT_GOLD=30;
 const STAGES=[
  {n:'새싹 지렁이',c:0x9be07a,c2:0x7fcc62,shape:'round',sky:0xcfeefa},
  {n:'풀숲 뱀',c:0x5cc46a,c2:0x3f9e4f,shape:'box',sky:0xc6ecee},
@@ -178,7 +178,7 @@ scene.fog=new THREE.Fog(STAGES[0].sky,34,70);
 const camera=new THREE.PerspectiveCamera(45,1,0.1,200);
 const camBase=new THREE.Vector3(),camLook=new THREE.Vector3();
 function resize(){const w=innerWidth,h=innerHeight,a=w/h;renderer.setSize(w,h);camera.aspect=a;
- const m=a<1?Math.min(2.7,1.18/a):1.12;camBase.set(0,17*m,11.5*m);camLook.set(0,0,a<1?2.4:0.9);
+ const mL=1.12*(ROWS+2.8)/17,m=a<1?Math.max(mL*1.12,Math.min(2.7,1.18/a)*(COLS+1.6)/17):mL;camBase.set(0,17*m,11.5*m);camLook.set(0,0,(a<1?1.6:0.5)*m);
  camera.position.copy(camBase);camera.lookAt(camLook);camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
@@ -189,22 +189,23 @@ scene.add(sun);
 
 const MC={};
 function mat(col,em){const k=col+'_'+(em||0);if(!MC[k])MC[k]=new THREE.MeshStandardMaterial({color:col,roughness:1,metalness:0,flatShading:true,emissive:em||0});return MC[k]}
-const wx=c=>c-HALF;
+const wx=c=>c-HX,wz=r=>r-HZ;
 
 /* 보드 */
 (function buildWorld(){
  const tg=new THREE.BoxGeometry(0.98,0.2,0.98);
- for(let r=0;r<N;r++)for(let c=0;c<N;c++){const m=new THREE.Mesh(tg,mat((r+c)%2?0xa8dc8a:0x98d17b));m.position.set(wx(c),-0.1,wx(r));m.receiveShadow=true;scene.add(m)}
- const base=new THREE.Mesh(new THREE.BoxGeometry(N+0.6,1.1,N+0.6),mat(0xc59a6d));base.position.y=-0.75;base.receiveShadow=true;scene.add(base);
- const lip=new THREE.Mesh(new THREE.BoxGeometry(N+0.6,0.12,N+0.6),mat(0x7fbf65));lip.position.y=-0.24;scene.add(lip);
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const m=new THREE.Mesh(tg,mat((r+c)%2?0xa8dc8a:0x98d17b));m.position.set(wx(c),-0.1,wz(r));m.receiveShadow=true;scene.add(m)}
+ const base=new THREE.Mesh(new THREE.BoxGeometry(COLS+1.4,1.1,ROWS+1.4),mat(0xc59a6d));base.position.y=-0.75;base.receiveShadow=true;scene.add(base);
+ const lip=new THREE.Mesh(new THREE.BoxGeometry(COLS+1.4,0.12,ROWS+1.4),mat(0x7fbf65));lip.position.y=-0.24;scene.add(lip);
  const gnd=new THREE.Mesh(new THREE.CircleGeometry(40,28),mat(0x9fd486));gnd.rotation.x=-Math.PI/2;gnd.position.y=-1.3;gnd.receiveShadow=true;scene.add(gnd);
- /* 순간이동 테두리 */
- const pm=new THREE.MeshBasicMaterial({color:0xc7a6ff,transparent:true,opacity:.5});
- [[0,-HALF-0.62,N,0.18],[0,HALF+0.62,N,0.18],[-HALF-0.62,0,0.18,N],[HALF+0.62,0,0.18,N]].forEach(([x,z,w,d])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.06,d),pm);m.position.set(x,0.02,z);scene.add(m)});
- window.portalMat=pm;
+ /* 돌담 */
+ const wg=new THREE.BoxGeometry(0.92,0.55,0.92),cg=new THREE.BoxGeometry(0.98,0.12,0.98);
+ for(let c=-1;c<=COLS;c++)for(let r=-1;r<=ROWS;r++){if(c>=0&&c<COLS&&r>=0&&r<ROWS)continue;
+  const w=new THREE.Mesh(wg,mat((c+r)%2?0xa99fbd:0x978daa));w.position.set(wx(c),0.08,wz(r));w.castShadow=true;w.receiveShadow=true;scene.add(w);
+  const cap=new THREE.Mesh(cg,mat(0xc4bbd6));cap.position.set(wx(c),0.41,wz(r));cap.receiveShadow=true;scene.add(cap)}
  /* 나무·바위 */
  const trunkG=new THREE.CylinderGeometry(0.18,0.24,1,6),leafG=new THREE.ConeGeometry(1,1.8,7),rockG=new THREE.DodecahedronGeometry(0.6,0);
- for(let k=0;k<46;k++){const a=Math.random()*Math.PI*2,rad=11.5+Math.random()*10;const x=Math.cos(a)*rad,z=Math.sin(a)*rad;if(z>8&&Math.abs(x)<14)continue;
+ for(let k=0;k<46;k++){const a=Math.random()*Math.PI*2,rad=9+Math.random()*10;const x=Math.cos(a)*rad,z=Math.sin(a)*rad;if(z>5.5&&Math.abs(x)<10)continue;
   const g=new THREE.Group();g.position.set(x,-1.3,z);
   if(Math.random()<0.7){const t=new THREE.Mesh(trunkG,mat(0x9a6b45));t.position.y=0.5;t.castShadow=true;g.add(t);
    const l=new THREE.Mesh(leafG,mat([0x6cc070,0x86d07a,0x5aa964][k%3]));l.position.y=1.8;l.castShadow=true;g.add(l);g.scale.setScalar(0.8+Math.random()*0.7)}
@@ -253,10 +254,13 @@ function makeItem(type){const g=new THREE.Group();
   const c=new THREE.Mesh(new THREE.ConeGeometry(0.33,0.26,7),mat(0x6fa8ff));c.position.y=0.12;c.castShadow=true;g.add(c);
   for(let k=0;k<3;k++){const d=new THREE.Mesh(pupG,mat(0xffffff));const a=k*2.1;d.position.set(Math.cos(a)*0.17,0.13,Math.sin(a)*0.17);d.scale.setScalar(0.8);g.add(d)}}
  scene.add(g);return g}
+const inB=(c,r)=>c>=0&&r>=0&&c<COLS&&r<ROWS;
+function space(c,r){const body=new Set(G.snake.slice(0,G.snake.length-1).map(p=>p.c+','+p.r));if(body.has(c+','+r))return -1;
+ const seen=new Set([c+','+r]),st=[[c,r]];while(st.length){const [x,y]=st.pop();for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=nx+','+ny;if(inB(nx,ny)&&!body.has(k)&&!seen.has(k)){seen.add(k);st.push([nx,ny])}}}return seen.size}
 const itemAt=(c,r)=>G.items.find(it=>it.c===c&&it.r===r);
 function freeCell(){const used=new Set(G.snake.map(p=>p.c+','+p.r));G.items.forEach(it=>used.add(it.c+','+it.r));
- const h=G.snake[0];const free=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(used.has(c+','+r))continue;if(Math.abs(c-h.c)+Math.abs(r-h.r)<3)continue;free.push([c,r])}
- return free.length?free[Math.floor(Math.random()*free.length)]:null}
+ const h=G.snake[0];const free=[],near=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(used.has(c+','+r))continue;(Math.abs(c-h.c)+Math.abs(r-h.r)<3?near:free).push([c,r])}
+ const pool=free.length?free:near;return pool.length?pool[Math.floor(Math.random()*pool.length)]:null}
 function spawn(type,life){const f=freeCell();if(!f)return;const it={type,c:f[0],r:f[1],life,mesh:makeItem(type),born:0};G.items.push(it)}
 function removeItem(it){scene.remove(it.mesh);G.items.splice(G.items.indexOf(it),1)}
 const rnd=(a,b)=>a+Math.random()*(b-a);
@@ -265,7 +269,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 function startGame(){
  if(G){if(G.head)scene.remove(G.head);G.segs.forEach(s=>scene.remove(s));G.items.forEach(it=>scene.remove(it.mesh))}
  parts.splice(0).forEach(p=>scene.remove(p.m));
- G={snake:[{c:8,r:11},{c:8,r:12},{c:8,r:13}],prev:null,dir:[0,-1],q:[],acc:0,time:0,ready:1.3,stage:0,hunger:hMax(0),
+ G={bumps:0,snake:[{c:3,r:4},{c:3,r:5},{c:3,r:6}],score:0,grown:0,prev:null,dir:[0,-1],q:[],acc:0,time:0,ready:1.3,stage:0,hunger:hMax(0),
   shield:0,shUsed:0,cut:0,slow:0,fruits:0,gold:0,herbs:0,ticks:0,maxLen:3,items:[],segs:[],head:null,pop:0,anim:0,
   goldIn:rnd(14,20),herbIn:rnd(22,30),shake:0,yaw:Math.PI,deadT:0,cause:0};
  G.prev=G.snake.map(p=>({c:p.c,r:p.r}));
@@ -281,22 +285,26 @@ function queueDir(k){if(state!=='play'||!G)return;const d=DIRS[k];const ref=G.q.
  if(d[0]===ref[0]&&d[1]===ref[1])return;if(d[0]===-ref[0]&&d[1]===-ref[1])return;if(G.q.length<3)G.q.push(d)}
 
 function step(){
- if(G.q.length)G.dir=G.q.shift();
+ while(G.q.length){const d=G.q.shift();if(!(d[0]===-G.dir[0]&&d[1]===-G.dir[1])){G.dir=d;break}}
  const old=G.snake.map(p=>({c:p.c,r:p.r}));const h=G.snake[0];
- const nc=(h.c+G.dir[0]+N)%N,nr=(h.r+G.dir[1]+N)%N;
- const it=itemAt(nc,nr);const grow=!!(it&&it.type==='fruit');
+ if(!inB(h.c+G.dir[0],h.r+G.dir[1])){ /* 벽: 좌/우 강제 회전 */
+  const opts=[[G.dir[1],-G.dir[0]],[-G.dir[1],G.dir[0]]].filter(d=>inB(h.c+d[0],h.r+d[1]));
+  opts.sort((a,b)=>space(h.c+b[0],h.r+b[1])-space(h.c+a[0],h.r+a[1]));
+  G.dir=opts[0];G.q.length=0;G.bumps++;G.shake=Math.max(G.shake,0.12)}
+ const nc=h.c+G.dir[0],nr=h.r+G.dir[1];
+ const it=itemAt(nc,nr);const grow=!!(it&&it.type==='fruit'&&G.snake.length<MAXLEN);
  const limit=grow?G.snake.length:G.snake.length-1;let hit=-1;
  for(let i=1;i<limit;i++)if(G.snake[i].c===nc&&G.snake[i].r===nr){hit=i;break}
  if(hit>=0){
   if(G.shield>0){G.shield--;G.shUsed++;const cut=G.snake.length-hit;G.cut+=cut;
-   for(let i=hit;i<G.snake.length;i++)burst(wx(G.snake[i].c),wx(G.snake[i].r),0xfff0a0,4);
+   for(let i=hit;i<G.snake.length;i++)burst(wx(G.snake[i].c),wz(G.snake[i].r),0xfff0a0,4);
    G.snake.length=hit;toast('🛡 보호막! 꼬리 '+cut+'칸 잘림');G.shake=0.25}
   else{die(0);return}
  }
  G.snake.unshift({c:nc,r:nr});if(!grow)G.snake.pop();G.ticks++;
- if(it){const x=wx(nc),z=wx(nr);
-  if(it.type==='fruit'){G.fruits++;G.hunger=hMax(G.stage);removeItem(it);burst(x,z,0xff6b6b,10);spawn('fruit',Infinity);G.pop=Math.max(G.pop,0.25)}
-  else if(it.type==='gold'){G.gold++;G.shield=Math.min(3,G.shield+1);G.hunger=hMax(G.stage);removeItem(it);burst(x,z,0xffd34d,14);toast('✨ 황금비늘! 보호막 +1')}
+ if(it){const x=wx(nc),z=wz(nr);
+  if(it.type==='fruit'){G.fruits++;G.score+=PT_FRUIT;if(grow)G.grown++;else toast('최대 길이! 점수 +'+PT_FRUIT);G.hunger=hMax(G.stage);removeItem(it);burst(x,z,0xff6b6b,10);spawn('fruit',Infinity);G.pop=Math.max(G.pop,0.25)}
+  else if(it.type==='gold'){G.gold++;G.score+=PT_GOLD;G.shield=Math.min(3,G.shield+1);G.hunger=hMax(G.stage);removeItem(it);burst(x,z,0xffd34d,14);toast('✨ 황금비늘! 보호막 +1')}
   else{G.herbs++;G.slow=5;removeItem(it);burst(x,z,0x6fa8ff,12);toast('🍄 느려졌다!')}
  }
  G.maxLen=Math.max(G.maxLen,G.snake.length);
@@ -304,13 +312,13 @@ function step(){
  syncSegs()}
 
 function evolve(ns){G.stage=ns;const st=STAGES[ns];rebuildSnake();G.pop=1;G.hunger=Math.min(G.hunger,hMax(ns));
- G.snake.forEach((p,i)=>{if(i%2===0)burst(wx(p.c),wx(p.r),st.rainbow?new THREE.Color().setHSL(Math.random(),.7,.65).getHex():st.c,3,0.5,3)});
+ G.snake.forEach((p,i)=>{if(i%2===0)burst(wx(p.c),wz(p.r),st.rainbow?new THREE.Color().setHSL(Math.random(),.7,.65).getHex():st.c,3,0.5,3)});
  $('bnTop').textContent=(ns+1)+'단계 진화!';$('bnName').textContent=st.name||st.n;
  $('banner').classList.add('show');clearTimeout(evolve.t);evolve.t=setTimeout(()=>$('banner').classList.remove('show'),1700)}
 
 function die(cause){state='dead';G.cause=cause;G.deadT=0;G.shake=0.5;
  const st=STAGES[G.stage];
- G.snake.forEach((p,i)=>burst(wx(p.c),wx(p.r),i===0?(st.rainbow?0xff7aa8:st.c):segColor(st,i),4,0.4,5));
+ G.snake.forEach((p,i)=>burst(wx(p.c),wz(p.r),i===0?(st.rainbow?0xff7aa8:st.c):segColor(st,i),4,0.4,5));
  if(G.head)G.head.visible=false;G.segs.forEach(s=>s.visible=false);
  $('pad').classList.add('hidden');$('ready').classList.add('hidden');
  toast(cause?'🍽 배가 고파 쓰러졌다…':'💥 몸에 부딪혔다!');
@@ -342,14 +350,13 @@ function loop(now){requestAnimationFrame(loop);let dt=Math.min(0.05,(now-last)/1
   updateHud()}
  if(G)drawSnake(dt);
  /* 아이템 */
- if(G)G.items.forEach(it=>{const m=it.mesh;m.position.set(wx(it.c),0.42+Math.sin(G.anim*3+it.c)*0.08,wx(it.r));m.rotation.y+=dt*(it.type==='gold'?3:1.2);
+ if(G)G.items.forEach(it=>{const m=it.mesh;m.position.set(wx(it.c),0.42+Math.sin(G.anim*3+it.c)*0.08,wz(it.r));m.rotation.y+=dt*(it.type==='gold'?3:1.2);
   m.visible=it.life===Infinity||it.life>2.5||Math.floor(it.life*8)%2===0});
  /* 파티클 */
  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.l-=dt;p.vy-=12*dt;p.m.position.x+=p.vx*dt;p.m.position.y=Math.max(0.07,p.m.position.y+p.vy*dt);p.m.position.z+=p.vz*dt;
   p.m.rotation.x+=dt*5;p.m.scale.setScalar(Math.max(0.01,p.l/0.8));if(p.l<=0){scene.remove(p.m);parts.splice(i,1)}}
  /* 하늘 */
  if(G){const target=new THREE.Color(STAGES[G.stage].sky);scene.background.lerp(target,Math.min(1,dt*1.5));scene.fog.color.copy(scene.background)}
- portalMat.opacity=0.35+Math.sin(performance.now()/400)*0.15;
  /* 카메라 흔들림 */
  camera.position.copy(camBase);
  if(G&&G.shake>0){G.shake-=dt;const s=G.shake*0.6;camera.position.x+=(Math.random()-.5)*s;camera.position.y+=(Math.random()-.5)*s}
@@ -360,7 +367,7 @@ function drawSnake(dt){if(state==='dead')return;
  const t=G.ready>0?0:Math.min(1,G.acc/curTick());const L=G.snake.length;
  if(G.pop>0)G.pop=Math.max(0,G.pop-dt*1.6);
  for(let i=0;i<L;i++){const cur=G.snake[i],pv=G.prev[i]||cur;
-  const x=wx(pv.c+(cur.c-pv.c)*t),z=wx(pv.r+(cur.r-pv.r)*t);
+  const x=wx(pv.c+(cur.c-pv.c)*t),z=wz(pv.r+(cur.r-pv.r)*t);
   const obj=i===0?G.head:G.segs[i-1];if(!obj)continue;
   const wave=1+0.35*Math.max(0,G.pop-i*0.04);
   if(i===0){obj.position.set(x,0.36,z);obj.scale.setScalar(wave);
@@ -373,7 +380,7 @@ function updateHud(){
  $('hTime').textContent='⏱ '+fmt(G.time);
  const st=STAGES[G.stage];$('hStage').textContent=(G.stage+1)+'단계 · '+st.n;
  $('hProg').style.width=(G.stage>=9?100:((G.time-G.stage*STAGE_SEC)/STAGE_SEC*100))+'%';
- $('hLen').textContent='📏 '+G.snake.length;$('hShield').textContent='🛡 '+G.shield;
+ $('hScore').textContent='⭐ '+G.score;$('hLen').textContent='📏 '+G.snake.length+'/'+MAXLEN;$('hShield').textContent='🛡 '+G.shield;
  const hm=hMax(G.stage);$('hungerBar').style.width=(G.hunger/hm*100)+'%';
  $('hungerChip').classList.toggle('warn',G.hunger<3&&G.ready<=0);
  const sc=$('slowChip');if(G.slow>0){sc.classList.remove('hidden');sc.textContent='🍄 감속 '+G.slow.toFixed(1)+'s'}else sc.classList.add('hidden')}
@@ -411,20 +418,21 @@ function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,1
 function b64e(s){const b=new TextEncoder().encode(s);let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 const fmtK=tn=>{const m=Math.floor(tn/600),s=(tn%600)/10;return(m?m+'분 ':'')+s.toFixed(1)+'초'};
 function playerName(){return($('iName').value.trim().replace(/[~\n\r]/g,'')||'이름 없는 뱀').slice(0,12)}
-function showBest(){const b=LS.get('snake_ascend_best_v1',null);$('bestLine').textContent=b?`🏆 내 최고 기록: ${fmtK(b.t)} · ${b.s+1}단계 ${STAGES[b.s].n} · 길이 ${b.l}`:'🏆 아직 기록이 없어요'}
+function showBest(){const b=LS.get('snake_ascend_best_v1',null);$('bestLine').textContent=b?`🏆 내 최고 기록: ${fmtK(b.t)} · ${b.s+1}단계 ${STAGES[b.s].n} · 점수 ${b.p||0}`:'🏆 아직 기록이 없어요'}
 showBest();
 $('iName').value=LS.get('snake_ascend_name','');
 function showResult(){state='result';
  const name=playerName();LS.set('snake_ascend_name',name==='이름 없는 뱀'?'':name);
  const tn=Math.floor(G.time*10),stg=Math.min(9,Math.floor(tn/(STAGE_SEC*10))),len=G.snake.length;
  const dt=new Date(),ds=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0'),nonce=Math.random().toString(36).slice(2,8);
- const best=LS.get('snake_ascend_best_v1',null);let nb=false;if(!best||tn>best.t){LS.set('snake_ascend_best_v1',{t:tn,s:stg,l:len});nb=true}
- const payload=['1',name,tn,stg,len,G.maxLen,G.fruits,G.gold,G.herbs,G.shUsed,G.cut,G.cause,G.ticks,ds,nonce].join('~');
+ const best=LS.get('snake_ascend_best_v1',null);let nb=false;if(!best||tn>best.t||(tn===best.t&&G.score>(best.p||0))){LS.set('snake_ascend_best_v1',{t:tn,s:stg,l:len,p:G.score});nb=true}
+ const payload=['3',name,tn,stg,G.score,len,G.maxLen,G.grown,G.fruits,G.gold,G.herbs,G.shUsed,G.cut,G.cause,G.ticks,ds,nonce].join('~');
  const code='SA1.'+b64e(payload)+'.'+sign(payload);
  const cause=G.cause?'굶주림':'몸통 충돌';
  const txt=`🐍 용이 되고픈 뱀 기록 인증
 👤 플레이어: ${name}
 ⏱️ 생존 시간: ${fmtK(tn)}
+⭐ 점수: ${G.score}
 🐉 도달 단계: ${stg+1}단계 · ${STAGES[stg].n}
 📏 최종 길이: ${len}칸 (최대 ${G.maxLen}칸)
 🍎 열매 ${G.fruits} · ✨ 황금비늘 ${G.gold} · 🍄 느림버섯 ${G.herbs}
@@ -435,7 +443,7 @@ function showResult(){state='result';
 검증기: ${VERIFY_URL}`;
  $('rec').textContent=txt;$('rTitle').textContent=nb?'🏆 최고 기록 갱신!':'탈락!';
  $('rSub').textContent=name+' · '+(stg+1)+'단계 '+STAGES[stg].n;$('rTime').textContent=fmtK(tn);
- const rows=[['도달 단계',(stg+1)+'단계 · '+STAGES[stg].n],['최종 길이',len+'칸 (최대 '+G.maxLen+')'],['열매',G.fruits],['황금비늘',G.gold],['느림버섯',G.herbs],['보호막 사용',G.shUsed+'회 · 잘린 꼬리 '+G.cut+'칸'],['탈락 사유',cause]];
+ const rows=[['점수',G.score],['도달 단계',(stg+1)+'단계 · '+STAGES[stg].n],['최종 길이',len+'칸 (최대 '+G.maxLen+')'],['열매',G.fruits],['황금비늘',G.gold],['느림버섯',G.herbs],['보호막 사용',G.shUsed+'회 · 잘린 꼬리 '+G.cut+'칸'],['탈락 사유',cause]];
  $('rDl').innerHTML=rows.map(([a,b])=>`<dt>${a}</dt><dd>${String(b).replace(/[<>&]/g,'')}</dd>`).join('');
  $('copyMsg').textContent='';$('hud').classList.add('hidden');$('sRes').classList.remove('hidden');showBest()}
 $('btnCopy').addEventListener('click',()=>{const t=$('rec').textContent;
