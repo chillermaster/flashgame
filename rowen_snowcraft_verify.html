@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>로웬 빙설전 점수검증기</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--snow:#f7fbff;--ink:#22304f;--frost:#2e7fa6;--frostD:#1d5e7e;--j:'Jua','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#cfe6f7;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;color:var(--ink);display:flex;justify-content:center;padding:16px;touch-action:manipulation}
+.card{background:var(--snow);border-radius:22px;padding:20px;width:100%;max-width:520px;box-shadow:0 8px 0 #9cc7de;height:fit-content}
+h1{margin:0 0 4px;font:26px var(--j);color:var(--frost);text-align:center;font-weight:400}
+.sub{text-align:center;font-size:13px;color:#5d6d8a;margin-bottom:14px}
+textarea{width:100%;height:230px;border:2px solid #cfe8f4;border-radius:12px;padding:10px;font-size:13.5px;font-family:inherit;resize:vertical;color:var(--ink)}
+button{width:100%;margin-top:10px;padding:13px;font:19px var(--j);border:none;border-radius:14px;background:var(--frost);color:#fff;box-shadow:0 4px 0 var(--frostD);cursor:pointer}
+button.clr{background:#e3eef6;box-shadow:0 4px 0 #b8c8d8;color:var(--ink);font-size:15px;padding:9px}
+#out{margin-top:16px}
+.verdict{padding:14px;border-radius:14px;text-align:center;font:21px var(--j);margin-bottom:10px}
+.ok{background:#d4f5dd;color:#1f7a3a}.bad{background:#ffd9df;color:#a8243f}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 8px;border-bottom:1px solid #e3eef6;vertical-align:top}
+td:first-child{color:#5d6d8a;width:34%}
+.chk{font-size:13px;line-height:1.85;background:#eef6fb;border-radius:12px;padding:10px 12px;margin-top:10px}
+.big{font:30px var(--j);color:var(--frost)}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>❄ 로웬 빙설전 점수검증기</h1>
+  <div class="sub">게임 종료 후 복사한 기록을 그대로 붙여넣으세요</div>
+  <textarea id="inp" placeholder="[로웬 빙설전 : 스노우 크래프트]&#10;이름: ...&#10;결과: ...&#10;..."></textarea>
+  <button id="go">검증하기</button>
+  <button class="clr" id="clr">지우기</button>
+  <div id="out"></div>
+</div>
+<script>
+function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
+function makeCode(p){const s='RSC|SNOWCRAFT|chillermaster|'+p;const a=cyrb53(s,131).toString(36).padStart(11,'0'),b=cyrb53(s,17).toString(36).padStart(11,'0');const c=(a.slice(-6)+b.slice(-6)).toUpperCase();return c.slice(0,4)+'-'+c.slice(4,8)+'-'+c.slice(8,12);}
+const DIFFS={'쉬움':{id:'easy',t:0,mult:100,cnt:[3,4,4,5,3],elite:[0,0,0,0,0],sum:2},'보통':{id:'normal',t:1,mult:150,cnt:[4,5,5,6,4],elite:[0,0,0,1,1],sum:2},'어려움':{id:'hard',t:2,mult:220,cnt:[5,6,6,7,4],elite:[0,1,1,1,1],sum:2},'악몽':{id:'night',t:3,mult:300,cnt:[6,6,7,8,4],elite:[1,1,1,2,2],sum:3},'전설':{id:'legend',t:4,mult:400,cnt:[7,7,8,9,5],elite:[1,2,2,2,2],sum:3}};
+const DEB={'동상':['E1',0,10],'젖은 눈':['E2',0,10],'얇은 외투':['E3',0,15],'고독한 전투':['E4',0,15],'흐린 눈':['E5',0,10],'소수 정예':['N1',1,20],'보급 단절':['N2',1,20],'성난 군단':['N3',1,15],'증원군':['N4',1,20],'전사자':['H1',2,25],'강철 서리':['H2',2,20],'촉박한 진군':['H3',2,20],'정예 지휘관':['M1',3,30],'영원한 눈보라':['M2',3,25],'얼어붙은 심장':['L1',4,40]};
+const DEB_ORDER=Object.values(DEB).map(d=>d[0]);
+const CLS={'기사':'knight','도적':'rogue','궁수':'archer','법사':'mage','주술사':'shaman','사제':'priest'};
+const CK=['knight','rogue','archer','mage','shaman','priest'];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function verify(){
+ const v=document.getElementById('inp').value,out=document.getElementById('out');
+ const g=re=>v.match(re);
+ const m={name:g(/이름:\s*(.+)/),res:g(/결과:\s*(.+)/),diff:g(/난이도:\s*(\S+)\s*\(x([\d.]+)\)/),deb:g(/디버프:\s*(.+?)\s*\(\+(\d+)%\)/),party:g(/파티:\s*(.+)/),
+  time:g(/플레이시간:\s*(\d+):(\d{2})\.(\d{2})/),kill:g(/처치:\s*(\d+)\s*\(정예\s*(\d+)\s*\/\s*보스\s*(\d+)\)/),hit:g(/명중:\s*(\d+)\s*\/\s*투척\s*(\d+)\s*\(MAX 명중\s*(\d+)\)/),
+  dmg:g(/받은 피해:\s*(\d+)\s*\/\s*기절:\s*(\d+)/),pts:g(/점수 내역:\s*명중\s*(\d+)\s*\+\s*처치\s*(\d+)\s*\+\s*클리어\s*(\d+)\s*\+\s*시간\s*(\d+)\s*\+\s*생존\s*(\d+)\s*=\s*(\d+)/),
+  fin:g(/최종 점수:\s*([\d,]+)/),date:g(/일시:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/),code:g(/검증코드:\s*([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i)};
+ if(Object.values(m).some(x=>!x)){out.innerHTML='<div class="verdict bad">⚠ 기록 형식을 읽을 수 없습니다</div><div class="chk">게임에서 복사한 기록 전체를 수정 없이 붙여넣어 주세요.</div>';return;}
+ const D=DIFFS[m.diff[1]];
+ const victory=/완전 승리/.test(m.res[1]),clM=m.res[1].match(/\((\d)\/5 클리어\)/),cleared=clM?+clM[1]:-1;
+ const debNames=m.deb[1].trim()==='없음'?[]:m.deb[1].split(/\s*,\s*/),debs=debNames.map(n=>DEB[n]);
+ const partyNames=m.party[1].trim().split(/\s*,\s*/),party=partyNames.map(n=>CLS[n]);
+ const name=m.name[1].trim(),cs=(+m.time[1])*6000+(+m.time[2])*100+(+m.time[3]);
+ const kills=+m.kill[1],elites=+m.kill[2],boss=+m.kill[3],hits=+m.hit[1],throws=+m.hit[2],maxH=+m.hit[3],dmg=+m.dmg[1],downs=+m.dmg[2];
+ const [hitPts,killPts,clearPts,timePts,survPts,base]=m.pts.slice(1,7).map(Number);
+ const fin=+m.fin[1].replace(/,/g,''),ds=m.date[1],code=m.code[1].toUpperCase();
+ const C=[];const add=(ok,txt)=>C.push([!!ok,txt]);
+ const fmtOK=!!D&&debs.every(Boolean)&&party.every(Boolean)&&cleared>=0&&cleared<=5;
+ if(!fmtOK){out.innerHTML='<div class="verdict bad">⚠ 난이도·디버프·파티·결과 항목을 읽을 수 없습니다</div>';return;}
+ const debIds=debs.map(d=>d[0]),dp=debs.reduce((s,d)=>s+d[2],0);
+ const exp=makeCode([name,D.id,debIds.join(','),party.join(','),cleared,victory?1:0,cs,kills,elites,boss,hits,throws,maxH,dmg,downs,hitPts,killPts,clearPts,timePts,survPts,base,fin,ds].join('|'));
+ add(exp===code,'검증코드 일치');
+ const has=id=>debIds.includes(id),psize=has('N1')?3:4;
+ add(debs.every(d=>d[1]===D.t)&&new Set(debIds).size===debIds.length&&debIds.every((id,i)=>i===0||DEB_ORDER.indexOf(id)>DEB_ORDER.indexOf(debIds[i-1])),'디버프가 선택한 난이도의 옵션과 일치');
+ add(+m.deb[2]===dp,`디버프 보너스 합계 일치 (+${dp}%)`);
+ add(party.length===psize&&new Set(party).size===party.length&&party.every((k,i)=>i===0||CK.indexOf(k)>CK.indexOf(party[i-1])),`파티 인원 정상 (${psize}명)`);
+ add(+m.diff[2]===D.mult/100,'난이도 배율 일치');
+ add(hitPts===hits*10+maxH*25,`명중 점수 = 명중 ${hits}×10 + MAX 명중 ${maxH}×25`);
+ add(killPts===kills*100+elites*200+boss*1000,`처치 점수 = 처치 ${kills}×100 + 정예 ${elites}×200 + 보스 ${boss}×1000`);
+ add(clearPts===cleared*500,`클리어 점수 = 클리어 ${cleared}×500`);
+ add(victory?(survPts%300===0&&survPts<=psize*300):survPts===0,'생존 점수 정상 (완전 승리 시 생존 아군×300)');
+ add(timePts%5===0&&timePts<=cleared*600&&cs/100+1>=120*cleared-timePts/5,'시간 보너스와 플레이시간이 서로 맞음');
+ add(base===hitPts+killPts+clearPts+timePts+survPts,'기본 점수 합계 일치');
+ add(fin===Math.floor(base*D.mult*(100+dp)/10000),`최종 점수 = 기본 ${base} × ${D.mult/100} × ${(100+dp)/100}`);
+ const reached=victory?5:Math.min(5,cleared+1);let maxK=0,maxE=0;
+ for(let i=0;i<reached;i++){const n=D.cnt[i]+(has('N4')?2:0);maxK+=n;maxE+=Math.min(n,D.elite[i]+(has('M1')?2:0));}
+ if(reached===5)maxK+=1+2+D.sum*2;
+ add(hits<=throws&&maxH<=hits,'명중 수 ≤ 투척 수, MAX 명중 ≤ 명중');
+ add(kills<=maxK&&elites<=Math.min(maxE,kills)&&boss<=(reached===5?1:0),`처치 수가 도달 스테이지 기준 최대치 이내 (최대 ${maxK})`);
+ add(!victory||(cleared===5&&boss===1),'완전 승리 기록이 보스 격파와 일치');
+ add(+m.time[2]<60,'시간 형식 정상');
+ const ok=C.every(c=>c[0]);
+ out.innerHTML=`<div class="verdict ${ok?'ok':'bad'}">${ok?'✅ 정상 기록입니다':'❌ 위조·변조가 의심됩니다'}</div>
+ <table>
+  <tr><td>이름</td><td><b>${esc(name)}</b></td></tr>
+  <tr><td>최종 점수</td><td><span class="big">${fin.toLocaleString()}</span></td></tr>
+  <tr><td>결과</td><td>${esc(m.res[1])}</td></tr>
+  <tr><td>난이도</td><td>${esc(m.diff[1])} (x${D.mult/100})</td></tr>
+  <tr><td>디버프</td><td>${debNames.length?esc(debNames.join(', ')):'없음'} (+${dp}%)</td></tr>
+  <tr><td>파티</td><td>${esc(partyNames.join(', '))}</td></tr>
+  <tr><td>플레이시간</td><td>${esc(m.time[1]+':'+m.time[2]+'.'+m.time[3])}</td></tr>
+  <tr><td>처치</td><td>${kills} (정예 ${elites} / 보스 ${boss})</td></tr>
+  <tr><td>명중 / 투척</td><td>${hits} / ${throws} (${throws?Math.round(hits/throws*100):0}%), MAX 명중 ${maxH}</td></tr>
+  <tr><td>받은 피해 / 기절</td><td>${dmg} / ${downs}</td></tr>
+  <tr><td>일시</td><td>${esc(ds)}</td></tr>
+ </table>
+ <div class="chk">${C.map(c=>(c[0]?'✅ ':'❌ ')+c[1]).join('<br>')}</div>`;
+}
+document.getElementById('go').onclick=verify;
+document.getElementById('clr').onclick=()=>{document.getElementById('inp').value='';document.getElementById('out').innerHTML='';};
+</script>
+</body>
+</html>
