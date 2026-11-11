@@ -697,8 +697,8 @@ function flat(o,from,to,speed,angOff,len){let dx=to.x-from.x,dz=to.z-from.z;cons
  if(angOff){const c=Math.cos(angOff),s=Math.sin(angOff);const nx=dx*c-dz*s,nzz=dx*s+dz*c;dx=nx;dz=nzz;}
  const L=len||26;const p=Object.assign(o,{sx:from.x,sy:from.y,sz:from.z,ex:from.x+dx*L,ey:.55,ez:from.z+dz*L,flat:true,T:L/speed,arc:.25,t:0,ox:0,vx:0,seed:rand(0,6),trail:0});
  p.mesh=projMesh(p.type,p.c,p.isMax);p.mesh.position.copy(from);scene.add(p.mesh);projs.push(p);if(p.team==='A')notifyDodge(p);return p;}
-const rangeOf=c=>4.5+18*Math.min(1,Math.max(0,c));
-const needC=d=>clamp((d-4.5)/18,0,1);
+const rangeOf=c=>8+16*Math.sqrt(Math.min(1,Math.max(0,c)));
+const needC=d=>{const k=clamp((d-8)/16,0,1);return k*k;};
 function allyThrow(u,c,aim,auto){
  const D=CLASSES[u.key];c=Math.min(1,c);const isMax=c>=1;
  if(isMax&&!auto&&u.maxShots>0)u.maxShots--;
