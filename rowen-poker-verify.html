@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>운명패 방위전 점수검증기</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(120% 90% at 50% 30%,#2b5550,#152a27);font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;color:#2a2531;display:flex;justify-content:center;padding:16px;touch-action:manipulation}
+.card{background:linear-gradient(180deg,#f3e6c6,#e3cfa2);border:2px solid #8a6a28;border-radius:16px;padding:18px;width:100%;max-width:520px;box-shadow:0 6px 0 #0007;height:fit-content}
+h1{margin:0 0 4px;font-size:22px;color:#7a2329;text-align:center;font-family:'Nanum Myeongjo','AppleMyungjo',serif}
+.sub{text-align:center;font-size:13px;color:#7a6440;margin-bottom:14px}
+textarea{width:100%;height:230px;border:2px solid #c8b080;border-radius:12px;padding:10px;font-size:14px;font-family:inherit;resize:vertical;background:#fffaf0}
+button{width:100%;margin-top:10px;padding:13px;font-size:17px;font-weight:800;border:2px solid #c9a44c;border-radius:12px;background:radial-gradient(circle at 40% 30%,#c8484f,#7a2329);color:#fff3dc;cursor:pointer}
+button.clr{background:#d8c69a;border-color:#8a6a28;color:#2a2531;font-size:14px;padding:9px}
+#out{margin-top:16px}
+.verdict{padding:14px;border-radius:12px;text-align:center;font-weight:900;font-size:19px;margin-bottom:10px}
+.ok{background:#d4f0d8;color:#1f6a34}.bad{background:#f6d2cc;color:#9a2430}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 8px;border-bottom:1px solid #8a6a2833}
+td:first-child{color:#6a5a40;width:36%}
+.chk{font-size:13px;line-height:1.8;background:#fff8e6;border-radius:10px;padding:10px 12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🃏 운명패 방위전 점수검증기</h1>
+  <div class="sub">게임 종료 후 복사한 기록을 그대로 붙여넣으세요</div>
+  <textarea id="inp" placeholder="[운명패 방위전 : 로웬 포커 디펜스]&#10;이름: ...&#10;결과: ...&#10;..."></textarea>
+  <button id="go">검증하기</button>
+  <button class="clr" id="clr">지우기</button>
+  <div id="out"></div>
+</div>
+<script>
+function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
+function makeCode(p){const s='RPKR|FATE|chillermaster|'+p;const a=cyrb53(s,52).toString(36).padStart(11,'0'),b=cyrb53(s,5).toString(36).padStart(11,'0');const c=(a.slice(-6)+b.slice(-6)).toUpperCase();return c.slice(0,4)+'-'+c.slice(4,8)+'-'+c.slice(8,12);}
+const HAND_N=['하이카드','원페어','투페어','트리플','스트레이트','플러시','풀하우스','포카드','스트레이트 플러시','로열 스트레이트 플러시'];
+const HAND_G=[1,2,3,4,5,5,6,7,8,8];
+const GRADE_N=['','일반','고급','희귀','레어','유니크','신화','전설','유일'];
+const DEB={'질긴 마물':0.25,'성급한 진군':0.2,'얇은 성벽':0.15,'굳은 손':0.3,'빈 금고':0.15,'분노한 군주':0.2,'흐린 별빛':0.15};
+const DEB_ORDER=Object.keys(DEB);
+const BOSS_PTS=[300,800,2000,4500,10000];
+function calcScore(o){let base=o.cleared*1000+o.life*50+o.grade*500;for(let i=0;i<5;i++)base+=o.bk[i]*BOSS_PTS[i];if(o.win)base+=Math.max(0,3600-o.sec)*5;return Math.floor(base*o.mult);}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function verify(){
+  const v=document.getElementById('inp').value,out=document.getElementById('out');const g=re=>v.match(re);
+  const mName=g(/이름:\s*(.+)/),mRes=g(/결과:\s*(원정 완수|성문 함락|보스 돌파)/),mSt=g(/정리한 스테이지:\s*(\d+)\/50/),mLife=g(/라이프:\s*(\d+)\/(\d+)/),
+        mTime=g(/경과시간:\s*(\d+):(\d{2})/),mTier=g(/최고 티어:\s*(없음|(\S+)\((.+?)\))/),mBoss=g(/보스 처치:\s*(\d+)\/(\d+)\/(\d+)\/(\d+)\/(\d+)/),
+        mDeb=g(/디버프:\s*(.+?)\s*\(x([\d.]+)\)/),mScore=g(/점수:\s*([\d,]+)/),mDate=g(/일시:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/),mCode=g(/검증코드:\s*([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})/i);
+  if(!(mName&&mRes&&mSt&&mLife&&mTime&&mTier&&mBoss&&mDeb&&mScore&&mDate&&mCode)){out.innerHTML='<div class="verdict bad">⚠ 기록 형식을 읽을 수 없습니다</div><div class="chk">게임에서 복사한 기록 전체를 수정 없이 붙여넣어 주세요.</div>';return;}
+  const name=mName[1].trim(),res=mRes[1],cleared=+mSt[1],life=+mLife[1],maxLife=+mLife[2],sec=(+mTime[1])*60+(+mTime[2]),
+        bk=[1,2,3,4,5].map(i=>+mBoss[i]),sc=+mScore[1].replace(/,/g,''),ds=mDate[1],code=mCode[1].toUpperCase();
+  let grade=0,rank=-1,tierOk=true;
+  if(mTier[1]!=='없음'){grade=GRADE_N.indexOf(mTier[2]);rank=HAND_N.indexOf(mTier[3]);tierOk=grade>0&&rank>=0&&HAND_G[rank]===grade;}
+  const debRaw=mDeb[1].trim(),dn=debRaw==='없음'?[]:debRaw.split(/\s*,\s*/);
+  const debKnown=dn.every(d=>d in DEB)&&new Set(dn).size===dn.length&&dn.join()===DEB_ORDER.filter(d=>dn.includes(d)).join();
+  const mult=Math.round((1+dn.reduce((a,d)=>a+(DEB[d]||0),0))*100)/100,multStr=mult.toFixed(2);
+  const win=res==='원정 완수';
+  const expCode=makeCode([name,res,cleared,life,maxLife,sec,grade,rank,bk.join('/'),dn.join(','),multStr,sc,ds].join('|'));
+  const expScore=calcScore({cleared,life,sec,grade,bk,mult,win});
+  const expMax=dn.includes('얇은 성벽')?50:100;
+  const c1=expCode===code,c2=expScore===sc,c3=debKnown&&mDeb[2]===multStr,c4=maxLife===expMax&&life<=maxLife,
+        c5=(win?cleared===50&&life>0:res==='성문 함락'?life===0:life>0)&&cleared<=50,c6=sec>=cleared*5&&+mTime[2]<60,c7=tierOk;
+  const ok=c1&&c2&&c3&&c4&&c5&&c6&&c7;const fmt=n=>n.toLocaleString('ko-KR');
+  out.innerHTML=`<div class="verdict ${ok?'ok':'bad'}">${ok?'✅ 정상 기록입니다':'❌ 위조·변조가 의심됩니다'}</div>
+  <table>
+    <tr><td>이름</td><td><b>${esc(name)}</b></td></tr>
+    <tr><td>결과</td><td><b>${esc(res)}</b></td></tr>
+    <tr><td>점수</td><td><b>${fmt(sc)}</b></td></tr>
+    <tr><td>정리한 스테이지</td><td>${cleared}/50</td></tr>
+    <tr><td>라이프</td><td>${life}/${maxLife}</td></tr>
+    <tr><td>경과시간</td><td>${esc(mTime[1]+':'+mTime[2])}</td></tr>
+    <tr><td>최고 티어</td><td>${esc(mTier[1])}</td></tr>
+    <tr><td>보스 처치 (Lv1~5)</td><td>${bk.join(' / ')}</td></tr>
+    <tr><td>디버프</td><td>${esc(debRaw)} (x${esc(mDeb[2])})</td></tr>
+    <tr><td>일시</td><td>${esc(ds)}</td></tr>
+  </table>
+  <div class="chk">
+    ${c1?'✅':'❌'} 검증코드 일치<br>
+    ${c2?'✅':'❌'} 점수 계산 일치 (계산값 ${fmt(expScore)})<br>
+    ${c3?'✅':'❌'} 디버프 배율 일치 (x${multStr})<br>
+    ${c4?'✅':'❌'} 최대 라이프·남은 라이프 정상<br>
+    ${c5?'✅':'❌'} 결과와 스테이지·라이프 일관성<br>
+    ${c6?'✅':'❌'} 경과시간 타당성<br>
+    ${c7?'✅':'❌'} 최고 티어와 족보 일치
+  </div>`;
+}
+document.getElementById('go').onclick=verify;
+document.getElementById('clr').onclick=()=>{document.getElementById('inp').value='';document.getElementById('out').innerHTML='';};
+</script>
+</body>
+</html>
