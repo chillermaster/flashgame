@@ -654,7 +654,7 @@ function tween(dur,fn,ease){return new Promise(res=>{TW.push({t:0,d:Math.max(.00
 const wait=ms=>tween(ms/1000,()=>{},'lin');
 function updTweens(dt){const L=TW.splice(0);const keep=[];for(const w of L){w.t+=dt;const k=Math.min(1,w.t/w.d);w.fn(w.e(k),k);if(k>=1)w.res();else keep.push(w)}TW.push(...keep)}
 /* ---------- effects ---------- */
-const PARTS=[];for(let i=0;i<170;i++){const m=new THREE.Mesh(gBox(),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,depthWrite:false}));m.visible=false;scene.add(m);PARTS.push({m,v:new THREE.Vector3(),life:0,max:1,g:0,s:.08})}
+const PARTS=[];for(let i=0;i<280;i++){const m=new THREE.Mesh(gBox(),new THREE.MeshBasicMaterial({color:'#fff',transparent:true,depthWrite:false}));m.visible=false;scene.add(m);PARTS.push({m,v:new THREE.Vector3(),life:0,max:1,g:0,s:.08})}
 let pIdx=0;function part(pos,col,v,life,g,s){const p=PARTS[pIdx++%PARTS.length];p.m.position.copy(pos);p.v.copy(v);p.life=p.max=life;p.g=g;p.s=s;p.m.material.color.set(col);p.m.visible=true;p.m.scale.setScalar(s);p.m.rotation.set(Math.random()*3,Math.random()*3,0);return p}
 const _v=new THREE.Vector3();
 function burst(pos,col,n,spd,life,g,s,up){for(let i=0;i<n;i++){const a=Math.random()*PI*2,e=Math.random()*(up||1.2);_v.set(Math.cos(a)*Math.cos(e),Math.sin(e)+.2,Math.sin(a)*Math.cos(e)).multiplyScalar(spd*(.4+Math.random()*.8));part(pos,col,_v,life*(.6+Math.random()*.6),g,s*(.6+Math.random()*.8))}}
@@ -693,6 +693,41 @@ function beam(a,b,col,dur){const d=a.distanceTo(b),g=new THREE.CylinderGeometry(
 function pillar(pos,col,dur){const g=new THREE.CylinderGeometry(.42,.42,9,10,1,true);g.translate(0,4.5,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
  const c=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:0,depthWrite:false}));c.scale.set(.4,1,.4);m.add(c);m.position.set(pos.x,0,pos.z);scene.add(m);
  return tween(dur,(e,k)=>{const w=k<.3?k/.3:1-(k-.3)/.7;m.material.opacity=.75*w;c.material.opacity=.9*w;m.scale.set(.4+w*.8,1,.4+w*.8);if(Math.random()<.7)part(_v.set(pos.x+(Math.random()-.5)*.8,Math.random()*2,pos.z+(Math.random()-.5)*.8),col,new THREE.Vector3(0,1.5,0),.5,0,.07)},'lin').then(()=>{scene.remove(m);g.dispose();m.material.dispose();c.material.dispose()})}
+/* ---------- phantom squad (환영 분대) ---------- */
+const FORM=[[-.85,-.8],[.85,-.8],[-.42,-1.5],[.42,-1.5],[-1.45,-1.35],[1.45,-1.35],[0,-2.15],[-1,-2.2]];
+const MZH=[0,.5,.72,.95,.45,1.0,.9];
+function gaitC(c,ph,amp){const P=c.piv,s=Math.sin(ph);if(P.legL){P.legL.rotation.x=s*amp;P.legR.rotation.x=-s*amp}if(P.lf){const a=Math.sin(ph*.5)*amp,b=Math.cos(ph*.5)*amp;P.lf.rotation.x=a;P.rb.rotation.x=a;P.rf.rotation.x=b;P.lb.rotation.x=b}c.inner.position.y=Math.abs(s)*.05*amp}
+function poseC(c,pose,k){const P=c.piv;
+ if(pose==='rear'){c.inner.rotation.x=-.35*k;if(P.armR)P.armR.rotation.x=2.3*k}else if(pose==='bow'){if(P.armL)P.armL.rotation.x=-1.5*k;if(P.armR)P.armR.rotation.x=-1.3*k}
+ else if(pose==='throw'){if(P.armR)P.armR.rotation.x=2.5*k}else if(pose==='cannon'||pose==='ballista'||pose==='arcane'){if(P.gun)P.gun.position.z=-.09*k}
+ else if(pose==='treb'||pose==='mangonel'){if(P.arm){const r0=P.arm.userData.rest||0;P.arm.rotation.x=lerp(r0,pose==='treb'?1.7:.25,k)}}else if(P.armR)P.armR.rotation.x=-2.7*k}
+function mini(pos,A,i,tgt){burst(pos,A.c,9,1.9,.45,4,.07);burst(pos,'#ffffff',4,2.4,.25,3,.05);if(i%2===0)shock(pos,A.c,.65,.3);flashL(pos,A.c,1.6);shake(.045);if(i%3===0)sfx(A.k==='arc'||A.pose==='cannon'?'boom':'hit');
+ if(tgt&&!tgt.dead){tgt.mat.emissive.setRGB(.7,.6,.5);tween(.12,e=>tgt.mat.emissive.setScalar(.7*(1-e)))}}
+function squad(att,tgt,A,ux,uz){const n=7+(Math.random()<.5?1:0),px=-uz,pz=ux,ap=att.home.clone(),tp=tgt.root.position.clone(),yaw=Math.atan2(ux,uz),U=new THREE.Vector3(ux,0,uz);
+ const mode=A.k==='melee'?'melee':att.t===2?'charge':'ranged';
+ const mat=att.mat.clone(),gmat=att.gmat.clone();for(const m of[mat,gmat]){m.transparent=true;m.opacity=0;m.depthWrite=false}mat.emissive.set(att.side>0?'#7aa8ff':A.c).multiplyScalar(.45);
+ const idx={};for(const k in att.piv)idx[k]=att.inner.children.indexOf(att.piv[k]);const C=[];
+ for(const m of att.meshes)delete m.userData.pc;
+ for(let i=0;i<n;i++){const r=att.root.clone();r.traverse(o=>{if(o.isMesh){o.material=o.material===att.gmat?gmat:mat;o.castShadow=false}});if(r.children[1])r.children[1].visible=false;
+  const inner=r.children[0];inner.rotation.set(0,0,0);inner.position.set(0,0,0);inner.scale.setScalar(SCALE[att.t]);const piv={};for(const k in idx){const g=inner.children[idx[k]];if(g){g.rotation.set(g.userData.rest||0,0,0);piv[k]=g}}
+  const [sx,bk]=FORM[i],spot=new THREE.Vector3(ap.x+px*sx+ux*bk,0,ap.z+pz*sx+uz*bk),start=spot.clone().addScaledVector(U,-1.3);r.position.copy(start);r.rotation.y=yaw;scene.add(r);C.push({r,inner,piv,spot,start,ph:Math.random()*6})}
+ for(const m of att.meshes)m.userData.pc=att;
+ const ready=tween(.42,(e,k)=>{for(const c of C){c.r.position.lerpVectors(c.start,c.spot,e);gaitC(c,k*16+c.ph,.7*(1-k))}mat.opacity=gmat.opacity=.6*e},'out');
+ function volley(){
+  if(mode==='charge')return Promise.all(C.map((c,i)=>wait(i*60).then(()=>{const lat=(i%2?1:-1)*(.18+.12*(i>>1)),end=new THREE.Vector3(tp.x+ux*1.9+px*lat,0,tp.z+uz*1.9+pz*lat),from=c.r.position.clone();let hit=false;if(i%3===0)sfx('gallop');
+    return tween(.55,(e,k)=>{c.r.position.lerpVectors(from,end,e);gaitC(c,k*22+c.ph,.85);c.inner.rotation.x=Math.sin(k*PI*5)*.07;if(!hit&&e>.5){hit=true;mini(_w.set(tp.x+px*lat,.4,tp.z+pz*lat).clone(),A,i,tgt)}},'in')})));
+  if(mode==='melee')return Promise.all(C.map((c,i)=>wait(i*35).then(async()=>{const ang=Math.atan2(-ux,-uz)+(i%2?1:-1)*(.35+.3*(i>>1)),dest=new THREE.Vector3(tp.x+Math.sin(ang)*.62,0,tp.z+Math.cos(ang)*.62),from=c.r.position.clone();
+    c.r.rotation.y=Math.atan2(tp.x-dest.x,tp.z-dest.z);const R=c.piv.armR;
+    await tween(.24,(e,k)=>{c.r.position.lerpVectors(from,dest,e);gaitC(c,k*14+c.ph,.7);if(R)R.rotation.x=1.1*e},'in');if(i%2===0)sfx('swing');
+    await tween(.1,e=>{if(R)R.rotation.x=lerp(1.1,-1.6,e)});mini(new THREE.Vector3(tp.x+Math.sin(ang)*.25,.45,tp.z+Math.cos(ang)*.25),A,i,tgt)})));
+  const d=ap.distanceTo(tp);
+  return Promise.all(C.map((c,i)=>wait(i*65+Math.random()*40).then(async()=>{await tween(.16,e=>poseC(c,A.pose,e));c.r.updateMatrixWorld(true);const from=c.r.localToWorld(new THREE.Vector3(0,MZH[att.t],.3));
+    const tg=new THREE.Vector3(tp.x+(Math.random()-.5)*1.15,.3,tp.z+(Math.random()-.5)*1.15);if(i%3===0)sfx(A.pose==='cannon'?'boom':A.k==='shot'||A.k==='arc'?'shoot':'magic');burst(from,A.c,4,1,.25,0,.05);
+    let pr;if(A.k==='shot')pr=fly(A.pj,A.c,from,tg,Math.max(.14,from.distanceTo(tg)/9),0,false);else if(A.k==='arc')pr=fly(A.pj,A.c,from,tg,.32+d*.08+Math.random()*.1,.7+d*.25+Math.random()*.5,A.pj==='axe'||A.pj==='boulder'||A.pj==='stone');
+    else if(A.k==='beam')pr=beam(from,tg,A.c,.3);else if(A.k==='pillar')pr=pillar(tg,A.c,.42);else pr=fly('fire',A.c,new THREE.Vector3(tg.x-ux*1.5+(Math.random()-.5)*2,7.5,tg.z-uz*1.5+(Math.random()-.5)*2),tg,.42,0,false);
+    tween(.22,e=>poseC(c,A.pose,1-e));await pr;mini(tg,A,i,tgt)})))}
+ function leave(){const P0=C.map(c=>c.r.position.clone()),dir=mode==='charge'?1:-1;return tween(.6,e=>{C.forEach((c,i)=>{c.r.position.set(P0[i].x+ux*1.1*e*dir,0,P0[i].z+uz*1.1*e*dir);c.inner.position.y=Math.sin(e*PI)*.06;if(c.piv.armR&&mode==='melee')c.piv.armR.rotation.x*=.85});mat.opacity=gmat.opacity=.6*(1-e)},'sio').then(()=>{for(const c of C)scene.remove(c.r);mat.dispose();gmat.dispose()})}
+ return{ready,volley,leave,mode}}
 /* ---------- attack / death ---------- */
 const _w=new THREE.Vector3();
 function wpos(obj,x,y,z){obj.updateMatrixWorld(true);return obj.localToWorld(new THREE.Vector3(x,y,z))}
@@ -705,15 +740,15 @@ function impact(tgt,A,ux,uz){tgt.dead=true;const p=tgt.root.position.clone();p.y
  const ly=tgt.yaw,lx=ux*Math.cos(ly)-uz*Math.sin(ly),lz=ux*Math.sin(ly)+uz*Math.cos(ly);
  return tween(.16,e=>{const q=Math.sin(e*PI);tgt.anim.set(ux*.22*e,q*.06,uz*.22*e);tgt.inner.rotation.x=lz*.35*q;tgt.inner.rotation.z=-lx*.35*q;tgt.inner.scale.set(SCALE[tgt.t]*(1+q*.18),SCALE[tgt.t]*(1-q*.22),SCALE[tgt.t]*(1+q*.18));tgt.mat.emissive.setScalar(1-e*.5)},'out')}
 async function attack(att,tgt){const A=(att.side>0?ATK[0]:ATK[G.fi+1])[att.t];const ap=att.root.position,tp=tgt.root.position;
- const dx=tp.x-ap.x,dz=tp.z-ap.z,dist=Math.hypot(dx,dz)||1,ux=dx/dist,uz=dz/dist;att.yawT=Math.atan2(dx,dz);att.pose=true;await wait(230);
- const P=att.piv,R=P.armR,L=P.armL,hit=new THREE.Vector3(tp.x,.45,tp.z);
+ const dx=tp.x-ap.x,dz=tp.z-ap.z,dist=Math.hypot(dx,dz)||1,ux=dx/dist,uz=dz/dist;att.yawT=Math.atan2(dx,dz);att.pose=true;const SQ=squad(att,tgt,A,ux,uz);await Promise.all([wait(230),SQ.ready]);
+ const P=att.piv,R=P.armR,L=P.armL,hit=new THREE.Vector3(tp.x,.45,tp.z),V=SQ.volley();
  if(A.k==='melee'){const lung=Math.max(0,dist-.62);sfx('swing');
-  await tween(.2,e=>{if(R)R.rotation.x=lerp(0,1.1,e);att.inner.rotation.x=lerp(0,-.1,e)});
+  await tween(.2,e=>{if(R)R.rotation.x=lerp(0,1.1,e);att.inner.rotation.x=lerp(0,-.1,e)});await V;
   await tween(.11,e=>{att.anim.set(ux*lung*e,0,uz*lung*e);if(R)R.rotation.x=lerp(1.1,-1.6,e);att.inner.rotation.x=lerp(-.1,.18,e)},'in');shake(.04,ux,uz);
   if(A.slash){const sw=projMesh('wind',A.c);sw.position.set(tp.x-ux*.25,.5,tp.z-uz*.25);sw.lookAt(tp.x+ux,.5,tp.z+uz);scene.add(sw);tween(.25,e=>{sw.scale.setScalar(1+e*.8);sw.children[0].material.opacity=1-e},'out').then(()=>scene.remove(sw))}
-  await impact(tgt,A,ux,uz);await wait(90);
+  await impact(tgt,A,ux,uz);SQ.leave();await wait(90);
   await tween(.24,e=>{att.anim.set(ux*lung*(1-e),0,uz*lung*(1-e));if(R)R.rotation.x=lerp(-1.6,0,e);att.inner.rotation.x=lerp(.18,0,e)})}
- else{const pose=A.pose||'cast';let from;
+ else{const pose=A.pose||'cast';let from;await V;
   if(pose==='rear'){await tween(.24,e=>{att.inner.rotation.x=lerp(0,-.38,e);if(R)R.rotation.x=lerp(0,2.3,e)});sfx('swing');await tween(.12,e=>{att.inner.rotation.x=lerp(-.38,.08,e);if(R)R.rotation.x=lerp(2.3,-1.3,e)},'in');from=wpos(R,0,-.2,.2)}
   else if(pose==='bow'){await tween(.22,e=>{if(L)L.rotation.x=lerp(0,-1.5,e);if(R)R.rotation.x=lerp(0,-1.3,e)});await tween(.2,e=>{if(R)R.rotation.x=lerp(-1.3,-.55,e)});from=wpos(L,0,-.2,.2);sfx('shoot')}
   else if(pose==='throw'){await tween(.22,e=>{if(R)R.rotation.x=lerp(0,2.5,e)});sfx('swing');await tween(.12,e=>{if(R)R.rotation.x=lerp(2.5,-1.1,e)},'in');from=wpos(R,0,-.2,.1)}
@@ -728,7 +763,7 @@ async function attack(att,tgt){const A=(att.side>0?ATK[0]:ATK[G.fi+1])[att.t];co
   else if(A.k==='beam'){await beam(from,hit,A.c,.42)}
   else if(A.k==='pillar'){await pillar(hit,A.c,.55)}
   else if(A.k==='meteor'){const top=new THREE.Vector3(hit.x-ux*1.5,7.5,hit.z-uz*1.5);await fly('fire',A.c,top,hit,.42,0,false)}
-  await impact(tgt,A,ux,uz);
+  await impact(tgt,A,ux,uz);SQ.leave();
   await tween(.22,e=>{att.inner.rotation.x=lerp(att.inner.rotation.x,0,e);if(R)R.rotation.x=lerp(R.rotation.x,0,e);if(L)L.rotation.x=lerp(L.rotation.x,0,e)})}
  att.pose=false;return{ux,uz}}
 async function kill(pc,ux,uz){pc.dead=true;const name=pc.F.units[pc.t];floatText(name+' 격파!',_w.set(pc.root.position.x,1.1,pc.root.position.z),pc.side>0?'#9cc4ff':'#ffd27a');
