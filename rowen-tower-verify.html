@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>수호탑 사성결계 점수 검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2b1d12;--ink2:#5a4128;--gold:#e8b84a;--line:#6b4520}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{touch-action:manipulation}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#5a4a8a 0,#2a2244 55%,#15122a 100%) fixed;color:var(--ink);font-family:'Gowun Batang',serif}
+.w{max-width:620px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 20px) 14px calc(env(safe-area-inset-bottom,0px) + 36px)}
+.card{background:linear-gradient(#f7ebcf,#e8d3a2);border:3px solid var(--line);border-radius:16px;box-shadow:inset 0 0 0 3px var(--gold),0 12px 34px rgba(0,0,0,.45);padding:20px 18px}
+h1{margin:0;font-size:clamp(24px,6.4vw,32px);color:#4a1f14;text-shadow:2px 2px 0 var(--gold)}
+p{line-height:1.65;font-size:15px;color:var(--ink2)}
+textarea{width:100%;height:13em;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#2b1d12;color:#fbefd2;border:2px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+textarea:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.row{display:flex;gap:10px;margin:14px 0}
+button{font:inherit;font-weight:700;font-size:16px;padding:.6em 1.3em;border-radius:12px;border:2px solid var(--line);background:#fffaf0;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--line);touch-action:manipulation}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+button.pri{background:linear-gradient(#ffe39a,#e8b84a)}
+.vres{margin-top:10px;padding:14px 16px;border-radius:12px;background:#fffaf0;border:3px solid var(--c)}
+.vres.ok{--c:#4f8f3a}.vres.bad{--c:#b8392b}
+.verdict{font-size:20px;font-weight:700;margin-bottom:8px}.ok .verdict{color:#3f7a2c}.bad .verdict{color:#b8392b}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;font-size:15px}dt{color:var(--ink2)}dd{margin:0;font-weight:700}
+ul{margin:10px 0 0;padding-left:1.2em;font-size:14px;line-height:1.6}li.x{color:#b8392b}li.w{color:#a5670f}
+details{margin-top:20px;font-size:14px;color:var(--ink2);line-height:1.7}summary{cursor:pointer;font-weight:700;color:#6b2a1e}
+a{color:#6b2a1e}
+</style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <h1>수호탑 사성결계 점수 검증기</h1>
+  <p>블로그 댓글에 올라온 점수 인증 글을 통째로 붙여넣으세요. 검증코드의 서명을 확인하고, 국별 기록으로 점수를 다시 계산해 대조합니다.</p>
+  <textarea id="vin" placeholder="🏰 수호탑 사성결계 점수 인증&#10;👤 마법사: …&#10;🔐 검증코드: RT1.…"></textarea>
+  <div class="row"><button class="pri" id="vgo">검증하기</button><button id="vclr">지우기</button></div>
+  <div id="vout" aria-live="polite"></div>
+  <details>
+    <summary>무엇을 확인하나요?</summary>
+    검증코드 속 기록(이름, 상대 단계, 점수, 대국 결과, 국별 승패와 던진 결계석 수, 맹약의 별, 사고 시간, 총 시간, 날짜)이 게임이 만든 서명과 일치하는지 봅니다. 한 글자라도 바뀌면 서명이 깨집니다.<br>
+    점수 계산: 국 승리 1,000 + (21 − 던진 결계석)×60, 무승부 300, 맹약의 별 1개당 250, 대국 승리 2,000(2:0이면 +1,000), 대국 승리 시 사고 시간 보너스 (240초 − 사고 시간)×5. 합계에 상대 단계 배율(×1, ×1.5, ×2, ×3, ×4, ×6)을 곱합니다.<br>
+    <a href="https://chillermaster.github.io/flashgame/rowen-tower.html" target="_blank" rel="noopener">수호탑 사성결계 하러 가기</a>
+  </details>
+</div></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n).toLocaleString('en-US');
+const MULT=[1,1.5,2,3,4,6],STARS=[2,2,3,3,3,4];
+const FOES=['유목민 · 바람술사 테무르','부족 · 가시뿌리 무당 우르가','부족연합체 · 예언자 사하르','국가 · 궁정마도사 그라우스','제국 · 대마도사 바르칸','검은 첨탑 · 군주 말레크'];
+const RES_TXT={W:'대국 승리',L:'대국 패배',D:'대국 무승부'};
+function roundPts(r){return r.r==='W'?1000+Math.max(0,21-r.s)*60:r.r==='D'?300:0}
+function calcScore(d,res,rounds,stars,think){let raw=0;for(const r of rounds)raw+=roundPts(r);raw+=stars*250;
+ if(res==='W'){raw+=2000;if(rounds.every(r=>r.r==='W'))raw+=1000;raw+=Math.max(0,240-think)*5}return Math.round(raw*MULT[d])}
+const SALT='rowentower/luca/v1#4c1e-a73d';
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b)}
+function readCode(text){const m=/RT1\.([A-Za-z0-9_-]+)\.([0-9A-Z]{22})/.exec(text);if(!m)return{err:'검증코드를 찾지 못했습니다. RT1. 로 시작하는 코드가 들어 있는지 확인하세요.'};
+ let p;try{p=b64d(m[1])}catch(e){return{err:'코드가 깨져 있어 읽을 수 없습니다.'}}
+ const f=p.split('~');if(f.length!==11||f[0]!=='1')return{err:'형식이 맞지 않는 코드입니다.'};
+ const rounds=f[5].split('.').filter(Boolean).map(x=>{const mm=/^([WLD])(\d{1,2})$/.exec(x);return mm?{r:mm[1],s:+mm[2]}:null});
+ const r={name:f[1],d:+f[2],score:+f[3],res:f[4],rounds,stars:+f[6],think:+f[7],total:+f[8],date:f[9],nonce:f[10]};
+ return{r,valid:sign(p)===m[2],code:m[0]}}
+const fmtT=s=>Math.floor(s/60)+'분 '+String(s%60).padStart(2,'0')+'초';
+const fmtDate=d=>/^\d{8}$/.test(d)?d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8):d;
+function verify(text){
+ const out=$('vout'),res=readCode(text);
+ if(res.err){out.innerHTML=`<div class="vres bad"><div class="verdict">확인할 수 없음</div><div>${esc(res.err)}</div></div>`;return}
+ const r=res.r,bad=[],warn=[],body=text.replace(res.code,''),okD=Number.isInteger(r.d)&&r.d>=0&&r.d<6;
+ if(!res.valid)bad.push('서명이 맞지 않습니다. 코드의 일부가 바뀌었거나 직접 만든 가짜 코드입니다.');
+ if(!okD)bad.push('알 수 없는 상대 단계입니다.');
+ if(!RES_TXT[r.res])bad.push('알 수 없는 대국 결과입니다.');
+ if(r.rounds.some(x=>!x)||!r.rounds.length||r.rounds.length>3)bad.push('국별 기록 형식이 맞지 않습니다.');
+ else{
+  let w=0,l=0,end=null;
+  r.rounds.forEach((x,i)=>{if(end)bad.push('대국이 끝난 뒤에 이어진 국이 있습니다.');if(x.r==='W')w++;else if(x.r==='L')l++;
+   if(w>=2)end='W';else if(l>=2)end='L';else if(i===2)end=w>l?'W':w<l?'L':'D';
+   if(x.s<3||x.s>21)bad.push((i+1)+'국의 결계석 수('+x.s+')가 가능한 범위를 벗어났습니다.');
+   else if(x.r==='W'&&x.s<4)bad.push((i+1)+'국은 결계석 4개 미만으로 이길 수 없습니다.');
+   else if(x.r==='D'&&x.s<13)warn.push((i+1)+'국 무승부치고는 던진 결계석이 적습니다.')});
+  if(!end)bad.push('대국이 끝나지 않은 기록입니다.');else if(end!==r.res)bad.push('국별 승패와 대국 결과가 맞지 않습니다.');
+  if(okD&&r.stars>STARS[r.d]*r.rounds.length)bad.push('맹약의 별 수가 단계 규칙을 넘습니다.');
+  if(r.think>r.total)bad.push('사고 시간이 총 시간보다 깁니다.');
+  const stones=r.rounds.reduce((a,x)=>a+x.s,0);if(r.total<stones*2)warn.push('던진 결계석 수에 비해 총 시간이 지나치게 짧습니다.');
+  if(okD&&RES_TXT[r.res]){const calc=calcScore(r.d,r.res,r.rounds,r.stars,r.think);if(calc!==r.score)bad.push('기록으로 다시 계산한 점수('+fmt(calc)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.')}}
+ const ms=/점수\s*[:：]\s*([\d,]+)/.exec(body);if(ms){const v=+ms[1].replace(/,/g,'');if(v!==r.score)bad.push('본문에 적힌 점수('+fmt(v)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.')}
+ const mn=/마법사\s*[:：]\s*(.+)/.exec(body);if(mn&&mn[1].trim()!==r.name)warn.push('본문의 마법사 이름이 코드 속 이름과 다릅니다.');
+ const ok=res.valid&&!bad.length,rs=r.rounds.filter(Boolean),w=rs.filter(x=>x.r==='W').length,l=rs.filter(x=>x.r==='L').length,dr=rs.length-w-l;
+ const per=rs.map((x,i)=>(i+1)+'국 '+(x.r==='W'?'승':x.r==='L'?'패':'무')+' '+x.s+'수').join(' · ');
+ out.innerHTML=`<div class="vres ${ok?'ok':'bad'}"><div class="verdict">${ok?(warn.length?'✔ 진짜 코드 (주의 사항 있음)':'✔ 진짜 기록입니다'):'✘ 위조 또는 변조 의심'}</div>
+ <dl><dt>마법사</dt><dd>${esc(r.name)}</dd><dt>상대</dt><dd>${okD?(r.d+1)+'단계 '+FOES[r.d]+' (×'+MULT[r.d]+')':'?'}</dd><dt>점수</dt><dd>${fmt(r.score)}</dd>
+ <dt>결과</dt><dd>${esc(RES_TXT[r.res]||'?')} (${w}승 ${l}패${dr?' '+dr+'무':''})</dd><dt>국별</dt><dd>${esc(per)}</dd>
+ <dt>맹약의 별</dt><dd>${r.stars}개</dd><dt>사고 시간</dt><dd>${fmtT(r.think)}</dd><dt>총 시간</dt><dd>${fmtT(r.total)}</dd><dt>날짜</dt><dd>${esc(fmtDate(r.date))}</dd></dl>
+ ${bad.length||warn.length?`<ul>${bad.map(s=>`<li class="x">${esc(s)}</li>`).join('')}${warn.map(s=>`<li class="w">${esc(s)}</li>`).join('')}</ul>`:''}</div>`}
+$('vgo').addEventListener('click',()=>verify($('vin').value));
+$('vclr').addEventListener('click',()=>{$('vin').value='';$('vout').innerHTML=''});
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('textarea,button,a,summary'))return;const n=Date.now();if(n-lt<350)e.preventDefault();lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+</script>
+</body>
+</html>
