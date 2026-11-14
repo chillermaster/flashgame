@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>딥 마린 : 심해 포격전 점수 검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html{touch-action:manipulation}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#0f4a74 0,#03111f 60%) fixed,#03111f;color:#d6efff;font-family:'Gowun Dodum',system-ui,sans-serif}
+.w{max-width:640px;margin:0 auto;padding:20px 14px 40px}
+.card{background:linear-gradient(180deg,#0b2740,#061624);border:1px solid #2b6f99;border-radius:16px;box-shadow:0 0 0 1px #000,0 12px 34px #000a;padding:18px 16px}
+h1{margin:0;font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:clamp(24px,6.4vw,32px);color:#bff4ff;text-shadow:0 0 16px #2fc8ff77,0 2px 0 #02324d}
+.sub{color:#7fd6ff;margin:2px 0 12px;font-size:13px;letter-spacing:2px}
+p{line-height:1.65;font-size:14.5px;color:#cfe8f7}
+textarea{width:100%;height:12em;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#010d18;color:#e9f8ff;border:1px solid #2f7aa6;border-radius:10px;padding:10px;resize:vertical}
+textarea:focus-visible,button:focus-visible{outline:2px solid #7fe3ff;outline-offset:2px}
+.row{display:flex;gap:10px;margin:12px 0}
+button{font:inherit;font-weight:700;font-size:15px;padding:.6em 1.3em;border-radius:11px;border:1px solid #2f7aa6;background:#0e3352;color:#e9f8ff;cursor:pointer;box-shadow:0 3px 0 #0008;touch-action:manipulation}
+button.pri{background:linear-gradient(180deg,#2bb3e8,#13689c);border-color:#8ae8ff;color:#fff}
+.vres{margin-top:10px;padding:14px 16px;border-radius:12px;background:#0007;border:2px solid var(--c)}
+.vres.ok{--c:#6fd38b}.vres.bad{--c:#ff5d5d}
+.verdict{font-family:'Black Han Sans',sans-serif;font-size:21px;margin-bottom:10px}.ok .verdict{color:#8ff0a7}.bad .verdict{color:#ff7b7b}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;margin:0;font-size:14.5px}dt{color:#8fc6e6}dd{margin:0;font-weight:700}
+.big{color:#ffe08a;font-size:18px}
+ul{margin:10px 0 0;padding-left:1.2em;font-size:13.5px;line-height:1.6}li.x{color:#ff8a8a}li.w{color:#ffc477}
+details{margin-top:18px;font-size:13.5px;color:#cfe8f7;line-height:1.65}summary{cursor:pointer;font-weight:700;color:#bff4ff}
+a{color:#7fe3ff}
+</style>
+</head>
+<body>
+<div class="w"><div class="card">
+ <h1>🌊 딥 마린 점수 검증기</h1>
+ <div class="sub">심해 포격전 · SCORE CHECK</div>
+ <p>블로그 댓글에 올라온 작전 기록을 통째로 붙여넣으세요. 검증코드의 서명을 확인하고, 기록만으로 점수를 다시 계산해 대조합니다.</p>
+ <textarea id="vin" placeholder="🌊 딥 마린 : 심해 포격전 — 작전 기록&#10;👤 함장: …&#10;🏆 점수: …&#10;🔐 검증코드: DM1.…"></textarea>
+ <div class="row"><button class="pri" id="vgo">검증하기</button><button id="vclr">지우기</button></div>
+ <div id="vout" aria-live="polite"></div>
+ <details><summary>무엇을 확인하나요?</summary>
+ 검증코드 속 기록(함장 이름, 점수, 잠수함, 난이도, 돌파 해역 수, 가한 피해, 명중·발사 수, 턴 보너스, HP 보너스, 플레이 시간, 결과, 시드, 날짜)이 게임이 만든 서명과 맞는지 봅니다. 한 글자라도 바뀌면 서명이 깨집니다.<br>
+ 또한 점수를 <b>(해역 돌파 보너스 + 피해×10 + 턴 보너스 + HP 보너스 + 명중률 보너스 + 전 해역 제압 보너스) × 난이도 배율</b>로 다시 계산해 대조하고, 턴·HP 보너스가 가능한 범위인지, 명중 수가 발사 수를 넘지 않는지, 가한 피해가 적 전체 체력을 넘지 않는지 같은 규칙 위반과, 본문에 적힌 점수·이름이 코드와 같은지도 확인합니다.
+ </details>
+ <p style="font-size:13px;margin-top:14px">게임 하러 가기: <a href="https://chillermaster.github.io/flashgame/deep_marine.html" target="_blank" rel="noopener">딥 마린 : 심해 포격전</a></p>
+</div></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SUBS=[['노틸러스',110],['해머헤드',150],['스팅레이',85],['크라켄',115],['오르카',105],['레비아탄',120]];
+const DIFFS=[{name:'쉬움',mult:1,ehp:.85},{name:'보통',mult:1.3,ehp:1},{name:'어려움',mult:1.7,ehp:1.15}];
+const STAGES=[['푸른 바다',1,1],['에메랄드 산호초',1,1],['깊은 강',1,1],['얼어붙은 바다',2,.72],['심해',2,.8],['심연',1,1.75]];
+const RES=['격침','전 해역 제압','작전 포기'];
+const calcScore=(c,dmg,tb,hb,hits,shots,diff)=>{const acc=shots>0?Math.round(hits/shots*500*c):0;return Math.round((1500*c*(c+1)/2+dmg*10+tb+hb+acc+(c>=6?10000:0))*DIFFS[diff].mult)};
+const SALT='deepmarine/luca/v1#58c2-d19e';
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,7),b=h53(s+a,131);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b)}
+function readCode(text){const m=/DM1\.([A-Za-z0-9_-]+)\.([0-9A-Z]{22})/.exec(text);if(!m)return{err:'검증코드를 찾지 못했습니다. DM1. 로 시작하는 코드가 들어 있는지 확인하세요.'};
+ let p;try{p=b64d(m[1])}catch(e){return{err:'코드가 깨져 있어 읽을 수 없습니다.'}}
+ const f=p.split('~');if(f.length!==16||f[0]!=='1')return{err:'형식이 맞지 않는 코드입니다.'};const n=k=>+f[k];
+ const r={name:f[1],score:n(2),sub:n(3),diff:n(4),cleared:n(5),dmg:n(6),hits:n(7),shots:n(8),turnB:n(9),hpB:n(10),secs:n(11),res:n(12),seed:f[13],date:f[14],nonce:f[15]};
+ return{r,valid:sign(p)===m[2],code:m[0]}}
+const fmtTime=s=>Math.floor(s/60)+'분 '+(s%60)+'초';
+const fmtDate=d=>/^\d{8}$/.test(d)?d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8):d;
+function verify(text){const out=$('vout'),res=readCode(text);
+ if(res.err){out.innerHTML=`<div class="vres bad"><div class="verdict">확인할 수 없음</div><div>${esc(res.err)}</div></div>`;return}
+ const r=res.r,bad=[],warn=[],body=text.replace(res.code,'');
+ const ints=['score','sub','diff','cleared','dmg','hits','shots','turnB','hpB','secs','res'];
+ const intOk=!ints.some(k=>!Number.isFinite(r[k])||r[k]<0||Math.floor(r[k])!==r[k]);
+ if(!intOk)bad.push('숫자가 아닌 값이나 음수가 들어 있습니다.');
+ if(!res.valid)bad.push('서명이 맞지 않습니다. 코드의 일부가 바뀌었거나 직접 만든 가짜 코드입니다.');
+ const S=SUBS[r.sub],D=DIFFS[r.diff];
+ if(!S)bad.push('알 수 없는 잠수함입니다.');if(!D)bad.push('알 수 없는 난이도입니다.');
+ if(r.cleared>6)bad.push('돌파 해역 수가 6을 넘습니다.');
+ if(!RES[r.res])bad.push('알 수 없는 결과 값입니다.');
+ if(r.res===1&&r.cleared!==6)bad.push('전 해역 제압인데 돌파 해역 수가 6이 아닙니다.');
+ if(r.res!==1&&r.cleared>=6)bad.push('6개 해역을 돌파했는데 결과가 제압이 아닙니다.');
+ if(r.hits>r.shots)bad.push('명중 수가 발사 수보다 많습니다.');
+ if(r.dmg<r.hits)bad.push('명중 수에 비해 가한 피해가 너무 적습니다.');
+ if(r.turnB%150!==0||r.turnB>r.cleared*1650)bad.push('턴 보너스가 가능한 값이 아닙니다.');
+ if(S&&(r.hpB%8!==0||r.hpB>r.cleared*S[1]*8))bad.push('HP 보너스가 가능한 값이 아닙니다.');
+ if(r.dmg>r.shots*250)bad.push('발사 수에 비해 가한 피해가 불가능하게 큽니다.');
+ if(D&&r.cleared<=6){let cap=r.shots*12;for(let si=0;si<=Math.min(r.cleared,5);si++){const st=STAGES[si];cap+=st[1]*(Math.round(150*st[2]*D.ehp*(1+si*.04))+70)}if(r.dmg>cap)warn.push('가한 피해가 도달한 해역의 적 체력(회복 포함 추정치)보다 큽니다.')}
+ if(r.cleared>0&&r.shots<r.cleared)warn.push('돌파한 해역 수보다 발사 수가 적습니다.');
+ if(D&&S&&intOk){const calc=calcScore(r.cleared,r.dmg,r.turnB,r.hpB,r.hits,r.shots,r.diff);if(calc!==r.score)bad.push('기록으로 다시 계산한 점수('+fmt(calc)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.')}
+ if(r.shots>0&&r.secs<r.shots*2)warn.push('발사 수에 비해 플레이 시간이 지나치게 짧습니다.');
+ const ms=/점수\s*[:：]\s*([\d,]+)/.exec(body);if(ms){const v=+ms[1].replace(/,/g,'');if(v!==r.score)bad.push('본문에 적힌 점수('+fmt(v)+')가 코드 속 점수('+fmt(r.score)+')와 다릅니다.')}
+ const mn=/함장\s*[:：]\s*(.+)/.exec(body);if(mn&&mn[1].trim()!==r.name)warn.push('본문의 함장 이름이 코드 속 이름과 다릅니다.');
+ const ok=res.valid&&!bad.length,c=r.cleared,acc=r.shots?Math.round(r.hits/r.shots*500*c):0;
+ const where=r.res===1?'전 해역 제압':(RES[r.res]||'?')+(r.cleared<6&&STAGES[Math.min(r.cleared,5)]?' — '+STAGES[Math.min(r.cleared,5)][0]:'');
+ out.innerHTML=`<div class="vres ${ok?'ok':'bad'}"><div class="verdict">${ok?(warn.length?'✔ 진짜 코드 (주의 사항 있음)':'✔ 진짜 기록입니다'):'✘ 위조 또는 변조 의심'}</div>
+ <dl><dt>함장</dt><dd>${esc(r.name)}</dd><dt>점수</dt><dd class="big">${fmt(r.score)}</dd>
+ <dt>잠수함 · 난이도</dt><dd>${S?S[0]:'?'} · ${D?D.name+' ×'+D.mult:'?'}</dd>
+ <dt>돌파</dt><dd>${c}/6 해역 (${esc(where)})</dd>
+ <dt>점수 내역</dt><dd>돌파 ${fmt(1500*c*(c+1)/2)} + 피해 ${fmt(r.dmg*10)} + 턴 ${fmt(r.turnB)} + HP ${fmt(r.hpB)} + 명중률 ${fmt(acc)}${c>=6?' + 제압 10,000':''}</dd>
+ <dt>가한 피해</dt><dd>${fmt(r.dmg)}</dd><dt>명중</dt><dd>${r.hits}/${r.shots} (${r.shots?Math.round(r.hits/r.shots*100):0}%)</dd>
+ <dt>플레이</dt><dd>${fmtTime(r.secs)}</dd><dt>날짜</dt><dd>${esc(fmtDate(r.date))}</dd></dl>
+ ${bad.length||warn.length?`<ul>${bad.map(s=>`<li class="x">${esc(s)}</li>`).join('')}${warn.map(s=>`<li class="w">${esc(s)}</li>`).join('')}</ul>`:''}</div>`}
+$('vgo').addEventListener('click',()=>verify($('vin').value));
+$('vclr').addEventListener('click',()=>{$('vin').value='';$('vout').innerHTML=''});
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('textarea,button,a'))return;const n=Date.now();if(n-lt<350)e.preventDefault();lt=n},{passive:false});
+})();
+</script>
+</body>
+</html>
