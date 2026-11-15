@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>초한쟁패 장기 · 점수검증기</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#120c10}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#3a2a1e,#120c10 520px) no-repeat #120c10;color:#f4ead6;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;touch-action:manipulation;min-height:100%}
+.wrap{max-width:480px;margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 14px 40px}
+h1{text-align:center;margin:6px 0 0;font-family:"Noto Serif KR","Batang",serif;font-size:36px;letter-spacing:5px;color:#ffe2a0;text-shadow:0 3px 0 #6a3a10}
+.sub{text-align:center;font-size:14px;opacity:.85;letter-spacing:2px;margin-bottom:14px}
+textarea{width:100%;height:230px;border-radius:12px;border:1px solid #fff4;background:#0008;color:#f4ead6;padding:10px;font-size:13px;font-family:ui-monospace,Menlo,monospace;resize:vertical}
+button{display:block;width:100%;margin-top:10px;padding:13px;font-size:17px;font-weight:900;letter-spacing:3px;border-radius:12px;border:2px solid #ffe7a3;color:#3a1a00;background:linear-gradient(#ffe08a,#e0a338);box-shadow:0 4px 0 #8a5a14;touch-action:manipulation;font-family:inherit}
+button.sub2{background:#0006;color:#f4ead6;border:1px solid #fff4;box-shadow:none;font-size:14px;letter-spacing:1px}
+#res{margin-top:16px;border-radius:14px;padding:14px;display:none}
+#res.ok{display:block;background:#1e3a22;border:2px solid #6ad27a}
+#res.bad{display:block;background:#3a1a1a;border:2px solid #ff7a6a}
+.verdict{font-size:22px;font-weight:900;text-align:center}
+.why{font-size:13px;text-align:center;opacity:.9;margin-top:4px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+td{padding:6px 4px;border-bottom:1px solid #fff2}
+td:first-child{opacity:.75;width:38%}
+.note{font-size:12px;opacity:.7;line-height:1.6;margin-top:16px;background:#0005;border-radius:10px;padding:10px 12px}
+a{color:#8fd0ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>楚漢爭覇</h1>
+  <div class="sub">초한쟁패 장기 · 점수검증기</div>
+  <textarea id="inp" placeholder="게임이 끝난 뒤 복사한 기록을 여기에 붙여넣으세요.&#10;&#10;【초한쟁패 장기】&#10;이름: ...&#10;결과: ...&#10;...&#10;검증코드: JG-...."></textarea>
+  <button id="go">검 증 하 기</button>
+  <button class="sub2" id="clr">지우기</button>
+  <div id="res"></div>
+  <div class="note">
+    검증기는 기록에 적힌 결과·난이도·둔 수·내 시간·잡은 기물·잃은 기물로 점수를 다시 계산하고, 이름·진영·상차림·일시까지 포함해 검증코드를 다시 만들어 비교합니다. 한 글자라도 바뀌면 검증에 실패합니다.<br>
+    <a href="https://chillermaster.github.io/flashgame/chohan-janggi.html" target="_blank" rel="noopener">초한쟁패 장기 하러 가기</a>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  let last = 0;
+  document.addEventListener('touchend', e => { const tag = e.target && e.target.tagName; const now = Date.now(); if (now - last < 350 && tag !== 'TEXTAREA') e.preventDefault(); last = now; }, { passive: false });
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+  ['gesturestart', 'gesturechange'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+
+  const SALT = 'CHOHAN|JANGGI|LUCA|2026';
+  const LEVELS = [{ name: '졸병', mult: 1 }, { name: '백부장', mult: 1.6 }, { name: '천부장', mult: 2.4 }, { name: '대장군', mult: 3.5 }, { name: '국사무쌍', mult: 5 }];
+  const SETUPS = ['마상마상', '상마상마', '마상상마', '상마마상'];
+  const RESULTS = ['외통승', '판정승', '외통패', '판정패', '기권패'];
+  function cyrb53(str, seed) {
+    seed = seed || 0;
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) { ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  }
+  function makeCode(payload) {
+    const s = cyrb53(payload + '|' + SALT).toString(36).toUpperCase().padStart(11, '0');
+    const t = cyrb53(SALT + '|' + payload, 77).toString(36).toUpperCase().padStart(11, '0');
+    const all = (s + t).slice(0, 16);
+    return 'JG-' + all.slice(0, 4) + '-' + all.slice(4, 8) + '-' + all.slice(8, 12) + '-' + all.slice(12, 16);
+  }
+  function calcScore(res, lv, M, T, C, L) {
+    const mult = LEVELS[lv].mult;
+    let base;
+    if (res === '외통승') base = 5000 + Math.max(0, 120 - M) * 40 + Math.max(0, 900 - T) * 2 + C * 30 + (72 - L) * 20;
+    else if (res === '판정승') base = 2500 + C * 30 + (72 - L) * 10;
+    else base = C * 30 + Math.min(M, 120) * 5;
+    return Math.round(base * mult);
+  }
+  const $ = id => document.getElementById(id);
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function field(text, key) {
+    const re = new RegExp('^\\s*' + key + '\\s*[:：]\\s*(.*)$', 'm');
+    const m = text.match(re); return m ? m[1].trim() : null;
+  }
+  function show(ok, verdict, why, rows) {
+    const r = $('res'); r.className = ok ? 'ok' : 'bad';
+    r.innerHTML = `<div class="verdict">${verdict}</div><div class="why">${why}</div>` + (rows ? '<table>' + rows.map(a => `<tr><td>${esc(a[0])}</td><td>${esc(a[1])}</td></tr>`).join('') + '</table>' : '');
+    r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function verify() {
+    const t = $('inp').value.replace(/\r/g, '');
+    if (!t.trim()) { show(false, '기록이 비어 있습니다', '게임 종료 화면에서 복사한 기록을 붙여넣어 주세요.'); return; }
+    const name = field(t, '이름'), res = field(t, '결과'), fac = field(t, '진영'), lvS = field(t, '난이도'), mS = field(t, '둔 수'), tS = field(t, '내 시간'), cS = field(t, '잡은 기물'), lS = field(t, '잃은 기물'), sS = field(t, '점수'), date = field(t, '일시'), code = field(t, '검증코드');
+    const missing = [['이름', name], ['결과', res], ['진영', fac], ['난이도', lvS], ['둔 수', mS], ['내 시간', tS], ['잡은 기물', cS], ['잃은 기물', lS], ['점수', sS], ['일시', date], ['검증코드', code]].filter(a => a[1] === null).map(a => a[0]);
+    if (missing.length) { show(false, '❌ 형식 오류', '빠진 항목: ' + missing.join(', ')); return; }
+    const f = fac.indexOf('漢') === 0 ? 'han' : fac.indexOf('楚') === 0 ? 'cho' : null;
+    const sm = fac.match(/상차림\s*(\S+)/), setup = sm ? sm[1] : null;
+    const lm = lvS.match(/^(\d)\s*단계/), lv = lm ? +lm[1] - 1 : -1;
+    const M = parseInt(mS, 10), C = parseInt(cS, 10), L = parseInt(lS, 10);
+    const tm = tS.match(/^(\d+):(\d{2})$/), T = tm ? (+tm[1]) * 60 + (+tm[2]) : NaN;
+    const score = parseInt(sS.replace(/[^\d]/g, ''), 10);
+    const rows = [['이름', name], ['결과', res], ['진영', fac], ['난이도', lvS], ['둔 수', mS], ['내 시간', tS], ['잡은 기물', cS], ['잃은 기물', lS], ['기록된 점수', sS], ['일시', date]];
+    if (!f || SETUPS.indexOf(setup) < 0 || lv < 0 || lv > 4 || RESULTS.indexOf(res) < 0 || [M, C, L, T, score].some(isNaN)) { show(false, '❌ 형식 오류', '기록의 값이 올바른 형식이 아닙니다.', rows); return; }
+    if (C > 72 || L > 72 || M > 100 || M < 0) { show(false, '❌ 비정상 기록', '나올 수 없는 수치가 포함되어 있습니다.', rows); return; }
+    const calc = calcScore(res, lv, M, T, C, L);
+    rows.push(['다시 계산한 점수', calc.toLocaleString('en-US')]);
+    if (calc !== score) { show(false, '❌ 점수 불일치', '기록된 점수와 다시 계산한 점수가 다릅니다.', rows); return; }
+    const want = makeCode([name, res, f, setup, lv, M, T, C, L, score, date].join('|'));
+    if (want !== code.toUpperCase()) { show(false, '❌ 검증코드 불일치', '기록의 일부가 바뀌었거나 다른 게임의 코드입니다.', rows); return; }
+    show(true, '✅ 정상 기록', name + ' 님의 ' + score.toLocaleString('en-US') + '점 기록이 확인되었습니다.', rows);
+  }
+  $('go').onclick = verify;
+  $('clr').onclick = () => { $('inp').value = ''; $('res').className = ''; $('res').style.display = ''; };
+})();
+</script>
+</body>
+</html>
