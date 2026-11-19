@@ -170,7 +170,7 @@ const sizeOf=L=>0.7+0.17*(L-1);
 const needXp=L=>3*(L-1)*L;
 const lvFromXp=xp=>{let L=1;while(L<MAXLV&&xp>=needXp(L+1))L++;return L;};
 const speedOf=L=>4.6+0.22*(L-1);
-const decayOf=L=>2.4*(1+.15*(L-1));
+const decayOf=L=>1.2*(1+.12*(L-1));
 
 // ================= 어종 =================
 // b:몸형 c:[등,옆,배] p:무늬 tl:꼬리 d:등지느러미 a:뒷지느러미 [뒤t,앞t,높이,형태] e:[눈t,높이,크기,홍채] m:입 br:수염 [길이,옆,아래,뒤,높이,t,굵기] sw:헤엄
@@ -303,25 +303,25 @@ const MAPS=[
   line:['🎣 월척이다! 오늘 저녁은 매운탕!','🎣 요 녀석, 미끼 맛 좀 봤구나!']},
  {id:'river',name:'강',em:'🌊',mult:1.15,decay:1.0,surf:14,bound:{x:94,z:19},sp:RIVER,
   water:0x6cc9c0,deep:0x2f8a84,fog:[3,40],sky:0xc8ecff,hemi:[0xe0fff6,0x6f9a7c,.95],sun:.7,camL:0,rays:14,rayC:0xf0fff8,surfC:[0xbaf2ea,.55],
-  floorC:[0xb8b0a0,0x9a948a,0xc8bca4],bank:0x86b860,parts:{m:'drift',c:0xf4fff8,s:.07},cur:1.3,
+  floorC:[0xb8b0a0,0x9a948a,0xc8bca4],bank:0x86b860,parts:{m:'drift',c:0xf4fff8,s:.07},cur:.6,
   desc:'<b>🌊 자갈 깔린 강</b> — 동글동글한 자갈 바닥 위로 맑은 물살이 하류로 흘러요. 양쪽 기슭엔 갈대가 수면을 뚫고 솟아 있어요. <b>물살에 떠밀리니 주의!</b>',
   line:['🎣 오호, 강고기 손맛 좋구먼!','🎣 이 녀석 힘이 장사네!']},
- {id:'amazon',name:'대형강',em:'🌴',mult:1.3,decay:1.05,surf:22,bound:{x:94,z:40},sp:AMAZON,
+ {id:'amazon',name:'대형강',em:'🌴',mult:1.3,decay:1.0,surf:22,bound:{x:94,z:40},sp:AMAZON,
   water:0x8c9a5a,deep:0x4e5228,fog:[2,27],sky:0xd4ecc8,hemi:[0xeef6c8,0x5a5a30,.85],sun:.55,camL:.25,rays:10,rayC:0xfff4c0,surfC:[0xc8c890,.72],
-  floorC:[0x5a4628,0x4a3a22,0x6e5430],bank:0x5e9a40,parts:{m:'drift',c:0xd8d0a0,s:.08},cur:1.9,
+  floorC:[0x5a4628,0x4a3a22,0x6e5430],bank:0x5e9a40,parts:{m:'drift',c:0xd8d0a0,s:.08},cur:.9,
   desc:'<b>🌴 아마존 같은 대형강</b> — 잠긴 밀림 사이로 거대한 나무 기둥과 뿌리가 늘어진 흙빛 강물이에요. 바닥엔 낙엽이 쌓였고 시야가 탁해요. <b>강한 물살!</b>',
   line:['🎣 아마존 강의 선물이다!','🎣 오늘 밤은 생선 구이 파티다!']},
- {id:'swamp',name:'늪지',em:'🪷',mult:1.45,decay:1.1,surf:12,bound:{r:70},sp:SWAMP,
+ {id:'swamp',name:'늪지',em:'🪷',mult:1.45,decay:1.05,surf:12,bound:{r:70},sp:SWAMP,
   water:0x5e7a3a,deep:0x2c3a1a,fog:[1.5,18],sky:0xcad6b2,hemi:[0xdde8b8,0x3a4420,.7],sun:.45,camL:.45,rays:5,rayC:0xe8ffb0,surfC:[0x6e9238,.9],
   floorC:[0x3e3420,0x4a3e26,0x2e2a18],bank:0x6a8a3a,parts:{m:'up',c:0xe8f0c0,s:.1},cur:0,
   desc:'<b>🪷 안개 낀 늪지</b> — 개구리밥이 수면을 덮어 빛이 잘 들지 않아요. 부들과 낙우송 뿌리가 빽빽하고, 진흙 바닥에서 거품이 보글보글 올라와요. <b>시야가 아주 좁아요.</b>',
   line:['🎣 늪에서 이런 놈이...? 튀김이다!','🎣 진흙 냄새 나는 녀석이군!']},
- {id:'sea',name:'바다',em:'🐚',mult:1.6,decay:1.1,surf:30,bound:{r:92},sp:SEA,
+ {id:'sea',name:'바다',em:'🐚',mult:1.6,decay:1.05,surf:30,bound:{r:92},sp:SEA,
   water:0x3ab0ea,deep:0x165aa6,fog:[4,60],sky:0x9fd8ff,hemi:[0xd8f4ff,0x6a8aa0,1],sun:.75,camL:0,rays:24,rayC:0xffffff,surfC:[0x9fe8ff,.55],
-  floorC:[0xf2e8c8,0xe6dab4,0xfaf0d8],bank:0xf2e8c8,parts:{m:'up',c:0xffffff,s:.08},cur:.7,
+  floorC:[0xf2e8c8,0xe6dab4,0xfaf0d8],bank:0xf2e8c8,parts:{m:'up',c:0xffffff,s:.08},cur:.4,
   desc:'<b>🐚 산호초 바다</b> — 햇살이 쏟아지는 새파란 바다예요. 알록달록한 산호와 말미잘, 하늘거리는 다시마 숲 사이로 빠른 물고기들이 몰려다녀요. <b>조류가 천천히 방향을 바꿔요.</b>',
   line:['🎣 대물이다! 회 뜨자!','🎣 바다의 선물이로구나!']},
- {id:'deep',name:'심해',em:'🦑',mult:1.9,decay:1.2,surf:30,bound:{r:76},sp:DEEP,
+ {id:'deep',name:'심해',em:'🦑',mult:1.9,decay:1.1,surf:30,bound:{r:76},sp:DEEP,
   water:0x0c2a4a,deep:0x030a16,fog:[1,22],sky:0x283c6e,hemi:[0x7090c0,0x182030,.45],sun:.12,camL:1.25,rays:0,rayC:0,surfC:[0x1a3050,.5],
   floorC:[0x2a2e3a,0x22262f,0x3a3a44],bank:0x3a3a44,parts:{m:'down',c:0xe8f0ff,s:.07},cur:0,
   desc:'<b>🦑 빛이 닿지 않는 심해</b> — 칠흑 같은 어둠 속에 바다눈이 소리 없이 내려요. 해저 열수구가 검은 연기를 뿜고, 해파리와 물고기들이 스스로 빛을 내요. <b>배고픔이 가장 빨라요.</b>',
@@ -666,7 +666,7 @@ const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,leve
 const fishes=[];
 const curVec=new THREE.Vector3();
 function updCurrent(t){const c=MAP.cur;if(!c){curVec.set(0,0,0);return;}if(MAP.id==='sea'){curVec.set(Math.cos(t*.05),0,Math.sin(t*.05)).multiplyScalar(c);}else curVec.set(c*(.8+.25*Math.sin(t*.3)),0,.15*c*Math.sin(t*.17));}
-function baitChance(){return gameTime<8?0:Math.min(.12,.03+gameTime/60*.012);}
+function baitChance(){return gameTime<5?0:Math.min(.09,.03+gameTime/60*.006);}
 function edibleLen(len){return len<=sizeOf(player.level)*1.05;}
 function pickSpecies(){const ps=sizeOf(player.level);const ws=TIERS.map(s=>{const r=Math.log(s.len/ps);return Math.exp(-((r+.25)**2)/.45)+.05;});let x=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<ws.length;i++){x-=ws[i];if(x<=0)return i;}return 0;}
 function spawnFish(si,pos,allowBait){
@@ -680,7 +680,7 @@ function removeFish(f){scene.remove(f.mdl.g);f.mdl.own.forEach(o=>o.dispose());c
 function spawnGroup(initial){
  const si=pickSpecies(),sp=SP()[si];const n=sp.school?ri(3,5):1;
  for(let tries=0;tries<6;tries++){
-  const a=Math.random()*Math.PI*2,d=initial?rnd(5,34):rnd(22,40);
+  const a=Math.random()*Math.PI*2,d=initial?rnd(4,26):rnd(18,32);
   _v.set(player.pos.x+Math.cos(a)*d,0,player.pos.z+Math.sin(a)*d);clampXZ(_v,4);
   const fl=floorH(_v.x,_v.z);if(fl+1.4>MAP.surf-1.2)continue;
   const y=rnd(fl+1.2,MAP.surf-1.2);
@@ -688,7 +688,7 @@ function spawnGroup(initial){
   return;
  }
 }
-const targetPop=()=>20+Math.min(8,player.level);
+const targetPop=()=>28+Math.min(8,player.level);
 
 // ================= 입력 =================
 const keys={};let mouseDown=false,usedLock=false,dashHeld=false;
@@ -748,7 +748,7 @@ function prepWorld(){
 function setupTitleScene(){prepWorld();for(let i=0;i<12;i++)spawnGroup(true);}
 function resetWorld(){
  prepWorld();gameTime=0;score=0;eaten=0;counts=SP().map(()=>0);
- for(let i=0;i<14;i++)spawnGroup(true);
+ for(let i=0;i<19;i++)spawnGroup(true);
  $('bubble').style.display='none';$('flash').style.opacity=0;
 }
 function startGame(){
@@ -970,7 +970,7 @@ function updPlayer(dt){
  const fl=floorH(player.pos.x,player.pos.z)+.5;
  if(fl>S-.6){_v.set(-player.pos.x,0,-player.pos.z).normalize();player.pos.addScaledVector(_v,dt*5);}
  player.pos.y=clamp(player.pos.y,Math.min(fl,S-.6),S-.5);
- player.hunger-=decayOf(L)*MAP.decay*dt*(wantDash?1.3:1);
+ player.hunger-=decayOf(L)*MAP.decay*dt*(wantDash?1.15:1);
  if(player.bumpT>0)player.bumpT-=dt;
  camera.position.copy(player.pos);camera.rotation.set(player.pitch,player.yaw,Math.sin(gameTime*1.3)*.015);
  if(player.hunger<=0){player.hunger=0;beginStarve(false);}
@@ -985,7 +985,7 @@ function updFish(f,dt){
  _v.subVectors(f.target,f.pos);_v.normalize();let spd=base;
  if(f.traits.pattern==='zigzag'){_p.set(-_v.z,0,_v.x);_v.addScaledVector(_p,Math.sin(f.t*3.2)*.7).normalize();}
  else if(f.traits.pattern==='hesitant'&&(f.t%4.2)<.8)spd*=.12;
- if(state==='play'){_w.subVectors(f.pos,player.pos);const dp=_w.length();if(dp<6&&edibleLen(f.len)){_v.copy(_w).normalize();_v.y*=.6;spd=Math.min(base*1.9,speedOf(player.level)*.72);}}
+ if(state==='play'){_w.subVectors(f.pos,player.pos);const dp=_w.length();if(dp<4.5&&edibleLen(f.len)){_v.copy(_w).normalize();_v.y*=.6;spd=Math.min(base*1.7,speedOf(player.level)*.62);}}
  _v.multiplyScalar(spd);f.vel.lerp(_v,1-Math.exp(-dt*2.5));
  f.pos.addScaledVector(f.vel,dt).addScaledVector(curVec,dt*.55);
  clampXZ(f.pos,1);
@@ -1025,14 +1025,14 @@ function updPlay(dt){
  const ps=sizeOf(player.level);
  for(let i=fishes.length-1;i>=0;i--){const f=fishes[i];updFish(f,dt);
   _w.subVectors(f.pos,player.pos);const d=_w.length();
-  if(d>58){removeFish(f);continue;}
+  if(d>46){removeFish(f);continue;}
   const reach=ps*.75+f.len*.45;
-  if(d<reach+.25){
+  if(d<reach+.35){
    if(edibleLen(f.len)){if(_f.dot(_w)/Math.max(d,.001)>.3){eat(f);if(state!=='play')return;}}
    else if(d<f.len*.5+ps*.45){player.pos.addScaledVector(_w.normalize(),-dt*6);player.vel.multiplyScalar(.5);if(player.bumpT<=0){toast('😤 '+f.sp.n+'은(는) 너무 커서 못 먹어!',1.3);player.bumpT=2;}}
   }
  }
- spawnT-=dt;if(spawnT<=0){spawnT=.35;if(fishes.length<targetPop())spawnGroup(false);}
+ spawnT-=dt;if(spawnT<=0){spawnT=.25;if(fishes.length<targetPop())spawnGroup(false);}
  infoT-=dt;if(infoT<=0){infoT=.12;updInfo();}
  updHud();
 }
