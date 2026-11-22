@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>마피아 : 모닥불 재판 점수검증기</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:radial-gradient(ellipse 80% 50% at 50% 100%,rgba(255,140,50,.22),transparent 70%),linear-gradient(#0a0f2c,#05070f);background-color:#05070f;color:#efe6d2;font-family:'Gowun Dodum',sans-serif;touch-action:manipulation}
+.w{max-width:620px;margin:0 auto;padding:22px 14px 40px}
+h1{text-align:center;font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:clamp(24px,6.5vw,34px);background:linear-gradient(#fff4d6,#ffb04a 55%,#c2441c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;font-size:12px;letter-spacing:4px;color:#ffcf8a;margin-top:4px}
+.box{margin-top:16px;background:rgba(18,20,44,.85);border:1px solid rgba(255,190,110,.35);border-radius:14px;padding:14px}
+label{font-size:13px;color:#ffcf8a;font-weight:700}
+textarea{width:100%;min-height:200px;margin-top:8px;background:#080a1c;color:#efe6d2;border:1px solid #4b4370;border-radius:10px;padding:10px;font-size:13px;line-height:1.55;font-family:inherit;resize:vertical}
+.row{display:flex;gap:8px;justify-content:center;margin-top:10px}
+button{height:42px;padding:0 20px;border-radius:21px;border:1px solid #4b4370;background:#14152f;color:#efe6d2;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
+button.gold{background:linear-gradient(#ffc56b,#e0702a);color:#2a1205;border-color:#ffd59a}
+.verdict{text-align:center;font-size:21px;font-weight:900;margin:4px 0 10px;font-family:'Black Han Sans',sans-serif;font-weight:400}
+.ok{color:#8ff0c8}.bad{color:#ff8a7a}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td{padding:7px 6px;border-bottom:1px solid rgba(255,190,110,.15)}
+td:first-child{color:#ffcf8a;white-space:nowrap;width:36%}
+.chk{margin-top:10px;font-size:13px;line-height:1.8}
+.note{font-size:12px;color:#a9a2c4;margin-top:12px;line-height:1.6}
+a{color:#ffcf8a}
+</style>
+</head>
+<body>
+<div class="w">
+ <h1>🔍 마피아 점수검증기</h1>
+ <div class="sub">MAFIA · CAMPFIRE TRIAL · VERIFIER</div>
+ <div class="box">
+  <label for="inp">게임에서 복사한 기록(또는 검증코드)을 붙여넣으세요</label>
+  <textarea id="inp" placeholder="🌙 마피아 : 모닥불 재판&#10;👤 이름: …&#10;🔐 검증코드: MFC1.xxxxx.xxxx"></textarea>
+  <div class="row"><button id="clr">지우기</button><button class="gold" id="go">✅ 검증하기</button></div>
+ </div>
+ <div class="box" id="out" style="display:none"></div>
+ <p class="note">검증코드에는 이름·승패·생존·투표·능력 성과·진행 일수·공개 방식·직업·플레이 시간이 암호화되어 들어 있습니다. 검증기는 코드를 풀어 서명을 확인하고, 점수를 다시 계산해 적힌 점수와 맞는지 확인합니다. 기록 본문의 이름·점수를 고쳐 쓰면 ‘본문 불일치’로 표시됩니다.<br>🎮 게임: <a href="https://chillermaster.github.io/flashgame/mafia-campfire.html" target="_blank" rel="noopener">마피아 : 모닥불 재판</a></p>
+</div>
+<script>
+(()=>{
+const SALT='MAFIA·모닥불재판·c4f2';
+const RN={mafia:'마피아',spy:'스파이',thief:'도둑',gisaeng:'기생',pickpocket:'소매치기',ghoul:'구울',zombie:'좀비',alien:'외계인',killer:'연쇄살인마',police:'경찰',doctor:'의사',coroner:'검시관',witness:'목격자',reporter:'기자',detective:'탐정',veteran:'퇴역군인',amnesiac:'기억상실자',guard:'경비원',merc:'용병',sniper:'저격수',hunter:'사냥꾼',recruit:'신병',hypno:'최면술사'};
+const RES={C:'시민 세력 승리',M:'마피아 세력 승리',N:'중립 세력 승리',alien:'외계인 승리',draw:'무승부'};
+function calcBase(o){return Math.max(0,(o.w?1000:200)+(o.a?(o.w?300:100):0)+o.cv*80-o.wv*40+o.sh*60+(o.w?Math.max(0,10-o.d)*40:0));}
+function calcScore(o){return Math.round(calcBase(o)*(o.r==='fac'?120:100)/100);}
+const cyrb53=(str,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function decode(code){const m=code.match(/MFC1\.([A-Za-z0-9_-]+)\.([0-9a-z]+)/);if(!m)return{err:'검증코드(MFC1.…)를 찾지 못했어요.'};
+ try{let b=m[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';const bin=atob(b);const key=new TextEncoder().encode(SALT);const by=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i)^key[i%key.length]^((i*31+7)&255);
+  const js=new TextDecoder().decode(by);const obj=JSON.parse(js);return{obj,sig:cyrb53(SALT+js).toString(36)===m[2]};}catch(e){return{err:'검증코드가 손상되었거나 위조되었습니다.'};}}
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+function run(){const txt=document.getElementById('inp').value;const out=document.getElementById('out');out.style.display='block';const d=decode(txt);
+ if(d.err){out.innerHTML=`<div class="verdict bad">❌ 검증 실패</div><p style="text-align:center">${d.err}</p>`;return;}
+ const o=d.obj,ck=[];ck.push([d.sig,'서명(해시) 확인']);
+ const num=x=>Number.isInteger(x)&&x>=0;
+ const fields=num(o.w)&&o.w<=1&&num(o.a)&&o.a<=1&&num(o.cv)&&num(o.wv)&&num(o.sh)&&num(o.d)&&o.d>=1&&o.d<=16&&(o.r==='job'||o.r==='fac')&&RN[o.ro]&&RN[o.fr]&&RES[o.res];
+ ck.push([!!fields,'기록 형식']);
+ ck.push([fields&&o.cv+o.wv<=o.d&&o.sh<=o.d*3,'투표·능력 횟수가 진행 일수 안에 있는지']);
+ const sc=fields?calcScore(o):-1;ck.push([sc===o.s,'점수 재계산 = '+(sc>=0?sc.toLocaleString():'?')+'점']);
+ const nm=txt.match(/이름:\s*(.+)/),sm=txt.match(/최종 점수:\s*([\d,]+)/);let bodyOk=true,bm='본문 일치';if(nm&&nm[1].trim()!==o.n)bodyOk=false;if(sm&&+sm[1].replace(/,/g,'')!==o.s)bodyOk=false;if(!nm&&!sm)bm='본문 없음(코드만 검증)';ck.push([bodyOk,bm+(bodyOk?'':' — 본문 이름/점수가 코드와 다름')]);
+ const all=ck.every(c=>c[0]);
+ out.innerHTML=`<div class="verdict ${all?'ok':'bad'}">${all?'✅ 정상 기록':'❌ 위조 또는 변조 의심'}</div>
+<table><tr><td>👤 이름</td><td>${esc(o.n)}</td></tr><tr><td>🏆 최종 점수</td><td><b style="color:#ffd36b;font-size:17px">${(o.s||0).toLocaleString()}</b>점</td></tr>
+<tr><td>🧮 계산</td><td>${fields?`기본 ${calcBase(o)} = ${o.w?'승리 1000':'패배 200'}${o.a?(o.w?' + 생존 300':' + 생존 100'):''} + 투표 ${o.cv*80-o.wv*40} + 능력 ${o.sh*60}${o.w?' + 빠른 승리 '+Math.max(0,10-o.d)*40:''} · ×${o.r==='fac'?'1.2':'1.0'}`:'?'}</td></tr>
+<tr><td>⚖️ 결과</td><td>${RES[o.res]||'?'} · ${o.w?'🏅 승리':'패배'}</td></tr>
+<tr><td>🎭 내 직업</td><td>${RN[o.ro]||'?'}${o.fr!==o.ro?' → '+(RN[o.fr]||'?'):''}</td></tr>
+<tr><td>❤️ 생존</td><td>${o.a?'생존':'사망'}</td></tr><tr><td>📅 진행</td><td>${o.d}일차</td></tr>
+<tr><td>🗳️ 투표</td><td>정확 ${o.cv} · 아군 ${o.wv}</td></tr><tr><td>✨ 능력 성과</td><td>${o.sh}회</td></tr>
+<tr><td>💀 사망자 공개</td><td>${o.r==='job'?'직업 공개 (×1.0)':'세력만 공개 (×1.2)'}</td></tr>
+<tr><td>⏱️ 플레이 시간</td><td>${fmt(o.t|0)}</td></tr><tr><td>📅 기록 시각</td><td>${new Date(o.ts).toLocaleString('ko-KR')}</td></tr></table>
+<div class="chk">${ck.map(c=>(c[0]?'✅ ':'❌ ')+c[1]).join('<br>')}</div>`;}
+document.getElementById('go').addEventListener('click',run);
+document.getElementById('clr').addEventListener('click',()=>{document.getElementById('inp').value='';document.getElementById('out').style.display='none';});
+let lt=0;document.addEventListener('touchend',e=>{const t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='A'))return;const n=Date.now();if(n-lt<380)e.preventDefault();lt=n;},{passive:false});
+})();
+</script>
+</body>
+</html>

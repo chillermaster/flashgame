@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>로웬 프리셀 점수검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% 0%,#1f4c52,#0b1b1f 70%);color:#e9dcc0;font-family:'Noto Serif KR','Nanum Myeongjo','Batang',serif;touch-action:manipulation}
+.wrap{max-width:680px;margin:0 auto;padding:18px 14px 30px}
+h1{margin:0;color:#e8cf8a;font-size:22px;letter-spacing:2px}
+.sub{color:#9fb8ae;font-size:13px;margin:4px 0 14px}
+.panel{background:linear-gradient(#173a42,#0e262c);border:1.5px solid #c9a457;border-radius:14px;padding:14px}
+textarea{width:100%;min-height:200px;font:inherit;font-size:14px;line-height:1.6;background:#0a1a1e;color:#f3e6c4;border:1px dashed rgba(201,164,87,.7);border-radius:9px;padding:10px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+button,.btn{font:inherit;font-size:14px;color:#f3e6c4;background:linear-gradient(#2a4a50,#1a3238);border:1px solid rgba(201,164,87,.6);border-radius:8px;padding:8px 14px;cursor:pointer;text-decoration:none}
+button.gold{background:linear-gradient(#d8b462,#a8823a);color:#2a1a08;font-weight:700;border-color:#f0d890}
+.res{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.card{border-radius:12px;padding:12px 14px;border:1.5px solid;background:#0c2024}
+.card.ok{border-color:#6ad08a}.card.bad{border-color:#e06a6a}
+.card h3{margin:0 0 6px;font-size:17px}
+.ok h3{color:#8af0a8}.bad h3{color:#ff9a9a}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+td{padding:3px 6px;border-bottom:1px solid rgba(201,164,87,.15)}
+td:first-child{color:#b8c8c0;width:110px;white-space:nowrap}
+.why{font-size:13px;color:#ffb0a0;margin-top:6px;line-height:1.6}
+.note{font-size:12.5px;color:#a8bab2;line-height:1.7;margin-top:14px}
+a{color:#ffd88a}
+.sum{font-size:14px;color:#e8cf8a}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <h1>🔐 로웬 프리셀 점수검증기</h1>
+ <div class="sub">🃏 네 결사의 서약 — 댓글에 붙여 넣은 기록이 진짜인지 확인해요</div>
+ <div class="panel">
+  <textarea id="inp" placeholder="게임 종료 화면에서 복사한 기록을 붙여 넣으세요.&#10;여러 개를 한꺼번에 붙여 넣어도 각각 검증해요."></textarea>
+  <div class="row"><button class="gold" id="go">🔍 검증하기</button><button id="clr">🧹 지우기</button><a class="btn" href="https://chillermaster.github.io/flashgame/rowen-freecell.html" target="_blank" rel="noopener">🎴 게임하러 가기</a></div>
+ </div>
+ <div class="res" id="res"></div>
+ <div class="note">
+  ⭐ <b>점수 계산</b><br>
+  · 클리어: [3000 + 시간 보너스 max(0, 3000 − 초×3) + 이동 보너스 max(0, 2500 − (이동−60)×20) − 되돌리기×30, 최저 2100] × 난이도 배율<br>
+  · 포기: 파운데이션에 올린 카드 수 × 40 × 난이도 배율<br>
+  🎚 난이도 배율: 초보 ×1.0 · 중수 ×1.25 · 고수 ×1.6 · 초고수 ×2.0 (더미를 여는 것도 이동 1수)<br>
+  🔐 검증코드는 이름·판 번호·결과·점수·시간·이동·되돌리기·일시를 모두 묶어 만든 값이라, 한 글자만 바뀌어도 맞지 않아요.<br>
+  🎴 같은 판 번호끼리 비교하면 더 공정한 승부가 돼요.
+ </div>
+</div>
+<script>
+const SALT = 'ROWEN-FREECELL2|deck&open|1121';
+const DIFF = { easy: { name: '초보', mult: 1.0 }, normal: { name: '중수', mult: 1.25 }, hard: { name: '고수', mult: 1.6 }, master: { name: '초고수', mult: 2.0 } };
+const DNAME = { '초보': 'easy', '중수': 'normal', '고수': 'hard', '초고수': 'master' };
+function h53(str, seed = 0) {
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return [h1 >>> 0, h2 >>> 0];
+}
+function vcode(f) {
+  const s = SALT + '|' + f.join('|'), [a, b] = h53(s, 7), [c] = h53(s + '#', 13);
+  const t = (a.toString(36) + b.toString(36) + c.toString(36)).toUpperCase().padEnd(16, '0');
+  return 'RFC-' + t.slice(0, 4) + '-' + t.slice(4, 8) + '-' + t.slice(8, 12) + '-' + t.slice(12, 16);
+}
+function rawScore(clear, found, sec, moves, undos) {
+  if (!clear) return found * 40;
+  return Math.max(2100, 3000 + Math.max(0, 3000 - 3 * sec) + Math.max(0, 2500 - 20 * Math.max(0, moves - 60)) - 30 * undos);
+}
+const calcScore = (dk, clear, found, sec, moves, undos) => Math.round(rawScore(clear, found, sec, moves, undos) * DIFF[dk].mult);
+const comma = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtT = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+function parse(t) {
+  const g = (re) => { const m = t.match(re); return m ? m : null; };
+  const r = {};
+  let m;
+  if ((m = g(/이름\s*:\s*([^\n\r]+)/))) r.name = m[1].trim();
+  if ((m = g(/난이도\s*:\s*(초고수|초보|중수|고수)/))) r.diff = DNAME[m[1]];
+  if ((m = g(/판\s*번호\s*:\s*#?\s*(\d+)/))) r.deal = +m[1];
+  if ((m = g(/결과\s*:\s*(클리어|포기)\s*\(\s*(\d+)\s*\/\s*52\s*\)/))) { r.clear = m[1] === '클리어'; r.found = +m[2]; }
+  if ((m = g(/점수\s*:\s*([\d,.\s]+)/))) r.score = +m[1].replace(/[^\d]/g, '');
+  if ((m = g(/시간\s*:\s*(\d+)\s*:\s*(\d{2})/))) r.sec = (+m[1]) * 60 + (+m[2]);
+  if ((m = g(/이동\s*:\s*(\d+)/))) r.moves = +m[1];
+  if ((m = g(/되돌리기\s*:\s*(\d+)/))) r.undos = +m[1];
+  if ((m = g(/일시\s*:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})/))) r.date = m[1].replace(/\s+/, ' ');
+  if ((m = g(/검증코드\s*:\s*(RFC(?:-[0-9A-Za-z]{4}){4})/))) r.code = m[1].toUpperCase();
+  return r;
+}
+function verify(r) {
+  const why = [];
+  const need = { name: '이름', diff: '난이도', deal: '판 번호', clear: '결과', score: '점수', sec: '시간', moves: '이동', undos: '되돌리기', date: '일시', code: '검증코드' };
+  for (const k in need) if (r[k] === undefined) why.push(`「${need[k]}」 줄을 찾을 수 없어요`);
+  if (why.length) return { ok: false, why };
+  if (r.deal < 1 || r.deal > 32000) why.push('판 번호는 1~32000이어야 해요');
+  if (r.clear && r.found !== 52) why.push('클리어 기록은 52/52여야 해요');
+  if (!r.clear && r.found > 51) why.push('포기 기록의 올린 카드 수가 이상해요');
+  const exp = calcScore(r.diff, r.clear, r.found, r.sec, r.moves, r.undos);
+  if (exp !== r.score) why.push(`점수가 계산과 달라요 (계산값 ${comma(exp)}점)`);
+  const code = vcode([r.name, r.deal, r.diff, r.clear ? 'CLEAR' : 'GIVEUP', r.found, r.score, r.sec, r.moves, r.undos, r.date]);
+  if (code !== r.code) why.push('검증코드가 맞지 않아요 — 기록이 수정되었을 수 있어요');
+  return { ok: !why.length, why };
+}
+function run() {
+  const txt = document.getElementById('inp').value;
+  const parts = txt.split(/(?=🃏)/).map(s => s.trim()).filter(s => /검증코드|점수/.test(s));
+  const out = document.getElementById('res');
+  if (!parts.length) { out.innerHTML = '<div class="card bad"><h3>❌ 기록을 찾지 못했어요</h3><div class="why">게임 종료 화면의 「📋 기록 복사」로 복사한 글을 그대로 붙여 넣어 주세요.</div></div>'; return; }
+  const rows = parts.map(p => { const r = parse(p), v = verify(r); return { r, v }; });
+  let h = '';
+  if (rows.length > 1) { const okN = rows.filter(x => x.v.ok).length; h += `<div class="sum">📊 총 ${rows.length}개 중 ✅ ${okN}개 정상 · ❌ ${rows.length - okN}개 이상</div>`; }
+  rows.sort((a, b) => (b.v.ok - a.v.ok) || ((b.r.score || 0) - (a.r.score || 0)));
+  rows.forEach(({ r, v }, i) => {
+    h += `<div class="card ${v.ok ? 'ok' : 'bad'}"><h3>${v.ok ? '✅ 정상 기록' : '❌ 검증 실패'}${rows.length > 1 && v.ok ? ` · ${i + 1}위` : ''}</h3><table>
+     <tr><td>👤 이름</td><td>${esc(r.name ?? '-')}</td></tr>
+     <tr><td>🎚 난이도</td><td>${r.diff ? DIFF[r.diff].name + ' (×' + DIFF[r.diff].mult + ')' : '-'}</td></tr>
+     <tr><td>🎴 판 번호</td><td>${r.deal !== undefined ? '#' + r.deal : '-'}</td></tr>
+     <tr><td>🏆 결과</td><td>${r.clear === undefined ? '-' : (r.clear ? '클리어' : '포기') + ` (${r.found}/52)`}</td></tr>
+     <tr><td>⭐ 점수</td><td>${r.score !== undefined ? comma(r.score) : '-'}</td></tr>
+     <tr><td>⏱️ 시간</td><td>${r.sec !== undefined ? fmtT(r.sec) : '-'}</td></tr>
+     <tr><td>👣 이동 / ↩️</td><td>${r.moves ?? '-'}수 / ${r.undos ?? '-'}회</td></tr>
+     <tr><td>📅 일시</td><td>${esc(r.date ?? '-')}</td></tr>
+     <tr><td>🔐 코드</td><td>${esc(r.code ?? '-')}</td></tr></table>
+     ${v.why.length ? `<div class="why">${v.why.map(w => '· ' + esc(w)).join('<br>')}</div>` : ''}</div>`;
+  });
+  out.innerHTML = h;
+}
+document.getElementById('go').onclick = run;
+document.getElementById('clr').onclick = () => { document.getElementById('inp').value = ''; document.getElementById('res').innerHTML = ''; };
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+</script>
+</body>
+</html>

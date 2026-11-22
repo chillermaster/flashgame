@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>맹약의 깃발 — 점수검증기</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at top,#1d2236,#0a0c14 70%);color:#f3ead6;font-family:'Pretendard','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:18px 14px 40px}
+h1{margin:6px 0 2px;text-align:center;font-size:clamp(24px,6vw,34px);background:linear-gradient(180deg,#fff3c8,#e3b45a 55%,#a8782c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:#cbb88a;font-size:13px;letter-spacing:2px;margin-bottom:14px}
+.panel{background:linear-gradient(180deg,rgba(26,30,46,.96),rgba(13,15,24,.97));border:1px solid #8a7340;border-radius:14px;padding:14px;box-shadow:0 10px 36px rgba(0,0,0,.55)}
+textarea{width:100%;height:250px;background:#0a0c14;border:1px solid #6a5a34;border-radius:9px;color:#efe6cc;padding:10px;font-size:14px;line-height:1.55;font-family:inherit;resize:vertical}
+.btns{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+button,a.b{font-family:inherit;border:none;cursor:pointer;font-weight:800;font-size:15px;padding:11px 20px;border-radius:10px;text-decoration:none;display:inline-block}
+.go{background:linear-gradient(180deg,#e9c36a,#b8862e);color:#1d1406;box-shadow:0 3px 0 #6a4a14}
+.sec{background:linear-gradient(180deg,#3a4258,#262b3c);color:#e8e2d0;box-shadow:0 3px 0 #141824}
+#out{margin-top:14px}
+.res{border-radius:12px;padding:14px;text-align:center}
+.ok{background:rgba(60,200,110,.12);border:1px solid #4cd38a}
+.bad{background:rgba(230,80,60,.12);border:1px solid #ff7a66}
+.res .big{font-size:24px;font-weight:900;margin-bottom:4px}
+.ok .big{color:#7cf0a8}.bad .big{color:#ff8a76}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left}
+td:first-child{color:#c9b27a;width:40%}
+.warn{color:#ffb4a4;font-size:13px;margin-top:8px;text-align:left;line-height:1.6}
+.note{font-size:12px;color:#a89e86;margin-top:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔍 점수검증기</h1>
+  <div class="sub">⚔️ 맹약의 깃발 — 로웬 용병단 토너먼트</div>
+  <div class="panel">
+    <div style="font-size:13px;color:#d9ceb4;margin-bottom:8px">📋 게임이 끝난 뒤 복사한 기록을 그대로 붙여넣으세요.</div>
+    <textarea id="t" placeholder="⚔️ 맹약의 깃발 — 로웬 용병단 토너먼트&#10;지휘관: ...&#10;...&#10;검증코드: XXXX-XXXX-XXXX-XXXX"></textarea>
+    <div class="btns"><button class="go" id="v">✅ 기록 검증하기</button><button class="sec" id="c">지우기</button><a class="b sec" href="https://chillermaster.github.io/flashgame/rowen-mercenary.html" target="_blank" rel="noopener">🎮 게임 하러 가기</a></div>
+    <div id="out"></div>
+    <div class="note">검증 방식: 기록에 적힌 지휘관·난이도·승수·점수·명성·처치·생포·영입·생존·최대 병력·상금·전투 시간·일시를 묶어 검증코드를 다시 계산하고, 점수 공식(명성 + 승리×500 + 생포×40 + 생존×60 + 상금÷2 + 우승 3000 + 왕의 시험 5000) × 난이도 배율과도 맞는지 확인합니다. 한 글자라도 고치면 검증에 실패합니다.</div>
+  </div>
+</div>
+<script>
+const SALT='ROWEN-MERC|맹약의깃발|2026';
+const DIFF={'견습':{id:'easy',mul:1.0},'정예':{id:'normal',mul:1.5},'전설':{id:'hard',mul:2.2}};
+const STAGES=['예선 1차전','예선 2차전','예선 3차전','본선 8강','본선 4강','결승','특별전 · 왕의 시험'];
+function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return[h2>>>0,h1>>>0];}
+function vcode(s){const[a,b]=cyrb53(SALT+'#'+s,7);const hx=(a.toString(16).padStart(8,'0')+b.toString(16).padStart(8,'0')).toUpperCase();return hx.slice(0,4)+'-'+hx.slice(4,8)+'-'+hx.slice(8,12)+'-'+hx.slice(12,16);}
+function calcScore(o){return Math.round((o.renown+o.wins*500+o.captures*40+o.survivors*60+Math.floor(o.gold/2)+(o.champion?3000:0)+(o.trial?5000:0))*o.mul);}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function field(txt,key){const m=txt.match(new RegExp('^\\s*'+key+'\\s*[:：]\\s*(.+)$','m'));return m?m[1].trim():null;}
+function verify(){
+  const txt=document.getElementById('t').value.replace(/\r/g,'');
+  const out=document.getElementById('out'); const errs=[];
+  const name=field(txt,'지휘관'), diffN=field(txt,'난이도'), result=field(txt,'결과'), scoreS=field(txt,'점수'), renS=field(txt,'명성'), capS=field(txt,'생포'), survS=field(txt,'생존 용병'), goldS=field(txt,'상금 잔액'), timeS=field(txt,'전투 시간'), ds=field(txt,'일시'), code=field(txt,'검증코드');
+  if(!name||!diffN||!result||!scoreS||!renS||!capS||!survS||!goldS||!timeS||!ds||!code){out.innerHTML='<div class="res bad"><div class="big">❌ 형식 오류</div>기록의 일부 항목을 찾을 수 없습니다. 복사한 기록 전체를 붙여넣어 주세요.</div>';return;}
+  const d=DIFF[diffN]; if(!d) errs.push('알 수 없는 난이도: '+diffN);
+  const mW=result.match(/\((\d)\/7승\)/); const wins=mW?+mW[1]:NaN; if(isNaN(wins)) errs.push('결과에서 승수를 읽을 수 없습니다.');
+  const score=+scoreS.replace(/[^\d]/g,'');
+  const mR=renS.match(/(\d+)\s*·\s*처치\s*(\d+)/); const renown=mR?+mR[1]:NaN, kills=mR?+mR[2]:NaN;
+  const mC=capS.match(/(\d+)\s*\(영입\s*(\d+)\)/); const captures=mC?+mC[1]:NaN, recruited=mC?+mC[2]:NaN;
+  const mS=survS.match(/(\d+)\s*·\s*최대 병력\s*(\d+)/); const survivors=mS?+mS[1]:NaN, maxBand=mS?+mS[2]:NaN;
+  const gold=+goldS.replace(/[^\d]/g,'');
+  const mT=timeS.match(/(\d+):(\d{2})/); const ts=mT?(+mT[1]*60+ +mT[2]):NaN;
+  if([renown,kills,captures,recruited,survivors,maxBand,ts].some(isNaN)) errs.push('숫자 항목을 읽을 수 없습니다.');
+  let codeOk=false, scoreOk=false;
+  if(!errs.length){
+    const payload=[name,d.id,wins,score,renown,kills,captures,recruited,survivors,maxBand,gold,ts,ds].join('|');
+    codeOk = vcode(payload)===code.toUpperCase().trim();
+    const champion=wins>=6, trial=wins>=7;
+    const exp=calcScore({renown,wins,captures,survivors,gold,champion,trial,mul:d.mul});
+    scoreOk = exp===score;
+    if(!scoreOk) errs.push('점수가 공식과 맞지 않습니다 (계산값 '+exp+').');
+    const expRes = trial?'🏆 우승 · 👑 왕의 시험 돌파':champion?'🏆 우승':(STAGES[wins]+' 탈락');
+    if(!result.startsWith(expRes)) errs.push('결과 문구가 승수와 맞지 않습니다.');
+    if(recruited>captures) errs.push('영입 수가 생포 수보다 많습니다.');
+    if(maxBand>40||survivors>40) errs.push('용병단 최대 인원(40)을 넘습니다.');
+    if(!codeOk) errs.push('검증코드가 일치하지 않습니다. 기록이 수정되었을 수 있습니다.');
+  }
+  const ok=codeOk&&scoreOk&&!errs.length;
+  let h=`<div class="res ${ok?'ok':'bad'}"><div class="big">${ok?'✅ 진짜 기록입니다':'❌ 검증 실패'}</div>${ok?'게임에서 그대로 복사된 기록이에요.':'기록이 수정되었거나 일부가 빠졌습니다.'}`;
+  h+=`<table><tr><td>🎖️ 지휘관</td><td>${esc(name)}</td></tr><tr><td>⚖️ 난이도</td><td>${esc(diffN)}</td></tr><tr><td>🏆 결과</td><td>${esc(result)}</td></tr><tr><td>🎯 점수</td><td><b>${isNaN(score)?'-':score.toLocaleString()}</b></td></tr><tr><td>⭐ 명성 · 처치</td><td>${renown} · ${kills}</td></tr><tr><td>⛓️ 생포 · 영입</td><td>${captures} · ${recruited}</td></tr><tr><td>🛡️ 생존 · 최대 병력</td><td>${survivors} · ${maxBand}</td></tr><tr><td>💰 상금 잔액</td><td>${gold}</td></tr><tr><td>⏱️ 전투 시간</td><td>${esc(timeS)}</td></tr><tr><td>📅 일시</td><td>${esc(ds)}</td></tr></table>`;
+  if(errs.length) h+='<div class="warn">'+errs.map(e=>'• '+esc(e)).join('<br>')+'</div>';
+  h+='</div>'; out.innerHTML=h;
+}
+document.getElementById('v').onclick=verify;
+document.getElementById('c').onclick=()=>{document.getElementById('t').value='';document.getElementById('out').innerHTML='';};
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+</script>
+</body>
+</html>

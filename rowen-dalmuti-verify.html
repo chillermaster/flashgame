@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>로웬 달무티 점수검증기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,214,150,.14),transparent 70%),radial-gradient(ellipse at 50% 100%,#08201f,#050406 70%);background-color:#050406;color:#f3e7cf;font-family:'Noto Serif KR',serif;touch-action:manipulation}
+.w{max-width:620px;margin:0 auto;padding:22px 14px 40px}
+h1{text-align:center;font-size:clamp(22px,6vw,32px);font-weight:900;background:linear-gradient(#fff6d2,#e8b860 55%,#9a6a1c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;font-size:12px;letter-spacing:4px;color:#9fd8cf;margin-top:4px}
+.box{margin-top:16px;background:linear-gradient(#21160e,#120b07);border:1px solid #c9a35c;border-radius:14px;padding:14px}
+label{font-size:13px;color:#c9a35c;font-weight:700}
+textarea{width:100%;min-height:190px;margin-top:8px;background:#0b0705;color:#f3e7cf;border:1px solid #6b5333;border-radius:10px;padding:10px;font-size:13px;line-height:1.55;font-family:inherit;resize:vertical}
+.row{display:flex;gap:8px;justify-content:center;margin-top:10px}
+button{height:42px;padding:0 20px;border-radius:21px;border:1px solid #c9a35c;background:linear-gradient(#3d2a18,#22160c);color:#f7e6c0;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
+button.gold{background:linear-gradient(#f0cd80,#b98a37);color:#2a1806;border-color:#ffe6aa}
+.verdict{text-align:center;font-size:20px;font-weight:900;margin:4px 0 10px}
+.ok{color:#8ff0c8}.bad{color:#ff8a7a}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td{padding:7px 6px;border-bottom:1px solid rgba(201,163,92,.18)}
+td:first-child{color:#c9a35c;white-space:nowrap;width:38%}
+.chk{margin-top:10px;font-size:13px;line-height:1.8}
+.note{font-size:12px;color:#b9a78a;margin-top:12px;line-height:1.6}
+.rounds{display:flex;gap:4px;flex-wrap:wrap}
+.rounds span{display:inline-block;min-width:34px;text-align:center;padding:3px 5px;border-radius:7px;background:#14100b;border:1px solid #5a4528;font-size:12px}
+.rounds span.k{border-color:#ffd27a;color:#ffd27a}
+a{color:#9fe3d8}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>🔍 로웬 달무티 점수검증기</h1>
+  <div class="sub">ROWEN · DALMUTI · VERIFIER</div>
+  <div class="box">
+    <label for="inp">게임에서 복사한 기록(또는 검증코드)을 붙여넣으세요</label>
+    <textarea id="inp" placeholder="🎭 로웬 달무티 · 맹약의 서열전&#10;👤 이름: …&#10;🔐 검증코드: RDM1.xxxxx.xxxx"></textarea>
+    <div class="row"><button id="clr">지우기</button><button class="gold" id="go">✅ 검증하기</button></div>
+  </div>
+  <div class="box" id="out" style="display:none"></div>
+  <p class="note">검증코드에는 이름·서열 기록·궁정 수준·디버프·플레이 시간이 암호화되어 들어 있습니다. 검증기는 코드를 풀어 서명을 확인하고, 판별 서열 기록으로 점수를 다시 계산해 적힌 점수와 맞는지 확인합니다. 기록 본문의 이름·점수를 고쳐 쓰면 ‘본문 불일치’로 표시됩니다.<br>🎮 게임: <a href="https://chillermaster.github.io/flashgame/rowen-dalmuti.html" target="_blank" rel="noopener">로웬 달무티 · 맹약의 서열전</a></p>
+</div>
+<script>
+(()=>{
+const SALT='ROWEN·DALMUTI·맹약의서열전·7e1';
+const PTS=[0,10,7,5,4,3,2,1,0];
+const LV=[null,{name:'견습 궁정',m:100},{name:'서약 궁정',m:130},{name:'원수 궁정',m:160},{name:'태양왕 궁정',m:200}];
+const DEB=[{ic:'⛓️',name:'낙인',add:20},{ic:'⏳',name:'모래시계',add:30},{ic:'🌑',name:'그림자 장막',add:15},{ic:'🎭',name:'가면 봉인',add:25},{ic:'💰',name:'무거운 공물',add:20}];
+const TITLES=p=>p===1?'👑대영주':p===2?'🎖️소영주':p===8?'⛓️농노':p===7?'🥀소작농':'🧺평민';
+function calcMult(l,mask){let s=100;DEB.forEach((d,i)=>{if(mask&(1<<i))s+=d.add;});return Math.round(LV[l].m*s/100);}
+function calcBase(list){let base=0,streak=0,prev=0,maxS=0,kings=0;list.forEach((p,i)=>{let pts=PTS[p];if(p===1){streak++;kings++;if(streak>1)pts+=2*(streak-1);}else streak=0;if(i>0&&p<prev)pts+=prev-p;maxS=Math.max(maxS,streak);base+=pts;prev=p;});return{base,maxS,kings};}
+const cyrb53=(str,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function decode(code){const m=code.match(/RDM1\.([A-Za-z0-9_-]+)\.([0-9a-z]+)/);if(!m)return{err:'검증코드(RDM1.…)를 찾지 못했어요.'};
+ try{let b=m[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';const bin=atob(b);const key=new TextEncoder().encode(SALT);const by=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i)^key[i%key.length]^((i*31+7)&255);
+  const js=new TextDecoder().decode(by);const obj=JSON.parse(js);const sig=cyrb53(SALT+js).toString(36)===m[2];return{obj,sig};}catch(e){return{err:'검증코드가 손상되었거나 위조되었습니다.'};}}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function run(){const txt=document.getElementById('inp').value;const out=document.getElementById('out');out.style.display='block';const d=decode(txt);
+ if(d.err){out.innerHTML=`<div class="verdict bad">❌ 검증 실패</div><p style="text-align:center">${d.err}</p>`;return;}
+ const o=d.obj,checks=[];checks.push([d.sig,'서명(해시) 확인']);
+ const pos=String(o.p||'').split('').map(Number);const valid=pos.length>=1&&pos.length<=7&&pos.every(x=>x>=1&&x<=8);checks.push([valid&&pos.length===7,`서열 기록 형식 (7판 완주)`]);
+ const cb=valid?calcBase(pos):{base:-1,maxS:-1,kings:-1};checks.push([cb.base===o.b&&cb.kings===o.k&&cb.maxS===o.x,'기본 점수 재계산']);
+ const okL=LV[o.l]!=null;const mul=okL?calcMult(o.l,o.d|0):-1;checks.push([mul===o.m,'배율 재계산']);checks.push([Math.round(o.b*o.m/100)===o.s,'최종 점수 = 기본 × 배율']);
+ const nm=txt.match(/이름:\s*(.+)/),sc=txt.match(/최종 점수:\s*([\d,]+)/);let bodyOk=true,bodyMsg='본문 일치';if(nm&&nm[1].trim()!==o.n){bodyOk=false;}if(sc&&+sc[1].replace(/,/g,'')!==o.s){bodyOk=false;}if(!nm&&!sc)bodyMsg='본문 없음(코드만 검증)';checks.push([bodyOk,bodyMsg+(bodyOk?'':' — 본문 이름/점수가 코드와 다름')]);
+ const all=checks.every(c=>c[0]);const debs=DEB.filter((x,i)=>o.d&(1<<i)).map(x=>x.ic+x.name);
+ out.innerHTML=`<div class="verdict ${all?'ok':'bad'}">${all?'✅ 정상 기록':'❌ 위조 또는 변조 의심'}</div>
+<table><tr><td>👤 이름</td><td>${esc(o.n)}</td></tr><tr><td>🏆 최종 점수</td><td><b style="color:#ffd27a;font-size:17px">${o.s}</b>점</td></tr>
+<tr><td>🧮 계산</td><td>기본 ${o.b}점 × ${(o.m/100).toFixed(2)}</td></tr><tr><td>🏰 상대 궁정</td><td>${okL?LV[o.l].name+' (×'+(LV[o.l].m/100).toFixed(1)+')':'?'}</td></tr>
+<tr><td>🌑 디버프</td><td>${debs.length?debs.join(', '):'없음'}</td></tr>
+<tr><td>📜 판별 서열</td><td><div class="rounds">${pos.map((p,i)=>`<span class="${p===1?'k':''}">${i+1}판 ${p}위<br>${TITLES(p)}</span>`).join('')}</div></td></tr>
+<tr><td>👑 대영주</td><td>${o.k}회 · 최다 연속 ${o.x}회</td></tr><tr><td>🥇 최종 순위</td><td>8명 중 ${o.f}위</td></tr>
+<tr><td>⏱️ 플레이 시간</td><td>${fmt(o.t|0)}</td></tr><tr><td>📅 기록 시각</td><td>${new Date(o.ts).toLocaleString('ko-KR')}</td></tr></table>
+<div class="chk">${checks.map(c=>(c[0]?'✅ ':'❌ ')+c[1]).join('<br>')}</div>`;}
+document.getElementById('go').addEventListener('click',run);
+document.getElementById('clr').addEventListener('click',()=>{document.getElementById('inp').value='';document.getElementById('out').style.display='none';});
+})();
+</script>
+</body>
+</html>
