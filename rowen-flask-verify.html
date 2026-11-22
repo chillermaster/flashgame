@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>정화의 플라스크 — 점수검증기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body{min-height:100vh;background:radial-gradient(ellipse at top,#2a1d4a,#07060f 70%);color:#efe6cf;font-family:'Pretendard','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif;padding:18px 12px 40px}
+.box{max-width:680px;margin:0 auto}
+h1{text-align:center;font-size:24px;color:#f6dc93;text-shadow:0 0 16px #c79b3b88}
+.sub{text-align:center;color:#bda7e8;font-size:13px;margin:6px 0 14px;line-height:1.6}
+textarea{width:100%;height:190px;border-radius:12px;background:#0f0b1b;color:#f2e8cc;border:1px solid #d9b96a66;padding:10px;font-size:13px;line-height:1.55;font-family:inherit;resize:vertical}
+.btns{display:flex;gap:8px;margin-top:10px}
+button{flex:1;height:48px;border-radius:12px;border:1px solid #d9b96a88;background:#1d1630;color:#f3e7c4;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+button.main{background:linear-gradient(#7a4fd0,#3d2780);border-color:#f6dc93;color:#fff}
+.vres{margin-top:16px;border-radius:14px;padding:14px;border:1px solid}
+.vres.ok{background:#1c3a2655;border-color:#6fdc8c}
+.vres.bad{background:#4a1c1c55;border-color:#ff7a6a}
+.verdict{font-size:20px;font-weight:900;text-align:center;margin-bottom:10px}
+.ok .verdict{color:#8ff0a8}.bad .verdict{color:#ff9a8a}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+dt{color:#c9b98f}dd{color:#fff;font-weight:700}
+ul{margin-top:10px;padding-left:18px;font-size:13px;line-height:1.7}
+li.x{color:#ff9a8a}li.w{color:#ffd27a}
+.note{margin-top:16px;font-size:12.5px;color:#a99cc4;line-height:1.7;background:#ffffff08;border-radius:10px;padding:10px 12px}
+a{color:#9fd0ff}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🔎 정화의 플라스크 점수검증기</h1>
+  <div class="sub">🧪 로웬 마나 정화전 기록을 통째로 붙여 넣고 검증하기를 누르세요.<br>검증코드(RFL1-…) 속 기록과 본문 내용을 대조해요.</div>
+  <textarea id="vin" placeholder="🧪 정화의 플라스크 — 로웬 마나 정화전&#10;👤 마법사: …&#10;…&#10;🔐 검증코드: RFL1-…"></textarea>
+  <div class="btns"><button class="main" id="vgo">✅ 검증하기</button><button id="vclr">🧹 지우기</button></div>
+  <div id="vout"></div>
+  <div class="note">🛡️ 검증코드에는 이름·결과·난이도·디버프·시간·정화 수·이동 수·주문 수·점수가 함께 봉인되어 있어요. 한 글자라도 바꾸면 봉인이 깨져요.<br>🎮 게임 하러 가기: <a href="https://chillermaster.github.io/flashgame/rowen-flask.html" target="_blank" rel="noopener">정화의 플라스크</a></div>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const SALT='rowen-flask#purify-2026',XK='LUCA-ROWEN-FLASK';
+const DIFFS=[{nc:5,base:600,par:90,tb:4},{nc:6,base:1000,par:120,tb:5},{nc:7,base:1600,par:150,tb:6},{nc:8,base:2400,par:180,tb:8},{nc:9,base:3500,par:220,tb:10}];
+const OPPS=[['견습','불씨 견습생 토비'],['수련','늪뿌리 주술사'],['숙련','새벽 수녀 클라라'],['대마법사','화염 대마법사 이그나'],['첨탑','역병 마녀 모르가나']];
+const FACS=['별탑 학회','새벽 성당','늪뿌리 부족'];
+const DEBUFFS=[['🌫️','안개의 저주',40],['☠️','첨탑의 저주',30],['🔥','서두르는 적',30],['🕯️','약해진 주문',20],['⏳','시간의 봉인',15],['🪨','무거운 플라스크',15]];
+const RES_TXT={W:'승리 (완전 정화)',w:'판정승 (시간 종료)',L:'패배',l:'판정패 (시간 종료)',D:'무승부 (시간 종료)'};
+const LIMIT=600;
+function h32(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}h^=h>>>13;h=Math.imul(h,0x5bd1e995);h^=h>>>15;return h>>>0}
+function multOf(mask){let m=100;for(let i=0;i<DEBUFFS.length;i++)if(mask>>i&1)m+=DEBUFFS[i][2];return m}
+function calcScore(r){const D=DIFFS[r.diff];const m=multOf(r.mask);let raw;
+ if(r.res==='W')raw=D.base+Math.max(0,Math.round((D.par*10-r.tenths)*D.tb/10))+(r.total-r.ai)*60;
+ else if(r.res==='w')raw=Math.round(D.base*.6)+(r.my-r.ai)*60;
+ else raw=Math.round(D.base*.3*r.peak/r.total);
+ return Math.round(raw*m/100)}
+function fmtT(sec){const m=Math.floor(sec/60),s=sec-m*60;return m+':'+(s<10?'0':'')+s.toFixed(1)}
+const fmt=n=>Number(n).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function decode(code){
+ try{let b=code.replace(/^RFL1-/,'').replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';
+  const bin=atob(b);const by=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i)^((XK.charCodeAt(i%XK.length)+i*7)&255);
+  const full=new TextDecoder().decode(by);const parts=full.split('~');if(parts.length!==20)return{valid:false,why:'코드 구조가 올바르지 않습니다.'};
+  const cs=parts.pop();const s=parts.join('~');const valid=h32(SALT+s).toString(36)===cs;
+  const n=k=>Number(parts[k]);
+  const r={v:n(0),name:parts[1],res:parts[2],diff:n(3),fac:n(4),mask:n(5),tenths:n(6),my:n(7),ai:n(8),peak:n(9),total:n(10),moves:n(11),cast:n(12),hit:n(13),shakes:n(14),undos:n(15),seed:n(16),score:n(17),date:parts[18]};
+  return{valid,r,why:valid?'':'봉인(체크섬)이 맞지 않습니다 — 코드가 변조되었어요.'}
+ }catch(e){return{valid:false,why:'코드를 해독할 수 없습니다.'}}}
+function verify(text){
+ const out=$('vout');const body=text||'';
+ const m=/RFL1-[A-Za-z0-9_\-]+/.exec(body);
+ if(!m){out.innerHTML='<div class="vres bad"><div class="verdict">✘ 검증코드를 찾을 수 없어요</div><ul><li class="x">기록 전체(🔐 검증코드: RFL1-… 줄 포함)를 붙여 넣어 주세요.</li></ul></div>';return}
+ const d=decode(m[0]);
+ if(!d.r){out.innerHTML=`<div class="vres bad"><div class="verdict">✘ 위조 또는 손상된 코드</div><ul><li class="x">${esc(d.why)}</li></ul></div>`;return}
+ const r=d.r,bad=[],warn=[];
+ if(!d.valid)bad.push(d.why);
+ if(!(r.diff>=0&&r.diff<=4)||!(r.fac>=0&&r.fac<=2)||!RES_TXT[r.res]||!(r.mask>=0&&r.mask<64))bad.push('알 수 없는 난이도·결사·결과 값이 들어 있어요.');
+ else{
+  const D=DIFFS[r.diff];
+  if(r.total!==D.nc)bad.push('난이도와 플라스크 수가 맞지 않아요.');
+  if(r.my<0||r.my>r.total||r.ai<0||r.ai>r.total)bad.push('정화 개수가 범위를 벗어났어요.');
+  if(r.peak<r.my||r.peak>r.total)bad.push('최고 정화 개수가 범위를 벗어났어요.');
+  if(r.res!=='W'&&r.peak>=r.total)bad.push('모든 플라스크를 정화했는데 승리가 아니에요.');
+  if(r.peak>r.cast+1)bad.push('보낸 주문 수에 비해 최고 정화 개수가 너무 많아요.');
+  if(r.res==='W'&&(r.my!==r.total||r.ai>=r.total))bad.push('완전 정화 승리인데 정화 개수가 맞지 않아요.');
+  if(r.res==='L'&&(r.ai!==r.total||r.my>=r.total))bad.push('패배 기록인데 상대의 정화 개수가 맞지 않아요.');
+  if('wlD'.includes(r.res)){if(r.tenths<LIMIT*10)bad.push('시간 판정 기록인데 10분이 지나지 않았어요.');
+   if(r.res==='w'&&r.my<=r.ai)bad.push('판정승인데 정화 개수가 상대보다 많지 않아요.');
+   if(r.res==='l'&&r.my>=r.ai)bad.push('판정패인데 정화 개수가 상대보다 적지 않아요.');
+   if(r.res==='D'&&r.my!==r.ai)bad.push('무승부인데 정화 개수가 서로 달라요.')}
+  if(r.tenths>LIMIT*10)bad.push('제한 시간(10분)을 넘는 기록이에요.');
+  if(r.res==='W'&&r.moves<r.total)bad.push('정화에 필요한 최소 이동 수보다 적어요.');
+  if(r.tenths<r.moves*3)bad.push('이동 수에 비해 시간이 너무 짧아요 (한 번 붓는 데 최소 0.3초).');
+  const sc=calcScore(r);if(sc!==r.score)bad.push('점수 계산이 맞지 않아요 (계산값 '+fmt(sc)+').');
+  if(r.mask>>4&1&&r.undos>0)bad.push('시간의 봉인(되돌리기 금지) 디버프인데 되돌리기 기록이 있어요.');
+ }
+ const ms=/점수\s*[:：]\s*([\d,]+)/.exec(body);if(ms){const v=+ms[1].replace(/,/g,'');if(v!==r.score)bad.push('본문에 적힌 점수('+fmt(v)+')가 코드 속 점수('+fmt(r.score)+')와 달라요.')}
+ const mn=/마법사\s*[:：]\s*(.+?)\s*\(/.exec(body);if(mn&&mn[1].trim()!==r.name)warn.push('본문의 마법사 이름이 코드 속 이름과 달라요.');
+ const ok=!bad.length;
+ const db=[];for(let i=0;i<DEBUFFS.length;i++)if(r.mask>>i&1)db.push(DEBUFFS[i][0]+' '+DEBUFFS[i][1]);
+ const o=OPPS[r.diff]||['?','?'];const ds=String(r.date);const date=ds.length===8?ds.slice(0,4)+'.'+ds.slice(4,6)+'.'+ds.slice(6):ds;
+ out.innerHTML=`<div class="vres ${ok?'ok':'bad'}"><div class="verdict">${ok?(warn.length?'✔ 진짜 기록 (주의 사항 있음)':'✔ 진짜 기록입니다'):'✘ 위조 또는 변조 의심'}</div>
+ <dl><dt>👤 마법사</dt><dd>${esc(r.name)} (${esc(FACS[r.fac]||'?')})</dd>
+ <dt>⚔️ 상대</dt><dd>${esc(o[0])} · ${esc(o[1])}</dd>
+ <dt>🏆 결과</dt><dd>${esc(RES_TXT[r.res]||r.res)}</dd>
+ <dt>⭐ 점수</dt><dd>${fmt(r.score)}</dd>
+ <dt>⏱️ 시간</dt><dd>${fmtT(r.tenths/10)}</dd>
+ <dt>🧪 정화</dt><dd>${r.my} / ${r.total} (최고 ${r.peak}) · 상대 ${r.ai} / ${r.total}</dd>
+ <dt>🔄 이동</dt><dd>${r.moves}</dd>
+ <dt>✨ 주문</dt><dd>보냄 ${r.cast} · 받음 ${r.hit}</dd>
+ <dt>🌀 / ↩️</dt><dd>흔들기 ${r.shakes} · 되돌리기 ${r.undos}</dd>
+ <dt>☠️ 디버프</dt><dd>${db.length?esc(db.join(', ')):'없음'} (×${(multOf(r.mask)/100).toFixed(2)})</dd>
+ <dt>📅 날짜</dt><dd>${esc(date)}</dd><dt>🎲 시드</dt><dd>${r.seed}</dd></dl>
+ ${bad.length||warn.length?`<ul>${bad.map(s=>`<li class="x">${esc(s)}</li>`).join('')}${warn.map(s=>`<li class="w">${esc(s)}</li>`).join('')}</ul>`:''}</div>`;
+}
+$('vgo').addEventListener('click',()=>verify($('vin').value));
+$('vclr').addEventListener('click',()=>{$('vin').value='';$('vout').innerHTML=''});
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('textarea,button,a'))return;const n=Date.now();if(n-lt<350)e.preventDefault();lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+})();
+</script>
+</body>
+</html>
