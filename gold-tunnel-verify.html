@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>황금 갱도 점수검증기</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:radial-gradient(ellipse 70% 40% at 50% -5%,rgba(255,180,80,.20),transparent 70%),radial-gradient(ellipse at 50% 110%,#1b0f08,#0a0705 65%);background-color:#0a0705;color:#f4e6cc;font-family:'Noto Sans KR',sans-serif;touch-action:manipulation}
+.w{max-width:620px;margin:0 auto;padding:22px 14px 40px}
+h1{text-align:center;font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:clamp(24px,7vw,34px);background:linear-gradient(#fff4c8,#ffcf4a 55%,#b37a1e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;font-size:11px;letter-spacing:4px;color:#9a8466;margin-top:4px}
+.box{margin-top:16px;background:linear-gradient(#2a1c12,#140d08);border:1.5px solid #b48a48;border-radius:14px;padding:14px}
+label{font-size:13px;color:#d9b77a;font-weight:700}
+textarea{width:100%;min-height:200px;margin-top:8px;background:#0c0805;color:#f4e6cc;border:1px solid #6b5333;border-radius:10px;padding:10px;font-size:13px;line-height:1.55;font-family:inherit;resize:vertical}
+.row{display:flex;gap:8px;justify-content:center;margin-top:10px}
+button{height:42px;padding:0 20px;border-radius:21px;border:1px solid #8a6a3a;background:linear-gradient(#3d2a18,#22160c);color:#f7e6c0;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
+button.gold{background:linear-gradient(#ffd77e,#c08a2c);color:#2a1806;border-color:#ffe6aa}
+.verdict{text-align:center;font-size:21px;font-family:'Black Han Sans',sans-serif;font-weight:400;margin:4px 0 10px}
+.ok{color:#8ff0c8}.bad{color:#ff8a7a}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td{padding:7px 6px;border-bottom:1px solid rgba(180,138,72,.2);vertical-align:top}
+td:first-child{color:#d9b77a;white-space:nowrap;width:34%}
+.chk{margin-top:10px;font-size:13px;line-height:1.8}
+.note{font-size:12px;color:#b9a07a;margin-top:12px;line-height:1.6}
+.rounds{display:flex;gap:5px;flex-wrap:wrap}
+.rounds span{display:inline-block;padding:4px 7px;border-radius:8px;background:#140d08;border:1px solid #5a4528;font-size:12px;line-height:1.45;text-align:center}
+.rounds span.win{border-color:#ffcf4a;color:#ffe3a0}
+a{color:#ffd77e}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>🔎 황금 갱도 점수검증기</h1>
+  <div class="sub">GOLD TUNNEL · VERIFIER</div>
+  <div class="box">
+    <label for="inp">게임에서 복사한 기록(또는 검증코드)을 붙여넣으세요</label>
+    <textarea id="inp" placeholder="⛏️ 황금 갱도 — 곡괭이와 배신자&#10;👤 이름: …&#10;🔐 검증코드: GTN1.xxxxx.xxxx"></textarea>
+    <div class="row"><button id="clr">지우기</button><button class="gold" id="go">✅ 검증하기</button></div>
+  </div>
+  <div class="box" id="out" style="display:none"></div>
+  <p class="note">검증코드에는 이름·라운드별 역할과 승패·금맥 연결 여부·원석·고발 결과·난이도·플레이 시간이 암호화되어 들어 있습니다. 검증기는 코드를 풀어 서명을 확인한 뒤, 라운드 기록으로 금괴와 점수를 다시 계산해 적힌 점수와 맞는지 확인합니다. 기록 본문의 이름·점수를 고쳐 쓰면 ‘본문 불일치’로 표시됩니다.<br>⛏️ 게임: <a href="https://chillermaster.github.io/flashgame/gold-tunnel.html" target="_blank" rel="noopener">황금 갱도 — 곡괭이와 배신자</a></p>
+</div>
+<script>
+(()=>{
+const SALT='GOLD·TUNNEL·곡괭이와배신자·3c9';
+const LV=[{nm:'견습',m:100},{nm:'숙련',m:130},{nm:'베테랑',m:160},{nm:'전설의 갱장',m:200}];
+const cyrb53=(str,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function decode(code){const m=code.match(/GTN1\.([A-Za-z0-9_-]+)\.([0-9a-z]+)/);if(!m)return{err:'검증코드(GTN1.…)를 찾지 못했어요.'};
+ try{let b=m[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';const bin=atob(b);const key=new TextEncoder().encode(SALT);const by=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i)^key[i%key.length]^((i*31+7)&255);
+  const js=new TextDecoder().decode(by);const obj=JSON.parse(js);return{obj,sig:cyrb53(SALT+js).toString(36)===m[2]};}catch(e){return{err:'검증코드가 손상되었거나 위조되었습니다.'};}}
+function roundGold(r){const[role,win,sab,conn]=r;if(!win)return 0;return role===0?2+(conn?2:0):(sab===1?5:3);}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+const isInt=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
+function run(){const txt=document.getElementById('inp').value,out=document.getElementById('out');out.style.display='block';const d=decode(txt);
+ if(d.err){out.innerHTML=`<div class="verdict bad">❌ 검증 실패</div><p style="text-align:center">${d.err}</p>`;return;}
+ const o=d.obj,checks=[];checks.push([d.sig,'서명(해시) 확인']);
+ const R=Array.isArray(o.r)?o.r:[];
+ const fmtOk=R.length===3&&R.every(r=>Array.isArray(r)&&r.length===7&&isInt(r[0],0,1)&&isInt(r[1],0,1)&&isInt(r[2],1,2)&&isInt(r[3],0,1)&&isInt(r[4],0,6)&&isInt(r[5],0,1)&&isInt(r[6],0,1)&&r[5]+r[6]<=1&&(!r[3]||(r[0]===0&&r[1]===1)));
+ checks.push([fmtOk,'라운드 기록 형식 (3라운드 완주 · 고발 라운드당 1회)']);
+ const gold=fmtOk?R.reduce((a,r)=>a+roundGold(r),0):-1,gems=fmtOk?R.reduce((a,r)=>a+r[4],0):-1,hit=fmtOk?R.reduce((a,r)=>a+r[5],0):-1,miss=fmtOk?R.reduce((a,r)=>a+r[6],0):-1;
+ checks.push([gold===o.g&&gems===o.e&&hit===o.h&&miss===o.x,'금괴·원석·고발 재계산']);
+ const base=Math.max(0,o.g*10+o.e*3+o.h*5-o.x*3);checks.push([base===o.b,'기본 점수 = 금×10 + 원석×3 + 적중×5 − 오발×3']);
+ const lv=LV[o.l];checks.push([!!lv&&lv.m===o.m,'난이도 배율 확인']);
+ checks.push([Math.round(o.b*o.m/100)===o.s,'최종 점수 = 기본 × 배율']);
+ const nm=txt.match(/이름:\s*(.+)/),sc=txt.match(/최종 점수:\s*([\d,]+)/);let bodyOk=true,bodyMsg='본문 일치';
+ if(nm&&nm[1].trim()!==o.n)bodyOk=false;if(sc&&+sc[1].replace(/,/g,'')!==o.s)bodyOk=false;if(!nm&&!sc)bodyMsg='본문 없음(코드만 검증)';
+ checks.push([bodyOk,bodyMsg+(bodyOk?'':' — 본문 이름/점수가 코드와 다름')]);
+ const all=checks.every(c=>c[0]);
+ out.innerHTML=`<div class="verdict ${all?'ok':'bad'}">${all?'✅ 정상 기록':'❌ 위조 또는 변조 의심'}</div>
+<table><tr><td>👤 이름</td><td>${esc(o.n)}</td></tr>
+<tr><td>🏆 최종 점수</td><td><b style="color:#ffcf4a;font-size:17px">${Number(o.s).toLocaleString()}</b>점</td></tr>
+<tr><td>🧮 계산</td><td>기본 ${o.b}점 × ${(o.m/100).toFixed(1)}</td></tr>
+<tr><td>🎚️ 난이도</td><td>${lv?lv.nm+' (×'+(lv.m/100).toFixed(1)+')':'?'}</td></tr>
+<tr><td>🪙 금괴 · 💎 원석</td><td>금 ${o.g} · 원석 ${o.e}</td></tr>
+<tr><td>🎯 고발</td><td>적중 ${o.h} · 오발 ${o.x}</td></tr>
+<tr><td>📜 라운드</td><td><div class="rounds">${R.map((r,i)=>`<span class="${r[1]?'win':''}">${i+1}R ${r[0]?'🗡️배신자':'⛏️광부'} ${r[1]?'승':'패'}<br>+${roundGold(r)}금${r[3]?' (금맥 연결)':''}${r[4]?' 💎'+r[4]:''}${r[5]?' 🎯':''}${r[6]?' 💢':''}</span>`).join('')}</div></td></tr>
+<tr><td>🥇 최종 순위</td><td>6명 중 ${o.f}위</td></tr>
+<tr><td>⏱️ 플레이 시간</td><td>${fmt(o.t|0)}</td></tr>
+<tr><td>📅 기록 시각</td><td>${new Date(o.ts).toLocaleString('ko-KR')}</td></tr></table>
+<div class="chk">${checks.map(c=>(c[0]?'✅ ':'❌ ')+c[1]).join('<br>')}</div>`;}
+document.getElementById('go').addEventListener('click',run);
+document.getElementById('clr').addEventListener('click',()=>{document.getElementById('inp').value='';document.getElementById('out').style.display='none';});
+})();
+</script>
+</body>
+</html>
