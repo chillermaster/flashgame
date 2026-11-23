@@ -34,7 +34,7 @@ window.GAMES = [
   { title:"딥 마린 : 심해포격전", sub:"바다 속 포트리스 게임", tags:["슈팅","잠수함"], post:37, play:"deep_marine.html", verify:"deep_marine_verify.html" },
   { title:"검 강화하기 : 어이쿠 손이 미끄러졌네", sub:"+100 강화에 도전하는 확률 게임", tags:["일반","성장","확률"], post:36, play:"sword-enhance.html", verify:"sword-enhance-verify.html" },
   { title:"수호탑 사성결계", sub:"커넥트4와 마법사의 돌", tags:["퍼즐","보드게임","전략","로웬","2인"], post:35, play:"rowen-tower.html", verify:"rowen-tower-verify.html" },
-  { title:"로웬 포커 디펜스 : 운명패 방위전", sub:"패 조합으로 직업을 뽑는 포커 디펜스", tags:["디펜스","카드","로웬"], post:34, play:"rowen-poker.html", verify:"rowen-poker-verify.html" },
+  { title:"로웬 포커 디펜스 : 운명패 방위전", sub:"패 조합으로 직업을 뽑는 포커 디펜스", tags:["디펜스","로웬"], post:34, play:"rowen-poker.html", verify:"rowen-poker-verify.html" },
   { title:"로웬 결계 방어전 : 뭉친 유닛 디펜스", sub:"좁은 우리에 몰려드는 유닛을 막아라", tags:["디펜스","로웬"], post:33, play:"rowen-ward.html", verify:"rowen-ward-verify.html" },
   { title:"로웬 왕좌전", sub:"중세 판타지 체스. 국가전을 제대로 담았다", tags:["퍼즐","보드게임","전략","체스","로웬"], post:32, play:"rowen-chess.html", verify:"rowen-chess-verify.html" },
   { title:"로웬 빙설전 : 스노우 크래프트", sub:"얼음 마법으로 벌이는 눈싸움 대전", tags:["액션","대전","로웬"], post:31, play:"rowen_snowcraft.html", verify:"rowen_snowcraft_verify.html" },
