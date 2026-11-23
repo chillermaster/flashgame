@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>게임 모음</title>
+<style>
+:root{
+  --bg:#12141c; --panel:#1b1f2b; --line:#2b3142; --text:#e8e6df; --mute:#9aa0b2;
+  --gold:#e0b45a; --gold2:#b98a2e; --red:#e0685a; --blue:#6aa7e0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  touch-action:manipulation} /* 모바일 더블탭 확대 방지 */
+a{color:inherit;text-decoration:none}
+header{padding:28px 16px 8px;text-align:center}
+header h1{margin:0;font-size:clamp(22px,4.5vw,32px);letter-spacing:.5px;color:var(--gold)}
+header p{margin:6px 0 0;color:var(--mute);font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 14px 60px}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 85%,transparent);padding:12px 0 8px}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;padding:12px 14px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);font-size:16px;outline:none}
+.search input:focus{border-color:var(--gold2)}
+.search select{padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:14px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--panel);
+  color:var(--mute);font-size:14px;cursor:pointer;white-space:nowrap}
+.tab b{font-weight:600;color:var(--text);margin-left:4px;font-size:12px}
+.tab.on{background:var(--gold);color:#1b1608;border-color:var(--gold)}
+.tab.on b{color:#1b1608}
+.info{color:var(--mute);font-size:13px;margin:10px 2px 12px;min-height:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;
+  display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--gold2);transform:translateY(-2px)}
+.card.soon{opacity:.72}
+.card h3{margin:0;font-size:16px;line-height:1.35;padding-right:48px}
+.card p{margin:0;color:var(--mute);font-size:13px;line-height:1.45;flex:1}
+.badge{position:absolute;top:12px;right:12px;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px}
+.badge.new{background:var(--red);color:#fff}
+.badge.soon{background:#3a4156;color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:12px;color:var(--blue);background:#1c2436;border:1px solid #27324a;border-radius:6px;padding:2px 7px;cursor:pointer}
+.chip:hover{background:#243050}
+.btns{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
+.btn{flex:1;min-width:84px;text-align:center;padding:9px 8px;border-radius:9px;font-size:13px;font-weight:600;
+  border:1px solid var(--line);background:#232838;cursor:pointer;color:var(--text)}
+.btn.main{background:var(--gold);color:#1b1608;border-color:var(--gold)}
+.btn.dis{opacity:.4;pointer-events:none}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:50px 0}
+footer{text-align:center;color:var(--mute);font-size:12px;padding:30px 10px}
+/* 플레이 창 */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:20;display:none;flex-direction:column}
+.modal.on{display:flex}
+.mhead{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0d0f15;border-bottom:1px solid var(--line)}
+.mhead strong{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.mhead a,.mhead button{font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:#232838;color:var(--text);cursor:pointer}
+.mhead .x{background:var(--red);border-color:var(--red);color:#fff}
+.modal iframe{flex:1;border:0;width:100%;background:#000}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="siteTitle"></h1>
+  <p id="siteDesc"></p>
+</header>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="search">
+      <input id="q" type="search" placeholder="이름 · #태그 · 초성 검색" autocomplete="off">
+      <select id="sort" aria-label="정렬">
+        <option value="new">최신순</option>
+        <option value="name">가나다순</option>
+      </select>
+    </div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+  <div class="info" id="info"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>게임 목록은 games.js 파일에서 수정할 수 있어요</footer>
+
+<div class="modal" id="modal">
+  <div class="mhead">
+    <strong id="mtitle"></strong>
+    <a id="mpost" target="_blank" rel="noopener">설명서</a>
+    <a id="mverify" target="_blank" rel="noopener">점수검증기</a>
+    <button class="x" id="mclose">닫기</button>
+  </div>
+  <iframe id="frame" allow="fullscreen; autoplay" allowfullscreen></iframe>
+</div>
+
+<script src="games.js"></script>
+<script>
+(function(){
+  var S = window.SITE || {}, GENRES = window.GENRES || [], GAMES = window.GAMES || [];
+  document.title = S.title || "게임 모음";
+  document.getElementById("siteTitle").textContent = S.title || "게임 모음";
+  document.getElementById("siteDesc").textContent = S.desc || "";
+
+  var state = { q:"", genre:"전체", sort:"new" };
+  var $q = document.getElementById("q"), $grid = document.getElementById("grid"),
+      $tabs = document.getElementById("tabs"), $info = document.getElementById("info"),
+      $sort = document.getElementById("sort");
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  /* 초성 변환 (ㅇㅋㄷ -> 원카드 등) */
+  var CH = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+  function chosung(s){
+    var o = "";
+    for (var i=0;i<s.length;i++){
+      var c = s.charCodeAt(i);
+      o += (c>=0xAC00 && c<=0xD7A3) ? CH[Math.floor((c-0xAC00)/588)] : s[i];
+    }
+    return o;
+  }
+  function norm(s){ return String(s||"").toLowerCase().replace(/\s+/g,""); }
+
+  function urlOf(base, p){
+    if (!p) return "";
+    if (/^https?:\/\//.test(p)) return p;
+    return (S.pages || "") + p;
+  }
+  function postUrl(g){ return g.post ? (S.blog || "") + g.post : ""; }
+
+  function matches(g){
+    if (state.genre !== "전체" && (g.tags||[]).indexOf(state.genre) < 0) return false;
+    var q = norm(state.q);
+    if (!q) return true;
+    if (q.charAt(0) === "#"){            // 태그 검색
+      var t = q.slice(1);
+      if (!t) return true;
+      return (g.tags||[]).some(function(x){ return norm(x).indexOf(t) >= 0; });
+    }
+    var hay = norm(g.title + " " + (g.sub||"") + " " + (g.tags||[]).join(" "));
+    if (hay.indexOf(q) >= 0) return true;
+    if (/^[ㄱ-ㅎ]+$/.test(q)) return norm(chosung(g.title)).indexOf(q) >= 0;   // 초성 검색
+    return false;
+  }
+
+  function sorted(list){
+    var a = list.slice();
+    if (state.sort === "name"){
+      a.sort(function(x,y){ return x.title.localeCompare(y.title,"ko"); });
+    } else {                              // 최신순: 올린 글 번호 큰 순, 준비중은 맨 뒤
+      a.sort(function(x,y){
+        var xs = x.soon?1:0, ys = y.soon?1:0;
+        if (xs!==ys) return xs-ys;
+        return (y.post||0)-(x.post||0);
+      });
+    }
+    return a;
+  }
+
+  function renderTabs(){
+    var names = ["전체"].concat(GENRES), html = "";
+    names.forEach(function(n){
+      var cnt = n==="전체" ? GAMES.length : GAMES.filter(function(g){return (g.tags||[]).indexOf(n)>=0;}).length;
+      if (n!=="전체" && !cnt) return;
+      html += '<button class="tab'+(state.genre===n?' on':'')+'" data-g="'+esc(n)+'">'+esc(n)+'<b>'+cnt+'</b></button>';
+    });
+    $tabs.innerHTML = html;
+  }
+
+  function render(){
+    var list = sorted(GAMES.filter(matches));
+    $info.textContent = (state.q ? '검색 "'+state.q+'" · ' : '') + (state.genre!=="전체" ? state.genre+' · ' : '') + list.length + "개";
+    if (!list.length){ $grid.innerHTML = '<div class="empty">찾는 게임이 없어요 🥲</div>'; return; }
+    $grid.innerHTML = list.map(function(g){
+      var play = urlOf("", g.play), post = postUrl(g), i = GAMES.indexOf(g);
+      var badge = g.soon ? '<span class="badge soon">준비중</span>' : (g.new ? '<span class="badge new">NEW</span>' : '');
+      var chips = (g.tags||[]).map(function(t){ return '<span class="chip" data-t="'+esc(t)+'">#'+esc(t)+'</span>'; }).join("");
+      var b1 = play ? '<button class="btn main" data-play="'+i+'">▶ 바로 플레이</button>'
+                    : (post ? '<a class="btn main" target="_blank" rel="noopener" href="'+esc(post)+'">▶ 블로그에서 플레이</a>'
+                            : '<span class="btn main dis">준비중</span>');
+      var b2 = (play && post) ? '<a class="btn" target="_blank" rel="noopener" href="'+esc(post)+'">설명서</a>' : '';
+      return '<div class="card'+(g.soon?' soon':'')+'">'+badge+
+        '<h3>'+esc(g.title)+'</h3><p>'+esc(g.sub)+'</p>'+
+        '<div class="chips">'+chips+'</div><div class="btns">'+b1+b2+'</div></div>';
+    }).join("");
+  }
+
+  /* 이벤트 */
+  $q.addEventListener("input", function(){ state.q = $q.value; render(); });
+  $sort.addEventListener("change", function(){ state.sort = $sort.value; render(); });
+  $tabs.addEventListener("click", function(e){
+    var b = e.target.closest(".tab"); if(!b) return;
+    state.genre = b.getAttribute("data-g"); renderTabs(); render();
+  });
+  $grid.addEventListener("click", function(e){
+    var c = e.target.closest(".chip");
+    if (c){ state.q = "#"+c.getAttribute("data-t"); state.genre = "전체"; $q.value = state.q; renderTabs(); render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+    var p = e.target.closest("[data-play]");
+    if (p) openGame(GAMES[+p.getAttribute("data-play")]);
+  });
+
+  /* 플레이 창 */
+  var $m = document.getElementById("modal"), $f = document.getElementById("frame");
+  function openGame(g){
+    document.getElementById("mtitle").textContent = g.title;
+    var po = postUrl(g), ve = urlOf("", g.verify);
+    var a = document.getElementById("mpost"), v = document.getElementById("mverify");
+    a.style.display = po ? "" : "none"; if (po) a.href = po;
+    v.style.display = ve ? "" : "none"; if (ve) v.href = ve;
+    $f.src = urlOf("", g.play);
+    $m.classList.add("on");
+  }
+  function closeGame(){ $m.classList.remove("on"); $f.src = "about:blank"; }
+  document.getElementById("mclose").addEventListener("click", closeGame);
+  document.addEventListener("keydown", function(e){ if (e.key==="Escape" && $m.classList.contains("on")) closeGame(); });
+
+  /* 주소의 #태그 로 바로 열기 (예: index.html#카드) */
+  if (location.hash.length > 1){
+    state.q = "#" + decodeURIComponent(location.hash.slice(1)); $q.value = state.q;
+  }
+  renderTabs(); render();
+})();
+</script>
+</body>
+</html>
