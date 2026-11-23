@@ -77,6 +77,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:30px 10px}
     <div class="search">
       <input id="q" type="search" placeholder="이름 · #태그 · 초성 검색" autocomplete="off">
       <select id="sort" aria-label="정렬">
+        <option value="pop">인기순</option>
         <option value="new">최신순</option>
         <option value="name">가나다순</option>
       </select>
@@ -157,6 +158,12 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:30px 10px}
     var a = list.slice();
     if (state.sort === "name"){
       a.sort(function(x,y){ return x.title.localeCompare(y.title,"ko"); });
+    } else if (state.sort === "pop"){     // 인기순: games.js의 pop 숫자 큰 순, 같으면 최신순
+      a.sort(function(x,y){
+        var xs = x.soon?1:0, ys = y.soon?1:0;
+        if (xs!==ys) return xs-ys;
+        return ((y.pop||0)-(x.pop||0)) || ((y.post||0)-(x.post||0));
+      });
     } else {                              // 최신순: 올린 글 번호 큰 순, 준비중은 맨 뒤
       a.sort(function(x,y){
         var xs = x.soon?1:0, ys = y.soon?1:0;
@@ -185,7 +192,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:30px 10px}
       var play = urlOf("", g.play), post = postUrl(g), i = GAMES.indexOf(g);
       var badge = g.soon ? '<span class="badge soon">준비중</span>' : (g.new ? '<span class="badge new">NEW</span>' : '');
       var chips = (g.tags||[]).map(function(t){ return '<span class="chip" data-t="'+esc(t)+'">#'+esc(t)+'</span>'; }).join("");
-      var b1 = post ? '<a class="btn main" target="_top" href="'+esc(post)+'">▶ 블로그에서 플레이</a>'
+      var b1 = post ? '<a class="btn main" target="_top" href="'+esc(post)+'">▶ 플레이</a>'
                     : (play ? '<button class="btn main" data-play="'+i+'">▶ 바로 플레이</button>'
                             : '<span class="btn main dis">준비중</span>');
       var b2 = '';
