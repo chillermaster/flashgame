@@ -185,10 +185,10 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:30px 10px}
       var play = urlOf("", g.play), post = postUrl(g), i = GAMES.indexOf(g);
       var badge = g.soon ? '<span class="badge soon">준비중</span>' : (g.new ? '<span class="badge new">NEW</span>' : '');
       var chips = (g.tags||[]).map(function(t){ return '<span class="chip" data-t="'+esc(t)+'">#'+esc(t)+'</span>'; }).join("");
-      var b1 = play ? '<button class="btn main" data-play="'+i+'">▶ 바로 플레이</button>'
-                    : (post ? '<a class="btn main" target="_blank" rel="noopener" href="'+esc(post)+'">▶ 블로그에서 플레이</a>'
+      var b1 = post ? '<a class="btn main" target="_top" href="'+esc(post)+'">▶ 블로그에서 플레이</a>'
+                    : (play ? '<button class="btn main" data-play="'+i+'">▶ 바로 플레이</button>'
                             : '<span class="btn main dis">준비중</span>');
-      var b2 = (play && post) ? '<a class="btn" target="_blank" rel="noopener" href="'+esc(post)+'">설명서</a>' : '';
+      var b2 = '';
       var th = thumbOf(g);
       var thumb = '<div class="thumb"><div class="ph">'+esc((g.title||"?").charAt(0))+'</div>'+
         (th ? '<img loading="lazy" alt="" src="'+esc(th)+'" onerror="this.remove()">' : '')+'</div>';
