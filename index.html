@@ -17,7 +17,7 @@ a{color:inherit;text-decoration:none}
 header{padding:28px 16px 8px;text-align:center}
 header h1{margin:0;font-size:clamp(22px,4.5vw,32px);letter-spacing:.5px;color:var(--gold)}
 header p{margin:6px 0 0;color:var(--mute);font-size:14px}
-.wrap{max-width:1100px;margin:0 auto;padding:0 14px 60px}
+.wrap{max-width:1500px;margin:0 auto;padding:0 14px 60px}
 .bar{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 85%,transparent);padding:12px 0 8px}
 .search{display:flex;gap:8px}
 .search input{flex:1;min-width:0;padding:12px 14px;border-radius:10px;border:1px solid var(--line);
@@ -32,7 +32,11 @@ header p{margin:6px 0 0;color:var(--mute);font-size:14px}
 .tab.on{background:var(--gold);color:#1b1608;border-color:var(--gold)}
 .tab.on b{color:#1b1608}
 .info{color:var(--mute);font-size:13px;margin:10px 2px 12px;min-height:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:860px){.grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:1080px){.grid{grid-template-columns:repeat(5,1fr)}}
+@media(min-width:1280px){.grid{grid-template-columns:repeat(6,1fr)}}
 .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;
   display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
 .card:hover{border-color:var(--gold2);transform:translateY(-2px)}
