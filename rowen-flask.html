@@ -660,7 +660,7 @@ function drawFlask(S,f,i,fog,t){
  const lipH=h*.045,bodyY=y+lipH,bodyH=h-lipH,ins=Math.max(2,w*.085);
  // 정화 오라
  if(f.sealed){const col=MANA[f.u[0].c].c;const a=.18+.1*Math.sin(t*3+i)+f.glow*.5;const g=c.createRadialGradient(x+w/2,y+h*.55,w*.2,x+w/2,y+h*.55,w*1.5);g.addColorStop(0,hexA(col,a));g.addColorStop(1,hexA(col,0));c.fillStyle=g;c.fillRect(x-w*1.5,y-w,w*4,h+w*2)}
- if(f.glow>0){c.fillStyle=`rgba(255,255,230,${f.glow*.35})`;c.fillRect(x+w*.15,y-h*1.2*f.glow,w*.7,h*1.2*f.glow+h*.2)}
+ if(f.glow>0){const ph=h*1.4*f.glow,y0=y+h*.35;const lg=c.createLinearGradient(0,y0,0,y0-ph);lg.addColorStop(0,`rgba(255,248,205,${f.glow*.5})`);lg.addColorStop(1,'rgba(255,248,205,0)');c.save();c.globalCompositeOperation='lighter';c.fillStyle=lg;c.fillRect(x+w*.14,y0-ph,w*.72,ph);c.restore()}
  // 유리 뒷면
  tubePath(c,x,bodyY,w,bodyH);c.fillStyle='rgba(150,175,230,.10)';c.fill();
  // 액체
