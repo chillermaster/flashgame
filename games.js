@@ -16,8 +16,8 @@
    ============================================================ */
 
 window.SITE = {
-  title: "오늘의 점심 내기 · 게임 모음",
-  desc: "브라우저에서 바로 즐기는 중세 판타지 웹게임",
+  title: "오늘의 점심 내기 · 브라우저별 기록 저장이 되는 플래시게임 모음",
+  desc: "브라우저에서 바로 즐기는 웹게임",
   blog: "https://todaylunch.tistory.com/",
   pages: "https://chillermaster.github.io/flashgame/"   // 게임 파일이 올라가는 주소
 };
@@ -69,7 +69,7 @@ window.GAMES = [
   { title:"마피아 : 모닥불 재판", sub:"11인 직업 랜덤 마피아 추리 게임", tags:["전략","보드게임","추리"], post:0, play:"mafia-campfire.html", verify:"mafia-campfire-verify.html" },
   { title:"철인 3종", sub:"수영·자전거·달리기를 좌우 번갈아 눌러 달리는 8인 레이스", tags:["액션","대전","레이스"], post:46, play:"iron-triathlon.html", verify:"iron-triathlon-verify.html" },
   { title:"미끼를 조심해", sub:"미끼를 피해 물고기를 먹고 자라는 생존 게임", tags:["액션","생존","3D"], post:47, play:"bait-dodger.html", verify:"bait-dodger-verify.html" },
-  { title:"정화의 플라스크", sub:"로웬 마나 정화전 · VS AI", tags:["전략","로웬"], post:52, play:"rowen-flask.html", verify:"rowen-flask-verify.html" },
+  { title:"정화의 플라스크", sub:"로웬 마나 정화전 · VS AI", tags:["퍼즐","전략","로웬"], post:52, play:"rowen-flask.html", verify:"rowen-flask-verify.html" },
   { title:"로웬 : 황혼의 가면", sub:"해와 달의 맹약이 깨진 밤, 국왕의 연회장에서", tags:["로웬"], post:0, play:"rowen-masks.html", verify:"rowen-masks-verify.html" },
   { title:"맹약의 깃발", sub:"로웬 용병단 오토배틀 토너먼트", tags:["전략","오토배틀","로웬"], post:53, play:"rowen-mercenary.html", verify:"rowen-mercenary-verify.html" },
 
