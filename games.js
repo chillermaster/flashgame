@@ -63,14 +63,14 @@ window.GAMES = [
   { title:"폰에서 왕까지 (2048)", sub:"견습기사에서 왕까지", tags:["퍼즐","2048"], post:1, play:"royal_merge.html", verify:"royal_merge_verify.html" },
 
   /* ---------- 아직 블로그에 안 올린 게임 (post:0) ---------- */
-  { title:"사보타지 : 황금 갱도", sub:"광부와 배신자가 섞여 황금을 캐는 갱도 게임", tags:["카드","보드게임","추리"], post:0, play:"gold-tunnel.html", verify:"gold-tunnel-verify.html" },
-   { title:"로웬 달무티 : 맹약의 서열전", sub:"8인 서열 카드게임", tags:["카드","전략","로웬"], post:0, play:"rowen-dalmuti.html", verify:"rowen-dalmuti-verify.html" },
-  { title:"로웬 프리셀", sub:"52장 모두 도트 초상화로 그린 프리셀", tags:["카드","퍼즐","로웬"], post:0, play:"rowen-freecell.html", verify:"rowen-freecell-verify.html", soon:true },
+  { title:"사보타지 : 황금 갱도", sub:"광부와 배신자가 섞여 황금을 캐는 갱도 게임", tags:["카드","보드게임","추리"], post:51, play:"gold-tunnel.html", verify:"gold-tunnel-verify.html" },
+   { title:"로웬 달무티 : 맹약의 서열전", sub:"8인 서열 카드게임", tags:["카드","전략","로웬"], post:50, play:"rowen-dalmuti.html", verify:"rowen-dalmuti-verify.html" },
+  { title:"로웬 프리셀", sub:"52장 모두 도트 초상화로 그린 프리셀", tags:["카드","퍼즐","로웬"], post:49, play:"rowen-freecell.html", verify:"rowen-freecell-verify.html" },
   { title:"마피아 : 모닥불 재판", sub:"11인 직업 랜덤 마피아 추리 게임", tags:["전략","보드게임","추리"], post:0, play:"mafia-campfire.html", verify:"mafia-campfire-verify.html" },
-  { title:"철인 3종", sub:"수영·자전거·달리기를 좌우 번갈아 눌러 달리는 8인 레이스", tags:["액션","대전","레이스"], post:0, play:"iron-triathlon.html", verify:"iron-triathlon-verify.html" },
-  { title:"미끼를 조심해", sub:"미끼를 피해 물고기를 먹고 자라는 생존 게임", tags:["액션","생존","3D"], post:0, play:"bait-dodger.html", verify:"bait-dodger-verify.html" },
-  { title:"정화의 플라스크", sub:"로웬 마나 정화전 · VS AI", tags:["전략","로웬"], post:0, play:"rowen-flask.html", verify:"rowen-flask-verify.html" },
+  { title:"철인 3종", sub:"수영·자전거·달리기를 좌우 번갈아 눌러 달리는 8인 레이스", tags:["액션","대전","레이스"], post:46, play:"iron-triathlon.html", verify:"iron-triathlon-verify.html" },
+  { title:"미끼를 조심해", sub:"미끼를 피해 물고기를 먹고 자라는 생존 게임", tags:["액션","생존","3D"], post:47, play:"bait-dodger.html", verify:"bait-dodger-verify.html" },
+  { title:"정화의 플라스크", sub:"로웬 마나 정화전 · VS AI", tags:["전략","로웬"], post:52, play:"rowen-flask.html", verify:"rowen-flask-verify.html" },
   { title:"로웬 : 황혼의 가면", sub:"해와 달의 맹약이 깨진 밤, 국왕의 연회장에서", tags:["로웬"], post:0, play:"rowen-masks.html", verify:"rowen-masks-verify.html" },
-  { title:"맹약의 깃발", sub:"로웬 용병단 오토배틀 토너먼트", tags:["전략","오토배틀","로웬"], post:0, play:"rowen-mercenary.html", verify:"rowen-mercenary-verify.html" },
+  { title:"맹약의 깃발", sub:"로웬 용병단 오토배틀 토너먼트", tags:["전략","오토배틀","로웬"], post:53, play:"rowen-mercenary.html", verify:"rowen-mercenary-verify.html" },
 
 ];

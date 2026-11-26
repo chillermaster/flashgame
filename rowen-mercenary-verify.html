@@ -38,7 +38,7 @@ td:first-child{color:#c9b27a;width:40%}
     <textarea id="t" placeholder="⚔️ 맹약의 깃발 — 로웬 용병단 토너먼트&#10;지휘관: ...&#10;...&#10;검증코드: XXXX-XXXX-XXXX-XXXX"></textarea>
     <div class="btns"><button class="go" id="v">✅ 기록 검증하기</button><button class="sec" id="c">지우기</button><a class="b sec" href="https://chillermaster.github.io/flashgame/rowen-mercenary.html" target="_blank" rel="noopener">🎮 게임 하러 가기</a></div>
     <div id="out"></div>
-    <div class="note">검증 방식: 기록에 적힌 지휘관·난이도·승수·점수·명성·처치·생포·영입·생존·최대 병력·상금·전투 시간·일시를 묶어 검증코드를 다시 계산하고, 점수 공식(명성 + 승리×500 + 생포×40 + 생존×60 + 상금÷2 + 우승 3000 + 왕의 시험 5000) × 난이도 배율과도 맞는지 확인합니다. 한 글자라도 고치면 검증에 실패합니다.</div>
+    <div class="note">검증 방식: 기록에 적힌 지휘관·난이도·승수·점수·명성·처치·생포·영입·생존·최대 병력·상금·전투 시간·일시를 묶어 검증코드를 다시 계산하고, 점수 공식 — 대군전(v2): (명성 + 승리×3000 + 생포×40 + 생존×60 + 상금÷2 + 우승 18000 + 왕의 시험 30000) × 난이도 배율, 이전 판: (명성 + 승리×500 + 생포×40 + 생존×60 + 상금÷2 + 우승 3000 + 왕의 시험 5000) × 난이도 배율 — 과도 맞는지 확인합니다. 한 글자라도 고치면 검증에 실패합니다.</div>
   </div>
 </div>
 <script>
@@ -48,12 +48,13 @@ const STAGES=['예선 1차전','예선 2차전','예선 3차전','본선 8강','
 function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return[h2>>>0,h1>>>0];}
 function vcode(s){const[a,b]=cyrb53(SALT+'#'+s,7);const hx=(a.toString(16).padStart(8,'0')+b.toString(16).padStart(8,'0')).toUpperCase();return hx.slice(0,4)+'-'+hx.slice(4,8)+'-'+hx.slice(8,12)+'-'+hx.slice(12,16);}
 function calcScore(o){return Math.round((o.renown+o.wins*500+o.captures*40+o.survivors*60+Math.floor(o.gold/2)+(o.champion?3000:0)+(o.trial?5000:0))*o.mul);}
+function calcScore2(o){return Math.round((o.renown+o.wins*3000+o.captures*40+o.survivors*60+Math.floor(o.gold/2)+(o.champion?18000:0)+(o.trial?30000:0))*o.mul);}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function field(txt,key){const m=txt.match(new RegExp('^\\s*'+key+'\\s*[:：]\\s*(.+)$','m'));return m?m[1].trim():null;}
 function verify(){
   const txt=document.getElementById('t').value.replace(/\r/g,'');
   const out=document.getElementById('out'); const errs=[];
-  const name=field(txt,'지휘관'), diffN=field(txt,'난이도'), result=field(txt,'결과'), scoreS=field(txt,'점수'), renS=field(txt,'명성'), capS=field(txt,'생포'), survS=field(txt,'생존 용병'), goldS=field(txt,'상금 잔액'), timeS=field(txt,'전투 시간'), ds=field(txt,'일시'), code=field(txt,'검증코드');
+  const name=field(txt,'지휘관'), diffN=field(txt,'난이도'), result=field(txt,'결과'), scoreS=field(txt,'점수'), renS=field(txt,'명성'), capS=field(txt,'생포'), survS=field(txt,'생존 용병'), goldS=field(txt,'상금 잔액'), timeS=field(txt,'전투 시간'), ds=field(txt,'일시'), code=field(txt,'검증코드'), ver=field(txt,'판본'); const V2=!!(ver&&/v2/i.test(ver)); const MAXB=V2?240:40;
   if(!name||!diffN||!result||!scoreS||!renS||!capS||!survS||!goldS||!timeS||!ds||!code){out.innerHTML='<div class="res bad"><div class="big">❌ 형식 오류</div>기록의 일부 항목을 찾을 수 없습니다. 복사한 기록 전체를 붙여넣어 주세요.</div>';return;}
   const d=DIFF[diffN]; if(!d) errs.push('알 수 없는 난이도: '+diffN);
   const mW=result.match(/\((\d)\/7승\)/); const wins=mW?+mW[1]:NaN; if(isNaN(wins)) errs.push('결과에서 승수를 읽을 수 없습니다.');
@@ -66,21 +67,21 @@ function verify(){
   if([renown,kills,captures,recruited,survivors,maxBand,ts].some(isNaN)) errs.push('숫자 항목을 읽을 수 없습니다.');
   let codeOk=false, scoreOk=false;
   if(!errs.length){
-    const payload=[name,d.id,wins,score,renown,kills,captures,recruited,survivors,maxBand,gold,ts,ds].join('|');
+    const payload=(V2?['v2']:[]).concat([name,d.id,wins,score,renown,kills,captures,recruited,survivors,maxBand,gold,ts,ds]).join('|');
     codeOk = vcode(payload)===code.toUpperCase().trim();
     const champion=wins>=6, trial=wins>=7;
-    const exp=calcScore({renown,wins,captures,survivors,gold,champion,trial,mul:d.mul});
+    const exp=(V2?calcScore2:calcScore)({renown,wins,captures,survivors,gold,champion,trial,mul:d.mul});
     scoreOk = exp===score;
     if(!scoreOk) errs.push('점수가 공식과 맞지 않습니다 (계산값 '+exp+').');
     const expRes = trial?'🏆 우승 · 👑 왕의 시험 돌파':champion?'🏆 우승':(STAGES[wins]+' 탈락');
     if(!result.startsWith(expRes)) errs.push('결과 문구가 승수와 맞지 않습니다.');
     if(recruited>captures) errs.push('영입 수가 생포 수보다 많습니다.');
-    if(maxBand>40||survivors>40) errs.push('용병단 최대 인원(40)을 넘습니다.');
+    if(maxBand>MAXB||survivors>MAXB) errs.push('용병단 최대 인원('+MAXB+')을 넘습니다.');
     if(!codeOk) errs.push('검증코드가 일치하지 않습니다. 기록이 수정되었을 수 있습니다.');
   }
   const ok=codeOk&&scoreOk&&!errs.length;
   let h=`<div class="res ${ok?'ok':'bad'}"><div class="big">${ok?'✅ 진짜 기록입니다':'❌ 검증 실패'}</div>${ok?'게임에서 그대로 복사된 기록이에요.':'기록이 수정되었거나 일부가 빠졌습니다.'}`;
-  h+=`<table><tr><td>🎖️ 지휘관</td><td>${esc(name)}</td></tr><tr><td>⚖️ 난이도</td><td>${esc(diffN)}</td></tr><tr><td>🏆 결과</td><td>${esc(result)}</td></tr><tr><td>🎯 점수</td><td><b>${isNaN(score)?'-':score.toLocaleString()}</b></td></tr><tr><td>⭐ 명성 · 처치</td><td>${renown} · ${kills}</td></tr><tr><td>⛓️ 생포 · 영입</td><td>${captures} · ${recruited}</td></tr><tr><td>🛡️ 생존 · 최대 병력</td><td>${survivors} · ${maxBand}</td></tr><tr><td>💰 상금 잔액</td><td>${gold}</td></tr><tr><td>⏱️ 전투 시간</td><td>${esc(timeS)}</td></tr><tr><td>📅 일시</td><td>${esc(ds)}</td></tr></table>`;
+  h+=`<table><tr><td>📦 판본</td><td>${V2?'대군전 v2':'이전 판'}</td></tr><tr><td>🎖️ 지휘관</td><td>${esc(name)}</td></tr><tr><td>⚖️ 난이도</td><td>${esc(diffN)}</td></tr><tr><td>🏆 결과</td><td>${esc(result)}</td></tr><tr><td>🎯 점수</td><td><b>${isNaN(score)?'-':score.toLocaleString()}</b></td></tr><tr><td>⭐ 명성 · 처치</td><td>${renown} · ${kills}</td></tr><tr><td>⛓️ 생포 · 영입</td><td>${captures} · ${recruited}</td></tr><tr><td>🛡️ 생존 · 최대 병력</td><td>${survivors} · ${maxBand}</td></tr><tr><td>💰 상금 잔액</td><td>${gold}</td></tr><tr><td>⏱️ 전투 시간</td><td>${esc(timeS)}</td></tr><tr><td>📅 일시</td><td>${esc(ds)}</td></tr></table>`;
   if(errs.length) h+='<div class="warn">'+errs.map(e=>'• '+esc(e)).join('<br>')+'</div>';
   h+='</div>'; out.innerHTML=h;
 }
