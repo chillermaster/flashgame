@@ -457,8 +457,9 @@ function mkMind(seat,role,human){return {seat,human,role,orig:role,fac:ROLE[role
 function newGame(opts,sim){
  const gen=++GEN_C;const comp=buildRoles(opts);const names=shuffle(NAMES);
  const P=[];for(let i=0;i<N;i++){const h=!sim&&i===0;P.push({seat:i,name:h?opts.name:names[i],look:makeLook(i),alive:true,mind:mkMind(i,comp.roles[i],h),dDay:0,dCause:'',shown:null,shownFac:null,trueRole:null,bub:null,mark:0});}
- G={gen,opts,sim:!!sim,P,human:sim?null:P[0].mind,day:1,phase:'start',pro:{name:pick(PRO_NAMES),role:comp.pro},claim:{},claimLog:[],reports:[],acc:[],vps:[],votes:[],trials:[],deaths:[],heals:[],healLog:[],over:false,res:null,stats:{cv:0,wv:0,sh:0},t0:Date.now(),speed:1,clock:0,dur:0,skip:false,nextSpeak:0,lastAtk:null,na:{},nightRes:null,defer:false,pendMsgs:[],revealAll:false,talkDur:90,ui:{},humanSuggest:null,docLink:null,lines:0,humanQ:[],qid:0,roll:null,abstainProp:null,guardReq:null,checkReq:null,claimC:{},semBy:{},lastSem:null,lastAddr:null,lastSpeaker:null,endTalkAt:null,reqs:{},amnReq:null,humanSuggestSp:false,silence:{},secrets:{},healClaims:[],followAsked:{}};
+ G={gen,opts,sim:!!sim,P,human:sim?null:P[0].mind,day:1,phase:'start',pro:{name:pick(PRO_NAMES),role:comp.pro},claim:{},claimLog:[],reports:[],acc:[],vps:[],votes:[],trials:[],deaths:[],heals:[],healLog:[],over:false,res:null,stats:{cv:0,wv:0,sh:0},t0:Date.now(),speed:1,clock:0,dur:0,skip:false,nextSpeak:0,lastAtk:null,na:{},nightRes:null,defer:false,pendMsgs:[],revealAll:false,talkDur:90,ui:{},humanSuggest:null,docLink:null,lines:0,humanQ:[],qid:0,roll:null,abstainProp:null,guardReq:null,checkReq:null,claimC:{},semBy:{},lastSem:null,lastAddr:null,lastSpeaker:null,endTalkAt:null,reqs:{},amnReq:null,humanSuggestSp:false,silence:{},secrets:{},healClaims:[],followAsked:{},claimInfo:{},usedTx:new Set(),usedDay:0,_k:null,mood:'normal',moodDay:0};
  initKnow();
+ assignVoices();
  return G;
 }
 function note(m,txt){m.notes.push({d:G.day,txt});if(m.human&&!G.sim){if(G.defer)G.pendMsgs.push(txt);else addChat({text:txt,cls:'priv'});}}
@@ -618,13 +619,15 @@ function evalSus(m,mask){
    else if(k.role&&ROLE[k.role].f==='C')s-=110;
    else{if(k.notM)s-=16;if(k.notSN)s-=14;if(k.notM&&k.notSN)s-=10;if(k.mw)s+=(G.claim[x]==='witness'?-5:60);if(k.nomw)s-=6;if(k.susKill!=null)s+=70;}}}
   const c=G.claim[x];
-  if(c){if(dr.has(c))s+=55+60*L;const riv=claimersOf(c).filter(y=>y!==x);if(riv.length)s+=14;if(deadClaimersOf(c).some(y=>G.P[y].shownFac==='C'&&diedAtNight(y)))s+=30*L;if(!mask&&m.fac==='C'&&m.role===c)s+=95;}
+  if(c){if(dr.has(c))s+=55+60*L;const riv=claimersOf(c).filter(y=>y!==x);if(riv.length)s+=14;if(deadClaimersOf(c).some(y=>G.P[y].shownFac==='C'&&diedAtNight(y)))s+=30*L;const own=!mask&&m.fac==='C'&&m.role===c;if(own)s+=95;
+   s+=claimCred(x,c,riv,dr,own,L);}
   else if(G.day>=3)s+=3+G.day;
   for(const v of G.votes)if(v.voter===x&&v.t>=0){const e=pubEvil(v.t);if(e===true)s-=8*L;else if(e===false)s+=10*L;}
   for(const t of G.trials)if(t.exec){const e=pubEvil(t.acc);if(e===true){if(t.no.includes(x))s+=14*L;else if(t.yes.includes(x))s-=4;}else if(e===false){if(t.yes.includes(x))s+=5*L;}}
   let am=0;for(const a of G.acc)if(a.by===x){const e=pubEvil(a.t);if(a.k==='acc'){if(e===true)s-=6*L;else if(e===false)s+=7*L;if(a.t===me&&honest&&a.day===G.day)am++;}else{if(e===true)s+=16*L;}}
   s+=Math.min(3,am)*8;
   s+=Math.min(18,(G.silence[x]||0)*7)+Math.min(6,(G.secrets[x]||0)*3);
+  if(!(window.__off&&__off.dbl)&&doubleRep(x))s+=45+50*L;
   for(const hc of G.healClaims)if(hc.by===x&&G.healLog.some(h=>h.seat===hc.t&&h.day===hc.day-1))s-=30;
   if(G.heals.includes(x))s-=26;
   s+=m.noise[x]*(1-L*.7)*20;
@@ -636,7 +639,7 @@ function evalSus(m,mask){
   cred[x]=clamp(.72-base[x]/130,.05,.95);
   if(!mask){const k=m.know[x];if(k){if(k.fac==='M'||k.fac==='N')cred[x]=.02;else if(k.role&&ROLE[k.role].f==='C')cred[x]=.97;}}}
  for(const r of G.reports){
-  if(r.by===me)continue;const w=cred[r.by];
+  if(r.by===me)continue;let w=cred[r.by];if(r.as&&G.P[r.by].alive&&!(window.__off&&__off.dmp)){const dm=window.__dmp||[.8,.8];if(claimersOf(r.as).length>2)w*=dm[0];if(r.t!=null&&r.t!=='pro'&&G.P[r.t].alive&&G.claim[r.t]===r.as&&claimersOf(r.as).length>2)w*=dm[1];}
   if(r.res==='gvis'){if(r.att)for(const y of r.list||[])if(G.P[y].alive&&y!==me)base[y]+=24*w;continue;}
   const x=r.t;if(x==null||x==='pro')continue;
   const ev=EVILRES[r.res],gd=GOODRES[r.res];
@@ -644,7 +647,8 @@ function evalSus(m,mask){
   if(!G.P[x].alive){const e=pubEvil(x);if(e===null||!G.P[r.by].alive)continue;
    if(e===false&&ev)base[r.by]+=80*L;
    else if(e===true&&r.res==='C'){const sr=G.P[x].shown;if(job){if(['mafia','gisaeng','pickpocket'].includes(sr))base[r.by]+=75*L;}else base[r.by]+=22*L;}
-   else if(e===true&&ev)base[r.by]-=30;continue;}
+   else if(e===true&&ev)base[r.by]-=30;
+   else if(e===false&&gd&&!(window.__off&&__off.gc))base[r.by]-=10;continue;}
   if(x===r.by)continue;
   if(ev)base[x]+=58*w*ev;else if(gd)base[x]-=22*w*gd;
  }
@@ -714,7 +718,7 @@ function pubMafiaDead(){return G.P.filter(p=>!p.alive&&p.shownFac==='M').length;
 function voteChoice(m,preview){
  const me=m.seat,town=m.fac==='C';const sus=evalSus(m,!town);
  const sup=new Array(N).fill(0);
- for(const v of G.vps)if(v.day===G.day&&v.by!==me&&G.P[v.t].alive)sup[v.t]+=town?credOf(m,v.by,sus):.6;
+ for(const v of G.vps)if(v.day===G.day&&v.by!==me&&G.P[v.t].alive&&(window.__off&&__off.sup||!G.acc.some(a=>a.day===G.day&&a.by===v.by&&a.t===v.t&&a.k==='def')))sup[v.t]+=town?credOf(m,v.by,sus):.6;
  for(const a of G.acc)if(a.day===G.day&&a.k==='acc'&&a.by!==me&&G.P[a.t].alive)sup[a.t]+=.25;
  const cand=aliveSeats().filter(x=>x!==me);let best=-1,bs=-1e9;
  for(const x of cand){let s=sus[x]+sup[x]*9;if(!town){if(isTeam(m,x))s-=200;else{s+=threat(m,x)*.12;const k=m.know[x];if(m.fac==='M'&&k&&k.role==='alien')s+=90;else if(m.fac==='M'&&k&&k.fac==='N')s+=25;if(m.fac==='M'&&m.avoid.has(x)&&G.claim[x]!=='veteran')s+=40;}}if(s>bs){bs=s;best=x;}}
@@ -734,7 +738,7 @@ const TX={
  greet:{p:['안녕하세요~','다들 반가워요!','첫날이라 아무것도 모르겠네요','{pro} 돌아가신 거 너무 무서워요..','잘 부탁드려요 ㅎㅎ','오늘은 조용히 지켜볼게요','다들 직업은 아직 숨기는 걸로 해요'],c:['ㅎㅇㅎㅇ','안녕~','헐 {pro} 죽었네','첫날이라 정보가 없다','무섭다ㅠ','누가 범인이지..','ㅋㅋ 다들 침착해']},
  idle:{p:['흠...','누가 수상한지 의견 좀 주세요','조용한 사람이 더 수상해요','음 잘 모르겠네요','정보 있는 분 말해주세요'],c:['흠..','누구지','아무나 정보 좀','조용한 애들 수상함','모르겠다 ㅋㅋ']},
  ask:{p:['경찰분 계시면 결과 좀 알려주세요','정보 직업 있으면 말해주세요!','직업 겹치는 사람 없나요?'],c:['경찰 있으면 결과 ㄱㄱ','정보직 손','직업 까볼까?']},
- claim:{p:['저 {role}입니다.','저는 {roleI}.','제 직업은 {roleI}.'],c:['나 {role}임','난 {roleY}','{role}이다 나']},
+ claim:{p:['저 {role}입니다.','저는 {roleI}.','제 직업은 {roleI}.'],c:['나 {role}임','난 {roleY}','{roleY} 나']},
  claimSave:{p:['어젯밤 제가 살렸어요. 의사예요.'],c:['어제 내가 살림 ㅋㅋ 의사임']},
  rep_M:{p:['{t} 조사했는데 마피아 나왔어요!!','{t} 마피아입니다! 확실해요.'],c:['{t} 마피아 나옴!!','{t} 마피아다 ㄹㅇ']},
  rep_C:{p:['{t} 조사해봤는데 시민이에요.','{tE} 시민 나왔어요.'],c:['{t} 시민 나옴','{tE} 시민임']},
@@ -749,7 +753,7 @@ const TX={
  rep_hunt:{p:['{tI} 어젯밤 {v}한테 갔는데 {vI} 죽었어요. {t} 범인이에요!'],c:['{t} 어제 {v}한테 감. {v} 죽음. 범인임']},
  rep_huntCor:{p:['{tE} 시체를 찾아갔어요. 검시관 확정!'],c:['{t} 시체 찾아감 검시관임']},
  rep_hypno:{p:['{t} 찾아갔더니 최면에 걸렸어요. {t} 최면술사예요.'],c:['{t} 최면술사임 확인함']},
- rep_cut:{p:['의사 {t}와 밤 대화가 끊겼어요! {t} 좀비가 된 것 같아요!'],c:['의사 {t}랑 대화 끊김. 좀비 된 듯!!']},
+ rep_cut:{p:['의사 {t}과 밤 대화가 끊겼어요! {t} 좀비가 된 것 같아요!'],c:['의사 {t}이랑 대화 끊김. 좀비 된 듯!!']},
  rep_cor:{p:['{t} 시신 확인 결과: {txt}!'],c:['{t} 시신 검시함 → {txt}']},
  rep_gvis:{p:['어젯밤 저한테 {list} 왔어요.'],c:['어제 나한테 {list} 옴']},
  rep_gnone:{p:['어젯밤 저한테 아무도 안 왔어요.'],c:['어제 아무도 안옴']},
@@ -772,7 +776,7 @@ const TX={
  rdeathR:{p:['{t}님이 돌아가셨네요.. 직업이 {role}','{roleG} 죽다니 큰일이네요','{t} {role}… 명복을 빕니다'],c:['헐 {role} 죽음','{role} 죽었네 망했다','{t} ㅠㅠ {role}…']},
  rheal:{p:['의사 나이스!!','와 살렸다! 의사 최고','화타 등장 ㅎㅎ'],c:['의사 나이스 ㅋㅋ','화타다','오 살렸네']},
  rnone:{p:['아무도 안 죽었네요?','어젯밤은 조용했네요'],c:['아무도 안죽음?','오 평화롭다']},
- plead:{p:['저 진짜 {roleI}! 저 죽이면 후회해요','억울해요… 저 시민이에요','한 번만 믿어주세요!'],c:['나 진짜 {role}이라고!!','억울하다 ㅠ 나 시민임','살려줘 제발']},
+ plead:{p:['저 진짜 {roleI}! 저 죽이면 후회해요','억울해요… 저 시민이에요','한 번만 믿어주세요!'],c:['나 진짜 {roleRa}!!','억울하다 ㅠ 나 시민임','살려줘 제발']},
  last:{p:['…억울하다','다들 잘 찾아보세요..','이렇게 가는구나'],c:['ㅠㅠ','후회할걸','ㅂㅂ']},
  ack:{p:['그쵸','맞아요','흠 그럴 수도','음..'],c:['ㅇㅇ','ㄹㅇ','글쎄','ㅇㅋ']},
  mn:{p:['오늘은 {t} 쏘죠. {why}','{t} 어때요? {why}'],c:['{t} 쏘자 {why}','{t} ㄱ? {why}']},
@@ -780,7 +784,7 @@ const TX={
  amn:{p:['의사님, 저 기억상실자예요. 4일차에 직업 생겨요!','의사님 저 좀 지켜주세요 ㅎㅎ'],c:['의사님 나 기상임 ㅎㅎ','4일차까지 버텨볼게']},
  docc:{p:['의사예요. 반가워요!','위험해 보이면 말해주세요. 지켜드릴게요.'],c:['ㅇㅇ 나 의사','버텨 지켜줄게']},
  askWhy:{p:['{to}님, 왜 저예요? 근거 있어요?','{to}님 저를 왜 의심하세요?','{to}님, 이유를 말해주세요.','{to}님, 저를요? 왜요?'],c:['{to} 왜 나임? 근거 있냐','{to} 이유 대봐','{to} 나 왜?','{to} 근거 뭔데']},
- why_report:{p:['{to}님, {by} 결과에 {txtRo} 나왔잖아요.','{to}님, {by}님이 {txtRa} 했잖아요.'],c:['{to}, {by} 결과에서 {txt} 나왔잖아','{to} {by}가 {txt}래잖아']},
+ why_report:{p:['{to}님, {by} 결과에 {txtRo} 나왔잖아요.','{to}님, {by}님이 {txtRa} 했잖아요.'],c:['{to}, {by} 결과에서 {txt} 나왔잖아','{to} {by}이 {txt}래잖아']},
  why_conflict:{p:['{to}님, {role} 주장하는 사람이 둘이잖아요.'],c:['{to}, {role} 겹치잖아']},
  why_deadrole:{p:['{to}님, {roleE} 이미 죽었는데 {roleRa} 하셨잖아요.'],c:['{to} {role} 이미 죽었는데?']},
  why_vote:{p:['{to}님 저번에 시민을 찍으셨잖아요.','{to}님 투표가 계속 엇나가요.'],c:['{to} 저번에 시민 찍었잖아','{to} 투표 이상함']},
@@ -800,7 +804,7 @@ const TX={
  press:{p:['{to}님 변명이 더 수상해요.','그래도 저는 {to}님이 의심돼요.'],c:['{to} 변명 수상함','그래도 너 의심됨']},
  backoff:{p:['{to}님 말 들어보니 그럴 수도 있겠네요.','알겠어요, {to}님은 일단 지켜볼게요.'],c:['ㅇㅋ {to} 일단 보류','흠 그럴수도']},
  sideA:{p:['저도 {a}님 말에 동의해요. {b} 수상해요.','{a}님 말 일리 있네요. {b} 보내죠.'],c:['{a} 말 맞음','ㄹㅇ {b} 수상']},
- sideB:{p:['{b}는 아닌 것 같은데요? {a}님이 너무 몰아가요.','{a}님, {b} 근거가 약해요.'],c:['{a} 너무 몰아감','{b} 아닌듯 {a} 진정해']},
+ sideB:{p:['{b}은 아닌 것 같은데요? {a}님이 너무 몰아가요.','{a}님, {b} 근거가 약해요.'],c:['{a} 너무 몰아감','{b} 아닌듯 {a} 진정해']},
  askRole:{p:['{to}님 직업이 뭐예요?','{to}님은 무슨 직업이세요?'],c:['{to} 직업 뭐임?','{to} 너 직업 뭐야']},
  ansRole:{p:['{to}님, 저 {roleI}.','{to}님, 제 직업은 {roleI}.'],c:['{to} 나 {role}임','{to} {roleY}']},
  ansSecret:{p:['{to}님, 아직은 비밀이에요.','{to}님, 때가 되면 말할게요.'],c:['{to} 비밀임 ㅋ','{to} 아직 안 깜']},
@@ -857,7 +861,7 @@ const TX={
  emo_sad:{p:['힘내요 ㅠㅠ','ㅠㅠ 저도 무서워요'],c:['ㅠㅠ','힘내 ㅠ']},
  emo_fear:{p:['저도 무서워요…','진짜 소름이에요'],c:['ㄹㅇ 무섭다','ㄷㄷ']},
  emo_wow:{p:['그러게요…','저도 놀랐어요'],c:['ㄹㅇ','헐']},
- rebutClaim:{p:['{to}님, 저 진짜 {roleI}. 의심하지 마세요.'],c:['{to} 나 진짜 {role}이라니까']},
+ rebutClaim:{p:['{to}님, 저 진짜 {roleI}. 의심하지 마세요.'],c:['{to} 나 진짜 {roleY}']},
  rebutH:{p:['{to}님 생각은 다르시군요. 근데 저는 확신해요.','{to}님, 제 말 한번 믿어보세요.'],c:['{to} 난 확신함','{to} 일단 믿어봐']}
 };
 
@@ -890,13 +894,13 @@ const TX_EXTRA={
  press:{p:['{to}님, 그 설명으로는 납득이 안 돼요.','{to}님, 말이 계속 바뀌시네요.'],c:['{to} 설명이 약함','{to} 말 바뀌네']},
  backoff:{p:['{to}님 말도 일리 있네요.','알겠어요, 일단 다른 사람도 볼게요.'],c:['ㅇㅋ 일리 있네','일단 넘어감']},
  sideA:{p:['저도 {b} 쪽이 수상하다고 봐요.','{a}님 말에 한 표요. {b} 의심돼요.'],c:['{b} 나도 의심중','{a} 말에 한표']},
- sideB:{p:['{a}님, {b}만 몰아가는 건 좀 이른 것 같아요.','{b}는 아직 확실하지 않아요.'],c:['{b}만 몰지 마','{a} 너무 성급함']},
+ sideB:{p:['{a}님, {b}만 몰아가는 건 좀 이른 것 같아요.','{b}은 아직 확실하지 않아요.'],c:['{b}만 몰지 마','{a} 너무 성급함']},
  askRole:{p:['{to}님, 직업 좀 알려주세요.','{to}님 정체가 궁금하네요.'],c:['{to} 직업 까봐','{to} 정체 뭐임']},
- ansRole:{p:['{to}님, 저는 {role}입니다.','{to}님, {roleI}. 믿어주세요.'],c:['{to} {role}임 ㅇㅇ','{to} 나 {role}이라고']},
+ ansRole:{p:['{to}님, 저는 {role}입니다.','{to}님, {roleI}. 믿어주세요.'],c:['{to} {role}임 ㅇㅇ','{to} 나 {roleRa}']},
  ansSecret:{p:['{to}님, 아직은 밝히기 어려워요.','{to}님, 정보직이라 지금은 못 밝혀요.'],c:['{to} 지금은 못 깜','{to} 나중에 알려줌']},
  askResult:{p:['{to}님, 조사한 거 있으면 말해주세요.'],c:['{to} 결과 공유 좀']},
  askHeal:{p:['{to}님, 어제 누구한테 갔어요?','{to}님 의사라면 어제 치료한 사람 말해보세요.'],c:['{to} 어제 누구 힐함?','{to} 의사면 어제 누구 살렸는지 말해봐']},
- askProof:{p:['{to}님, {role}라는 증거 있어요?','{to}님 {roleI}? 어떻게 믿죠?'],c:['{to} {role} 증거 있음?','{to} {role} 맞냐']},
+ askProof:{p:['{to}님, {role} 맞다는 증거 있어요?','{to}님 {roleI}? 어떻게 믿죠?'],c:['{to} {role} 증거 있음?','{to} {role} 맞냐']},
  ansNoRes:{p:['{to}님, 아직 쓸 만한 결과가 없어요.','{to}님, 아직은 말씀드릴 게 없어요.'],c:['{to} 아직 결과 없음','{to} 딱히 없음']},
  ansHeal:{p:['{to}님, {t} 지켰어요.','{to}님, 어제는 {t}한테 갔어요.'],c:['{to} {t} 지켰음','{to} 어제 {t} 힐']},
  ansProof:{p:['{to}님, 밤이 지나면 아실 거예요.'],c:['{to} 밤 지나면 앎']},
@@ -926,7 +930,7 @@ const TX_EXTRA={
  okSorry:{p:['{to}님, 괜찮아요. 다들 예민하죠.'],c:['{to} 괜찮음']},
  endOk:{p:['네, 바로 투표하죠.'],c:['ㄱㄱ']},
  yourTurn:{p:['이제 {to}님 차례예요.'],c:['{to} 너 차례']},
- rollClaim:{p:['저는 {role}입니다.'],c:['{role}이다']},
+ rollClaim:{p:['저는 {role}입니다.'],c:['{roleY}']},
  rollPass:{p:['저는 정보직이라 지금은 패스할게요.'],c:['패스']},
  rollAgree:{p:['찬성이에요.','좋습니다.'],c:['콜','ㅇㅇ 하자']},
  rollObject:{p:['그러면 마피아한테 정보만 주는 거예요.'],c:['마피아만 좋아함']},
@@ -939,11 +943,14 @@ const TX_EXTRA={
  idle:{p:['다들 의견 좀 내봐요','시간 얼마 없어요'],c:['다들 말 좀 해','시간 없음']}
 };
 for(const k in TX_EXTRA){if(!TX[k])continue;for(const st of ['p','c'])if(TX_EXTRA[k][st])TX[k][st]=(TX[k][st]||[]).concat(TX_EXTRA[k][st]);}
-function tx(m,key,o={}){const set=TX[key];if(!set)return '';const arr=set[m.style]||set.p;let s=pick(arr);
- const L=x=>x==null?'':lab(x);const vars={pro:o.pro||'',t:L(o.t),tI:o.t!=null?L(o.t)+'이':'',tE:o.t!=null?L(o.t)+'은':'',tL:o.t!=null?L(o.t)+'을':'',v:L(o.v),vI:o.v!=null?L(o.v)+'이':'',vL:o.v!=null?L(o.v)+'을':'',by:L(o.by),byE:o.by!=null?L(o.by)+'은':'',role:o.role?ROLE[o.role].n:'',roleI:o.role?J.ida(ROLE[o.role].n):'',roleY:o.role?J.ya(ROLE[o.role].n):'',roleE:o.role?J.eun(ROLE[o.role].n):'',roleG:o.role?J.ig(ROLE[o.role].n):'',to:L(o.to),a:L(o.a),b:L(o.b),roleRa:o.role?ROLE[o.role].n+(hasB(ROLE[o.role].n)?'이라고':'라고'):'',roleIm:o.role?ROLE[o.role].n+(hasB(ROLE[o.role].n)?'이면':'면'):'',job:o.job?ROLE[o.job].n:'',txt:o.txt||'',txtRo:o.txt?J.ro(o.txt):'',txtRa:o.txt?o.txt+(hasB(o.txt)?'이라고':'라고'):'',list:o.list||'',why:o.why||'',sp:o.sp||''};
+function tx(m,key,o={}){const set=TX[key];if(!set)return '';let arr=set[m.style]||set.p;
+ const va=m.voice&&TXV[m.voice]&&TXV[m.voice][key];const vv=va&&(va[m.style]||(m.style==='p'?null:va.c));if(vv&&vv.length&&R()<.42)arr=vv;
+ if(G.usedDay!==G.day){G.usedDay=G.day;G.usedTx=new Set();}let s=null;for(let i=0;i<9;i++){const c=pick(arr);if(!G.usedTx.has(c)&&c!==m.lastTpl){s=c;break;}}if(s==null)s=pick(arr);G.usedTx.add(s);m.lastTpl=s;if(G._k==null)G._k=key;
+ const L=x=>x==null?'':lab(x);const vars={pro:o.pro||'',t:L(o.t),tI:o.t!=null?L(o.t)+'이':'',tE:o.t!=null?L(o.t)+'은':'',tL:o.t!=null?L(o.t)+'을':'',v:L(o.v),vI:o.v!=null?L(o.v)+'이':'',vL:o.v!=null?L(o.v)+'을':'',by:L(o.by),byE:o.by!=null?L(o.by)+'은':'',role:o.role?ROLE[o.role].n:'',roleI:o.role?J.ida(ROLE[o.role].n):'',roleY:o.role?J.ya(ROLE[o.role].n):'',roleE:o.role?J.eun(ROLE[o.role].n):'',roleG:o.role?J.ig(ROLE[o.role].n):'',to:L(o.to),a:L(o.a),b:L(o.b),roleRa:o.role?ROLE[o.role].n+(hasB(ROLE[o.role].n)?'이라고':'라고'):'',roleIm:o.role?ROLE[o.role].n+(hasB(ROLE[o.role].n)?'이면':'면'):'',job:o.job?ROLE[o.job].n:'',txt:o.txt||'',txtRo:o.txt?J.ro(o.txt):'',txtRa:o.txt?o.txt+(hasB(o.txt)?'이라고':'라고'):'',list:o.list||'',why:o.why||'',sp:o.sp||'',txtC:o.txtC||o.txt||'',n:o.n!=null?String(o.n):'',vE:o.v!=null?L(o.v)+'은':'',toI:o.to!=null?L(o.to)+'이':''};
  return s.replace(/\{(\w+)\}/g,(_,k)=>vars[k]??'');}
 function say(seat,text,sts,cls,to){
- const p=G.P[seat];const m=p.mind;m.said++;m.saidDay=G.day;G.lines++;
+ const p=G.P[seat];const m=p.mind;m.said++;m.saidDay=G.day;G.lines++;const vk=G._k;G._k=null;
+ if(text&&!m.human)text=voiceIt(m,vk,text);
  if(to==null&&sts){const f=(Array.isArray(sts)?sts:[sts]).find(x=>x.to!=null);if(f)to=f.to;}
  if(text){addChat({seat,text,cls,to});if(!G.sim)p.bub={txt:text,until:SC.t+Math.min(5.5,2.4+text.length*.07),cls,to,t0:SC.t};}
  if(!m.human){G.lastSpeaker=seat;const hs=G.human?G.human.seat:-1;if(hs>=0&&(to===hs||(sts&&(Array.isArray(sts)?sts:[sts]).some(x=>x.t===hs&&(x.type==='acc'||x.type==='vp')))))G.lastAddr={seat,clock:G.clock};}
@@ -953,9 +960,10 @@ function say(seat,text,sts,cls,to){
 }
 function record(st){const P=G.P[st.by];
  switch(st.type){
-  case 'claim':G.claim[st.by]=st.role;G.claimLog.push({by:st.by,role:st.role,day:G.day});P.mind.claimed=st.role;break;
-  case 'rep':if(st.as&&G.claim[st.by]!==st.as){G.claim[st.by]=st.as;G.claimLog.push({by:st.by,role:st.as,day:G.day});P.mind.claimed=st.as;}G.reports.push({by:st.by,as:st.as,t:st.t,res:st.res,job:st.job,v:st.v,list:st.list,att:st.att,day:G.day});break;
-  case 'acc':case 'def':G.acc.push({by:st.by,t:st.t,k:st.type,day:G.day});break;
+  case 'claim':noteClaim(st.by,st.role);G.claim[st.by]=st.role;G.claimLog.push({by:st.by,role:st.role,day:G.day});P.mind.claimed=st.role;break;
+  case 'rep':if(st.night==null){const pr=P.mind.pend.find(r=>r.t===st.t&&r.res===st.res)||P.mind.pend.find(r=>r.t===st.t);st.night=pr?pr.day:G.day-1;}
+   if(st.as&&G.claim[st.by]!==st.as){noteClaim(st.by,st.as);G.claim[st.by]=st.as;G.claimLog.push({by:st.by,role:st.as,day:G.day});P.mind.claimed=st.as;}G.reports.push({by:st.by,as:st.as,t:st.t,res:st.res,job:st.job,v:st.v,list:st.list,att:st.att,day:G.day,night:st.night});break;
+  case 'acc':case 'def':G.acc.push({by:st.by,t:st.t,k:st.type,day:G.day,reason:st.reason});break;
   case 'vp':G.vps.push({by:st.by,t:st.t,day:G.day});G.acc.push({by:st.by,t:st.t,k:'acc',day:G.day});break;
   case 'q':if(G.phase==='talk'&&st.to!=null&&G.P[st.to].mind.human&&G.P[st.to].alive&&!P.mind.human){G.humanQ.push({id:++G.qid,from:st.by,q:st.q,role:st.role,clock:G.clock});if(!G.sim)renderAct();}break;
   case 'healclaim':G.healClaims.push({by:st.by,t:st.t,day:G.day});break;
@@ -978,10 +986,13 @@ function pickFake(m){
  const r=wpick(Object.keys(W),k=>(dr.has(k)||taken.has(k)||knownHeld.has(k))?0:W[k])||'veteran';
  m.fake=r;return r;}
 function reasonFor(m,t){const sus=null;
+ const d2=doubleRep(t);if(d2)return ['double',{a:d2[0].t,b:d2[1].t,role:d2[0].as}];
  for(const r of G.reports)if(r.t===t&&EVILRES[r.res]&&r.by!==m.seat&&G.P[r.by].alive)return ['report',{by:r.by,txt:({M:'마피아',spy:'스파이',N:'중립',catch:'마피아',Ndoc:'중립',hunt:'범인',mw:'마피아 또는 목격자',cut:'좀비'})[r.res]||'마피아'}];
  const c=G.claim[t];if(c&&deadRoleSet().has(c))return ['deadrole',{role:c}];
  if(c&&claimersOf(c).length>1)return ['conflict',{role:c}];
+ {const ex=G.trials.find(tr=>tr.day===G.day-1&&tr.exec&&pubEvil(tr.acc)===false);if(ex&&G.vps.some(v=>v.day===ex.day&&v.by===t&&v.t===ex.acc))return ['lead',{v:ex.acc}];}
  if(G.acc.some(a=>a.by===t&&a.t===m.seat&&a.k==='acc'&&a.day===G.day))return ['accme',{}];
+ {const ci=G.claimInfo&&G.claimInfo[t];if(ci&&ci.pressed&&ci.day===G.day&&G.claim[t]===ci.role&&R()<.6)return ['pclaim',{role:ci.role}];}
  if(G.votes.some(v=>v.voter===t&&pubEvil(v.t)===false))return ['vote',{}];
  if(G.day>=2&&G.P[t].mind.saidDay!==G.day&&R()<.5)return ['quiet',{}];
  return ['gut',{}];}
@@ -990,7 +1001,8 @@ function pickFrame(m){const sus=evalSus(m,true);const c=aliveSeats().filter(x=>x
 function repText(m,r,prefix){const key='rep_'+(r.res==='gvis'?(r.list&&r.list.length?'gvis':'gnone'):r.res);return (prefix?prefix+' ':'')+tx(m,key,{t:r.t,v:r.v,job:r.job,txt:r.txt,list:(r.list||[]).map(lab).join(', ')});}
 function speak(m,it){
  const s=m.seat;if(!G.P[s].alive)return;
- const T=(k,o)=>tx(m,k,o);
+ const T=(k,o)=>tx(m,k,o);G._k=null;
+ if(SPEAK2[it.type])return SPEAK2[it.type](m,it,T);
  switch(it.type){
   case 'greet':return say(s,T('greet',{pro:G.pro.name}));
   case 'idle':return say(s,T('idle'));
@@ -998,13 +1010,16 @@ function speak(m,it){
   case 'ask':if(m.claimed)return;return say(s,T('ask'),{type:'ask'});
   case 'react':{if(G.reactDay===G.day&&G.reactN>=2)return;if(G.reactDay!==G.day){G.reactDay=G.day;G.reactN=0;}G.reactN++;const ld=G.deaths.filter(d=>d.day===G.day-1&&d.night);if(ld.length){const d=pick(ld);return say(s,G.opts.reveal==='job'&&R()<.6?T('rdeathR',{t:d.seat,role:G.P[d.seat].shown}):T('rdeath',{t:d.seat}));}if(G.healLog.some(h=>h.day===G.day-1))return say(s,T('rheal'));return say(s,T('rnone'));}
   case 'rep':{const r=it.r;if(r.said)return;r.said=true;if(r.t!=null&&r.t!=='pro'&&!G.P[r.t].alive&&EVILRES[r.res]&&r.res!=='hunt')return;const pre=m.claimed!==m.role?T('claim',{role:m.role}):'';
-   return say(s,repText(m,r,pre),{type:'rep',as:m.role,t:r.t,res:r.res,job:r.job,v:r.v,list:r.list,att:r.att});}
+   return say(s,repText(m,r,pre),{type:'rep',as:m.role,t:r.t,res:r.res,job:r.job,v:r.v,list:r.list,att:r.att,night:r.day});}
   case 'claim':{if(m.claimed&&!it.force)return;const role=it.role||claimRoleFor(m);if(m.fac!=='C')m.fake=role;if(it.why==='save')return say(s,T('claimSave'),{type:'claim',role:'doctor'});return say(s,T('claim',{role}),{type:'claim',role});}
-  case 'fakerep':{const t=pickFrame(m);if(t==null)return;m.fake=it.as;const pre=m.claimed!==it.as?T('claim',{role:it.as}):'';return say(s,(pre?pre+' ':'')+T('rep_M',{t}),{type:'rep',as:it.as,t,res:'M'});}
-  case 'acc':{let t=it.t,reason=it.reason,ex={};
+  case 'fakerep':{if(!(window.__off&&__off.sw)&&m.claimed&&m.claimed!==it.as)return;if(!(window.__off&&__off.coord)&&!m.claimed&&aliveSeats().some(x=>x!==s&&isTeam(m,x)&&G.claim[x]===it.as))return;if(G.reports.some(r=>r.by===s&&r.night===G.day-1&&SINGLE.has(r.as))&&!(m.pers.logic<.5&&R()<.15))return;const t=pickFrame(m);if(t==null)return;m.fake=it.as;const pre=m.claimed!==it.as?T('claim',{role:it.as}):'';return say(s,(pre?pre+' ':'')+T('rep_M',{t}),{type:'rep',as:it.as,t,res:'M',night:G.day-1});}
+  case 'acc':{let t=it.t,reason=it.reason,ex=it.ex||{};
    if(it.dyn||t==null){const town=m.fac==='C';const sus=evalSus(m,!town);const cand=aliveSeats().filter(x=>x!==s&&!(!town&&isTeam(m,x)));if(!cand.length)return;t=argmax(cand,x=>sus[x]+(!town?threat(m,x)*.1:0));if(sus[t]<(town?52:44))return;[reason,ex]=reasonFor(m,t);}
    else if(reason==='deadrole')ex={role:it.role};
-   if(!G.P[t].alive||t===s)return;return say(s,T('acc_'+(reason||'gut'),Object.assign({t},ex)),{type:'acc',t});}
+   if(!G.P[t].alive||t===s)return;
+   if(!(window.__off&&__off.rep)&&G.acc.some(a=>a.day===G.day&&a.by===s&&a.t===t&&a.k==='acc'&&a.reason===(reason||'gut'))&&stance(m,t)==='acc')return;
+   {const prev=G.acc.find(a=>a.day===G.day&&a.t===t&&a.k==='acc'&&a.by!==s&&G.P[a.by].alive);if(prev&&!['double','ghoul','deadrole'].includes(reason)&&R()<.5)return say(s,T('acc_echo',{t,by:prev.by}),{type:'acc',t,reason:prev.reason||reason||'gut',agreeWith:prev.by});}
+   return say(s,T('acc_'+(reason||'gut'),Object.assign({t},ex)),{type:'acc',t,reason:reason||'gut'});}
   case 'def':{if(!G.P[it.t].alive)return;return say(s,T('def',{t:it.t}),{type:'def',t:it.t});}
   case 'agree':{if(!G.P[it.t].alive)return;return say(s,T('agree',{t:it.t}),{type:'acc',t:it.t});}
   case 'refute':{if(!G.P[it.t].alive)return;return say(s,T('refute',{t:it.t,by:it.by}),[{type:'def',t:it.t},{type:'acc',t:it.by}]);}
@@ -1014,11 +1029,11 @@ function speak(m,it){
   case 'counterRep':{if(!G.P[it.t].alive)return;const role=claimRoleFor(m);if(m.fac!=='C')m.fake=role;say(s,T('counterRep',{role,by:it.t}),[{type:'claim',role},{type:'acc',t:it.t}]);if(m.fac==='C')for(const r of m.pend)if(!r.said)m.intents.push({type:'rep',r,pri:8,at:G.clock+rnd(1.5,4),done:false});return;}
   case 'plead':{const role=claimRoleFor(m);return say(s,T('plead',{role}));}
   case 'askWhy':{const t=it.to;if(!G.P[t].alive)return;return say(s,T('askWhy',{to:t}),{type:'q',q:'why',to:t});}
-  case 'giveWhy':{const t=it.to;if(!G.P[t].alive)return;let [reason,ex]=reasonFor(m,t);if(m.role==='ghoul'&&m.ghoulFail===t)reason='ghoul';if(reason==='gut'&&G.silence[t])reason='silence';const key=TX['why_'+reason]?'why_'+reason:'why_gut';return say(s,T(key,Object.assign({to:t},ex)),{type:'why',to:t,reason});}
+  case 'giveWhy':{const t=it.to;if(!G.P[t].alive)return;if(stance(m,t)==='def')return say(s,T('whyDropped',{to:t}),null,null,t);let [reason,ex]=reasonFor(m,t);if(m.role==='ghoul'&&m.ghoulFail===t)reason='ghoul';if(reason==='gut'&&G.silence[t])reason='silence';const key=TX['why_'+reason]?'why_'+reason:'why_gut';return say(s,T(key,Object.assign({to:t},ex)),{type:'why',to:t,reason});}
   case 'rebut':{const t=it.to;if(!G.P[t].alive)return;const key=TX['rebut_'+it.reason]?'rebut_'+it.reason:'rebut_gut';const sts=[{type:'rebut',to:t,reason:it.reason}];let txt=T(key,{to:t});if(!m.claimed&&R()<.6){const role=claimRoleFor(m);if(m.fac!=='C')m.fake=role;txt+=' '+T('claimShort',{role});sts.push({type:'claim',role});}return say(s,txt,sts);}
-  case 'press':{const t=it.to;if(!G.P[t].alive)return;return say(s,T('press',{to:t}),[{type:'acc',t},{type:'press',to:t}]);}
+  case 'press':{const t=it.to;if(!G.P[t].alive||stance(m,t)==='def')return;return say(s,T('press',{to:t}),[{type:'acc',t},{type:'press',to:t}]);}
   case 'backoff':{const t=it.to;if(!G.P[t].alive)return;return say(s,T('backoff',{to:t}),[{type:'def',t},{type:'backoff',to:t}]);}
-  case 'side':{const a=it.a,b=it.b;if(!G.P[a].alive||!G.P[b].alive||b===s)return;const sus=evalSus(m,m.fac!=='C');let sup=sus[b]>=50?true:sus[b]<=38?false:R()<.5;if(m.fac!=='C'){if(isTeam(m,b))sup=false;else if(isTeam(m,a))sup=true;}return sup?say(s,T('sideA',{a,b}),[{type:'acc',t:b,side:1}],null,a):say(s,T('sideB',{a,b}),[{type:'def',t:b}],null,a);}
+  case 'side':{const a=it.a,b=it.b;if(!G.P[a].alive||!G.P[b].alive||b===s)return;const sus=evalSus(m,m.fac!=='C');let sup=sus[b]>=50?true:sus[b]<=38?false:R()<.5;{const stc=stance(m,b);if(stc==='acc')sup=true;else if(stc==='def')sup=false;}if(m.fac!=='C'){if(isTeam(m,b))sup=false;else if(isTeam(m,a))sup=true;}return sup?say(s,T('sideA',{a,b}),[{type:'acc',t:b,side:1}],null,a):say(s,T('sideB',{a,b}),[{type:'def',t:b}],null,a);}
   case 'askRole':{let t=it.to;if(t==null){const c=aliveSeats().filter(x=>x!==s&&!G.claim[x]&&!(m.fac!=='C'&&isTeam(m,x)));if(!c.length)return;const sus=evalSus(m,m.fac!=='C');t=argmax(c,x=>sus[x]+rnd(0,30));}if(!G.P[t].alive||G.claim[t])return;return say(s,T('askRole',{to:t}),{type:'q',q:'role',to:t});}
   case 'answerRole':{const t=it.to;if(m.claimed)return say(s,T('ansRole',{to:t,role:m.claimed}),[{type:'claim',role:m.claimed,to:t}]);
    const pressed=G.acc.some(a=>a.day===G.day&&a.t===s&&a.k==='acc');
@@ -1028,13 +1043,13 @@ function speak(m,it){
    if(m.fac==='C')for(const r of m.pend)if(!r.said&&EVILRES[r.res])m.intents.push({type:'rep',r,pri:8.5,at:G.clock+rnd(1,2.5),done:false});return;}
   case 'askFollow':{const t=it.to,role=it.role;if(!G.P[t].alive)return;let q=role==='doctor'?'heal':['police','witness','reporter','detective','hunter','guard','coroner'].includes(role)?'result':'proof';if(G.day<2&&q!=='proof')q='proof';return say(s,T(q==='heal'?'askHeal':q==='result'?'askResult':'askProof',{to:t,role}),{type:'q',q,to:t,role});}
   case 'answerResult':{const t=it.to;
-   if(m.fac==='C'){const un=m.pend.filter(x=>!x.said&&x.res!=='gvis'||(!x.said&&x.list&&x.list.length));const r=un.sort((a,b)=>(EVILRES[b.res]?1:0)-(EVILRES[a.res]?1:0))[0];if(r){r.said=true;return say(s,lab(t)+'님, '+repText(m,r,''),{type:'rep',as:m.role,t:r.t,res:r.res,job:r.job,v:r.v,list:r.list,att:r.att,to:t});}return say(s,T('ansNoRes',{to:t}),{type:'ans',to:t});}
-   if(m.claimed==='police'||m.fake==='police'){const team=aliveSeats().filter(x=>x!==s&&isTeam(m,x)&&!G.reports.some(r=>r.by===s&&r.t===x));let ft,res;if(team.length&&R()<.45){ft=pick(team);res='C';}else{ft=pickFrame(m);res='M';}if(ft==null)return say(s,T('ansNoRes',{to:t}),{type:'ans',to:t});return say(s,lab(t)+'님, '+T(res==='M'?'rep_M':'rep_C',{t:ft}),{type:'rep',as:'police',t:ft,res,to:t});}
+   if(m.fac==='C'){const un=m.pend.filter(x=>!x.said&&x.res!=='gvis'||(!x.said&&x.list&&x.list.length));const r=un.sort((a,b)=>(EVILRES[b.res]?1:0)-(EVILRES[a.res]?1:0))[0];if(!r){const old=G.reports.filter(x=>x.by===s&&x.day===G.day).pop();if(old)return say(s,lab(t)+'님, 아까 말했잖아요. '+repText(m,old,''),null,null,t);}if(r){r.said=true;return say(s,lab(t)+'님, '+repText(m,r,''),{type:'rep',as:m.role,t:r.t,res:r.res,job:r.job,v:r.v,list:r.list,att:r.att,to:t,night:r.day});}return say(s,T('ansNoRes',{to:t}),{type:'ans',to:t});}
+   if(m.claimed==='police'||m.fake==='police'){const done=G.reports.find(r=>r.by===s&&r.night===G.day-1&&r.as==='police');if(done&&!(m.pers.logic<.5&&R()<.15))return say(s,lab(t)+'님, 아까 말했듯 '+T(done.res==='M'?'rep_M':'rep_C',{t:done.t}),null,null,t);const team=aliveSeats().filter(x=>x!==s&&isTeam(m,x)&&!G.reports.some(r=>r.by===s&&r.t===x));let ft,res;if(team.length&&R()<.45){ft=pick(team);res='C';}else{ft=pickFrame(m);res='M';}if(ft==null)return say(s,T('ansNoRes',{to:t}),{type:'ans',to:t});return say(s,lab(t)+'님, '+T(res==='M'?'rep_M':'rep_C',{t:ft}),{type:'rep',as:'police',t:ft,res,to:t,night:G.day-1});}
    return say(s,T('ansNoRes',{to:t}),{type:'ans',to:t});}
   case 'answerHeal':{const t=it.to;let h=null;if(m.fac==='C'&&m.role==='doctor')h=m.lastHeal;else if(m.zsaveT!=null)h=m.zsaveT;else{const c=aliveSeats().filter(x=>x!==s&&x!==t);h=c.length?pick(c):null;}
    if(h==null||G.day<2)return say(s,T('ansNoRes',{to:t}),{type:'ans',to:t});return say(s,T('ansHeal',{to:t,t:h}),{type:'healclaim',t:h,to:t});}
   case 'answerProof':return say(s,T('ansProof',{to:it.to}),{type:'ans',to:it.to});
-  case 'judge':{const t=it.t;if(!G.P[t].alive||t===s)return;const sus=evalSus(m,m.fac!=='C');if(m.fac!=='C'&&isTeam(m,t))return say(s,T('judgeY',{t}),{type:'def',t},null,t);if(sus[t]>=56)return say(s,T('judgeN',{t}),{type:'acc',t,side:1},null,t);if(sus[t]<=40)return say(s,T('judgeY',{t}),{type:'def',t},null,t);return;}
+  case 'judge':{const t=it.t;if(!G.P[t].alive||t===s)return;const sus=evalSus(m,m.fac!=='C');const stc=stance(m,t);if(stc==='acc')return say(s,T('judgeN',{t}),{type:'acc',t,side:1},null,t);if(stc==='def')return say(s,T('judgeY',{t}),{type:'def',t},null,t);if(m.fac!=='C'&&isTeam(m,t))return say(s,T('judgeY',{t}),{type:'def',t},null,t);if(sus[t]>=56)return say(s,T('judgeN',{t}),{type:'acc',t,side:1},null,t);if(sus[t]<=40)return say(s,T('judgeY',{t}),{type:'def',t},null,t);return;}
   case 'noAns':{const t=it.to;if(!G.P[t].alive)return;G.silence[t]=(G.silence[t]||0)+1;return say(s,T('noAns',{to:t}),{type:'acc',t,side:1},null,t);}
   case 'ackHuman':return say(s,T('ackHuman',{to:it.to}),null,null,it.to);
   case 'thanks':if(!G.P[it.to].alive)return;return say(s,T('thanks',{to:it.to}),null,null,it.to);
@@ -1048,15 +1063,15 @@ function speak(m,it){
   case 'reqAck':return say(s,T('reqAck',{to:it.to}),null,null,it.to);
   case 'greetBack':return say(s,T('greetBack',{to:it.to}),null,null,it.to);
   case 'notSus':return say(s,T('notSus',{to:it.to}),null,null,it.to);
-  case 'aboutAns':{const t=it.t;if(!G.P[t].alive)return say(s,T('abDead',{to:it.to,t}),null,null,it.to);if(t===s)return say(s,T('abSelf',{to:it.to}),null,null,it.to);const town=m.fac==='C';const sus=evalSus(m,!town);let v=sus[t];if(!town&&isTeam(m,t))v=Math.min(v,30);if(v>=55)return say(s,T('abSus',{to:it.to,t}),{type:'acc',t},null,it.to);if(v<=40)return say(s,T('abGood',{to:it.to,t}),{type:'def',t},null,it.to);return say(s,T('abMid',{to:it.to,t}),null,null,it.to);}
-  case 'whyAboutAns':{const t=it.t;const accd=G.acc.some(a=>a.day>=G.day-1&&a.by===s&&a.t===t&&a.k==='acc');if(!accd)return say(s,T('waNo',{to:it.to,t}),null,null,it.to);const [rs,ex]=reasonFor(m,t);const RT={report:'{by} 결과에 '+J.ro((ex&&ex.txt)||'마피아')+' 나왔잖아요',conflict:'직업이 겹쳐요',deadrole:'이미 죽은 직업을 주장했어요',vote:'투표가 이상했어요',quiet:'말이 너무 없어요',accme:'저를 먼저 몰았어요',gut:'느낌이 안 좋아요',silence:'질문에 대답을 안 했어요'};const rt=(RT[rs]||RT.gut).replace('{by}',ex&&ex.by!=null?lab(ex.by):'');return say(s,T('waYes',{to:it.to,t,txt:rt}),{type:'acc',t},null,it.to);}
+  case 'aboutAns':{const t=it.t;if(!G.P[t].alive)return say(s,T('abDead',{to:it.to,t}),null,null,it.to);if(t===s)return say(s,T('abSelf',{to:it.to}),null,null,it.to);const town=m.fac==='C';const sus=evalSus(m,!town);let v=sus[t];const stc=stance(m,t);if(stc==='acc')v=Math.max(v,56);else if(stc==='def')v=Math.min(v,40);if(!town&&isTeam(m,t))v=Math.min(v,30);if(v>=55)return say(s,T('abSus',{to:it.to,t}),{type:'acc',t},null,it.to);if(v<=40)return say(s,T('abGood',{to:it.to,t}),{type:'def',t},null,it.to);return say(s,T('abMid',{to:it.to,t}),null,null,it.to);}
+  case 'whyAboutAns':{const t=it.t;const accd=G.acc.some(a=>a.day>=G.day-1&&a.by===s&&a.t===t&&a.k==='acc');if(!accd)return say(s,T('waNo',{to:it.to,t}),null,null,it.to);const [rs,ex]=reasonFor(m,t);const RT={report:'{by} 결과에 '+J.ro((ex&&ex.txt)||'마피아')+' 나왔잖아요',conflict:'직업이 겹쳐요',deadrole:'이미 죽은 직업을 주장했어요',vote:'투표가 이상했어요',quiet:'말이 너무 없어요',accme:'저를 먼저 몰았어요',gut:'느낌이 안 좋아요',silence:'질문에 대답을 안 했어요',double:'하룻밤에 결과를 두 개나 말했어요',lead:'어제 시민을 몰아갔어요',pclaim:'의심받자마자 직업을 깠어요'};const rt=(RT[rs]||RT.gut).replace('{by}',ex&&ex.by!=null?lab(ex.by):'');return say(s,T('waYes',{to:it.to,t,txt:rt}),{type:'acc',t},null,it.to);}
   case 'noOne':return say(s,T('noOne',{to:it.to}),null,null,it.to);
   case 'conflictPick':{const cs=claimersOf(it.role).filter(x=>x!==s);if(cs.length<2)return say(s,T('confFew',{role:it.role}),null,null,it.to);const sus=evalSus(m,m.fac!=='C');let c=cs.filter(x=>!(m.fac!=='C'&&isTeam(m,x)));if(!c.length)c=cs;const t=argmax(c,x=>sus[x]+(m.fac!=='C'?threat(m,x)*.2:0));const o=cs.find(x=>x!==t);return say(s,T('confPick',{a:o,b:t,t,role:it.role}),{type:'acc',t},null,t);}
   case 'endOk':return say(s,T('endOk',{to:it.to}),null,null,it.to);
   case 'welcome':return say(s,T('welcome',{to:it.to}),null,null,it.to);
   case 'okSorry':return say(s,T('okSorry',{to:it.to}),null,null,it.to);
   case 'hurt':{const ag=R()<m.pers.aggr;return say(s,T(ag?'hurtA':'hurt',{to:it.to}),ag?{type:'acc',t:it.to}:null,null,it.to);}
-  case 'stateAns':{const al=aliveSeats();let txt;if(it.k2==='role'&&it.role){const d=G.P.find(p=>!p.alive&&G.opts.reveal==='job'&&p.shown===it.role);const cl=claimersOf(it.role);if(d){const rn=ROLE[it.role].n;txt=T('stRoleDead',{to:it.to,t:d.seat,role:it.role,txt:rn+(hasB(rn)?'이었어요':'였어요')});}else if(G.opts.reveal==='fac')txt=T('stRoleFac',{to:it.to,role:it.role});else txt=cl.length?T('stRoleAlive',{to:it.to,role:it.role,t:cl[0]}):T('stRoleUnk',{to:it.to,role:it.role});}else if(it.k2==='facN'){const dm=G.P.filter(p=>!p.alive&&p.shownFac==='M').length;txt=T('stFac',{to:it.to,txt:String(Math.max(0,3-dm))});}else if(it.k2==='alive'){const nm=al.length;txt=T('stAlive',{to:it.to,txt:String(nm)});}else{const ds=(it.k2==='last'?G.deaths.filter(d=>d.day===G.day-1):G.deaths).map(d=>lab(d.seat)+'('+shownLabel(d.seat)+')');txt=ds.length?T(it.k2==='last'?'stLast':'stDead',{to:it.to,txt:ds.slice(-6).join(', ')}):T('stNone',{to:it.to});}return say(s,txt,null,null,it.to);}
+  case 'stateAns':{if(it.k2==='summary')return SPEAK2.recapTo(m,it,T);const al=aliveSeats();let txt;if(it.k2==='role'&&it.role){const d=G.P.find(p=>!p.alive&&G.opts.reveal==='job'&&p.shown===it.role);const cl=claimersOf(it.role);if(d){const rn=ROLE[it.role].n;txt=T('stRoleDead',{to:it.to,t:d.seat,role:it.role,txt:rn+(hasB(rn)?'이었어요':'였어요')});}else if(G.opts.reveal==='fac')txt=T('stRoleFac',{to:it.to,role:it.role});else txt=cl.length?T('stRoleAlive',{to:it.to,role:it.role,t:cl[0]}):T('stRoleUnk',{to:it.to,role:it.role});}else if(it.k2==='facN'){const dm=G.P.filter(p=>!p.alive&&p.shownFac==='M').length;txt=T('stFac',{to:it.to,txt:String(Math.max(0,3-dm))});}else if(it.k2==='alive'){const nm=al.length;txt=T('stAlive',{to:it.to,txt:String(nm)});}else{const ds=(it.k2==='last'?G.deaths.filter(d=>d.day===G.day-1):G.deaths).map(d=>lab(d.seat)+'('+shownLabel(d.seat)+')');txt=ds.length?T(it.k2==='last'?'stLast':'stDead',{to:it.to,txt:ds.slice(-6).join(', ')}):T('stNone',{to:it.to});}return say(s,txt,null,null,it.to);}
   case 'emoBack':return say(s,T('emo_'+(it.k2||'wow')),null);
   case 'rebutHuman':{const sm=G.semBy[s];if(sm&&sm.type==='claim')return say(s,T('rebutClaim',{to:it.to,role:sm.role}),null,null,it.to);return say(s,T('rebutH',{to:it.to}),null,null,it.to);}
   case 'speakUp':{if(!m.claimed&&(m.fac==='C'||R()<.6)){const role=claimRoleFor(m);if(m.fac!=='C')m.fake=role;say(s,T('ansRole',{to:it.to,role}),[{type:'claim',role,to:it.to}]);}const town=m.fac==='C';const sus=evalSus(m,!town);const c=aliveSeats().filter(x=>x!==s&&!(!town&&isTeam(m,x)));const t=c.length?argmax(c,x=>sus[x]):null;if(t!=null&&sus[t]>=48)return say(s,T('opinion',{to:it.to,t}),{type:'acc',t},null,it.to);return say(s,T('opinionNone',{to:it.to}),null,null,it.to);}
@@ -1064,11 +1079,12 @@ function speak(m,it){
 function planDay(m){
  m.intents=[];m.tdone=new Set();m.said=0;m.bus=null;m.jd=0;
  const add=(type,o={})=>m.intents.push(Object.assign({type,pri:5,at:0,done:false},o));
- const talk=m.pers.talk,D=G.talkDur;
+ const talk=m.pers.talk,D=G.talkDur;if(G.moodDay!==G.day){G.moodDay=G.day;G.mood=pick(['calm','heated','normal','normal','normal']);}const hot=G.mood==='heated'?.22:G.mood==='calm'?-.15:0;
  if(G.day===1){if(R()<.8)add('greet',{pri:3,at:rnd(0,D*.4)});if(R()<.3*talk)add('idle',{pri:2,at:rnd(D*.3,D*.8)});if(R()<.25)add('ask',{pri:2,at:rnd(5,D*.6)});return;}
  if(R()<.45*talk)add('react',{pri:3,at:rnd(0,5)});
  if(m.fac==='C')planTown(m,add);else planEvil(m,add);
- if(R()<.35+m.pers.aggr*.4)add('acc',{pri:5,at:rnd(6,D*.5),dyn:true});
+ if(R()<.35+m.pers.aggr*.4+hot)add('acc',{pri:5,at:rnd(G.mood==='heated'?3:6,D*(G.mood==='heated'?.35:.5)),dyn:true});
+ if(G.mood==='calm'&&R()<.3*talk)add('idle',{pri:2,at:rnd(3,D*.4)});
  if(R()<.38)add('vp',{pri:4,at:D*.5+rnd(0,D*.35),dyn:true});
  if(R()<.25*talk)add('idle',{pri:1.5,at:rnd(5,D*.6)});
  if(!G.claimLog.length&&R()<.3)add('ask',{pri:3,at:rnd(4,20)});
@@ -1088,7 +1104,7 @@ function planTown(m,add){
  if(!m.claimed&&G.day>=3&&['veteran','merc','recruit','hunter','guard','hypno','amnesiac'].includes(m.role)&&R()<.25)add('claim',{pri:4,at:rnd(10,40)});
 }
 function planEvil(m,add){
- if(m.fac==='M'&&!m.claimed&&G.day>=2){const ch=(m.role==='spy'?.45:m.role==='pickpocket'?.25:.12)*m.pers.bluff*(claimersOf('police').length?1.2:1);if(R()<ch)add('fakerep',{pri:8,at:rnd(3,16),as:'police'});}
+ if(m.fac==='M'&&!m.claimed&&G.day>=2&&(window.__off&&__off.coord||G.fakeDay!==G.day&&!aliveSeats().some(x=>x!==m.seat&&isTeam(m,x)&&G.claim[x]==='police'))){const ch=(m.role==='spy'?.45:m.role==='pickpocket'?.25:.12)*m.pers.bluff*(claimersOf('police').length?1.2:1);if(R()<ch){G.fakeDay=G.day;add('fakerep',{pri:8,at:rnd(3,16),as:'police'});}}
  else if(m.fake==='police'&&m.claimed==='police'&&R()<.75)add('fakerep',{pri:7,at:rnd(2,12),as:'police'});
  if(m.team==='Z'&&m.zsave&&!m.claimed&&R()<.5)add('claim',{pri:6,at:rnd(3,12),role:'doctor',why:'save'});
  if(m.role==='ghoul'&&m.ghoulFail!=null&&G.P[m.ghoulFail].alive&&!m.gsaid){m.gsaid=true;add('acc',{pri:9,at:rnd(1,8),t:m.ghoulFail,reason:'ghoul'});}
@@ -1097,8 +1113,9 @@ function reactAll(st){if(G.phase!=='talk'&&G.phase!=='defense')return;for(const 
 function react(m,st,clock){
  const me=m.seat,town=m.fac==='C',by=st.by,ty=st.type;
  const add=(type,o={})=>{const key=type+':'+(o.to??o.t??'')+':'+(o.k??'');if(m.tdone.has(key))return false;m.tdone.add(key);m.intents.push(Object.assign({type,pri:6,at:clock+(o.d??rnd(1,3.5)),done:false},o));return true;};
- if(ty==='acc'&&st.t===me){
-  if(R()<.75)add('askWhy',{to:by,pri:8.6,d:rnd(.9,2.2)});else add('deny',{to:by,pri:7.5});
+ if((ty==='acc'||(ty==='vp'&&!(window.__off&&__off.vpr)))&&st.t===me){
+  const rs=st.reason;if(!(window.__off&&__off.rd)&&ty==='acc'&&rs&&rs!=='gut'&&R()<.7)add('rebut',{to:by,reason:rs,pri:8.5,d:rnd(.9,2.2)});
+  else if(R()<.72)add('askWhy',{to:by,pri:8.6,d:rnd(.9,2.2)});else add('deny',{to:by,pri:7.5});
   const n=G.acc.filter(a=>a.day===G.day&&a.t===me&&a.k==='acc').length;
   if(!m.claimed&&(n>=2||R()<.3))add('claim',{pri:8,d:rnd(4,7)});
   if(R()<m.pers.aggr*.35)add('acc',{t:by,reason:'accme',pri:5,d:rnd(5,9)});
@@ -1119,8 +1136,9 @@ function react(m,st,clock){
  if(ty==='rep'&&st.t===me&&EVILRES[st.res])add('counterRep',{t:by,pri:9.5,d:rnd(.8,2.5)});
  const role=ty==='claim'?st.role:ty==='rep'?st.as:null;
  if(role&&by!==me){
-  if(town&&m.role===role)add('counter',{t:by,role,pri:10,d:rnd(.8,2.2)});
-  else if(!town&&m.claimed===role&&R()<m.pers.bluff)add('counter',{t:by,role,pri:8,d:rnd(1,3)});
+  const crp=ty==='rep'&&st.t===me&&EVILRES[st.res];
+  if(town&&m.role===role&&(!crp||(window.__off&&__off.crp)))add('counter',{t:by,role,pri:10,d:rnd(.8,2.2)});
+  else if(!town&&m.claimed===role&&!crp&&R()<m.pers.bluff)add('counter',{t:by,role,pri:8,d:rnd(1,3)});
   if(G.opts.reveal==='job'&&deadRoleSet().has(role)&&m.pers.logic>.45&&R()<.55)add('acc',{t:by,reason:'deadrole',role,pri:7});
  }
  if(ty==='rep'&&EVILRES[st.res]&&st.t!=null&&st.t!==me&&st.t!=='pro'&&G.P[st.t].alive){const k=m.know[st.t];
@@ -1158,6 +1176,7 @@ function react(m,st,clock){
  if(ty==='greet'&&(st.oc||0)<2&&R()<.6){st.oc=(st.oc||0)+1;add('greetBack',{to:by,pri:7,d:rnd(.8,2.2),exp:10});}
  if(ty==='chat'&&G.P[by].mind.human&&R()<.15)add('ack',{pri:3});
  if(ty==='vp'&&R()<.12)add('vp',{pri:3,dyn:true});
+ if(!(window.__off&&__off.r2))react2(m,st,clock,add);
 }
 function talkTick(clock){
  if(G.humanQ.length&&G.phase==='talk'){for(const q of G.humanQ.slice()){if(clock-q.clock>15){G.humanQ.splice(G.humanQ.indexOf(q),1);const a=G.P[q.from];if(a.alive&&!a.mind.human&&G.human)a.mind.intents.push({type:'noAns',to:G.human.seat,pri:8.2,at:clock,done:false});if(!G.sim)renderAct();}}}
@@ -1180,6 +1199,290 @@ function talkTick(clock){
  const urgent=cands.some(([m,it])=>!it.done&&it.pri>=8);
  G.nextSpeak=clock+(urgent?rnd(1.5,2.3):rnd(2.0,3.6));
 }
+/* ================= 대화 v4: 말투·주장 신뢰·상황 대사 ================= */
+const SINGLE=new Set(['police','reporter','detective','witness','hunter']);
+const UNVERIF=new Set(['veteran','merc','recruit','sniper','hypno','guard','amnesiac']);
+const INFO_SET=new Set(['police','reporter','detective','witness','hunter','coroner','doctor']);
+const RES_SHORT={M:'마피아',C:'시민',spy:'스파이',N:'중립',catch:'마피아',mw:'마피아 또는 목격자',hunt:'범인',cut:'좀비',Ndoc:'중립',notSN:'스파이 아님',nomw:'해당 없음'};
+const SADK=new Set(['rdeath','rdeathR','last','plead','mfinal','emo_sad','emo_fear','hurt','execBad','execBadLead','tension','betrayed','dClaimTrue','dSusDead','okSorry']);
+
+/* ---------- 캐릭터 말투 ---------- */
+const VOICES={
+ calm:{n:'침착한 분석가',pre:{p:['정리하면,','차분히 보면','논리적으로 보면','일단','음,'],c:['정리하면','차분히 보자.','일단','논리적으로 보면']},suf:{p:[],c:[]},rp:.26,rs:0,st:.85,mod:{logic:.25,aggr:-.1,talk:0}},
+ hot:{n:'다혈질',pre:{p:['아니','아 진짜','하..','솔직히'],c:['아니','아 진짜','하..','야']},suf:{p:['!!','!'],c:['!!',' ㅡㅡ','!']},rp:.33,rs:.33,st:.45,mod:{aggr:.3,talk:.12,logic:-.08}},
+ shy:{n:'소심이',pre:{p:['저기..','혹시..','음..','제 생각엔..'],c:['음..','저기..','혹시..']},suf:{p:['..','...'],c:['..','...']},rp:.38,rs:.33,st:.85,mod:{aggr:-.3,talk:-.15}},
+ joker:{n:'장난꾸러기',pre:{p:['ㅋㅋ','헐','와','ㅎㅎ'],c:['ㅋㅋ','헐','ㅋㅋㅋ','와']},suf:{p:[' ㅋㅋ',' ㅎㅎ','~'],c:[' ㅋㅋ',' ㅋㅋㅋ','~']},rp:.28,rs:.4,st:.25,mod:{talk:.2,logic:-.05}},
+ elder:{n:'점잖은 어르신',pre:{p:['허허','흠흠','허 참','이보게,'],c:['허허','흠흠']},suf:{p:[],c:[]},rp:.33,rs:0,st:1,mod:{logic:.1,talk:-.05}},
+ blunt:{n:'직설파',pre:{p:['돌려 말 안 할게요.','딱 잘라서','솔직히'],c:['돌려 말 안 함.','솔직히','딱 잘라서']},suf:{p:[],c:[]},rp:.22,rs:0,st:.5,mod:{aggr:.15,talk:-.05}}
+};
+function assignVoices(){const pool=shuffle(['calm','calm','hot','hot','shy','shy','joker','joker','elder','blunt','blunt','calm']);let i=0;
+ for(const p of G.P){const m=p.mind;if(m.human)continue;const v=pool[i++%pool.length];m.voice=v;const V=VOICES[v];m.style=R()<V.st?'p':'c';
+  if(!(window.__off&&__off.voice))for(const k in V.mod)m.pers[k]=clamp(m.pers[k]+V.mod[k],.1,1);}}
+const ANALYTIC=/^(acc_|vp|opinion|ab(Sus|Good|Mid)|side|judge|press|backoff|conflict|cv|execG|execB|claimPress|claimBack|waYes|confPick|idle|recap|retract)/;
+function voiceIt(m,key,s){const V=VOICES[m.voice];if(!V||!s)return s;const st=m.style;const sad=SADK.has(key);
+ if(sad&&(m.voice==='joker'||m.voice==='hot'))return s;
+ if(m.voice==='joker'&&/[ㅋㅎ]/.test(s))return s;
+ const anaOK=!(m.voice==='calm'||m.voice==='blunt')||ANALYTIC.test(key||'');
+ if(anaOK&&R()<V.rp){const arr=V.pre[st]||V.pre.p;if(arr.length){const p=pick(arr);const core=p.replace(/[.,]+$/,'');if(!s.startsWith(core)&&!/^(ㅋ|ㅎ|헐|와|아니|허허|흠|음)/.test(s)&&!((/,$/.test(p)||m.voice==='calm'||m.voice==='blunt'||m.voice==='elder')&&/^\d/.test(s))&&!(sad&&p==='이보게,'))s=p+' '+s;}}
+ if(R()<V.rs&&!/[ㅋㅎㅠㅜ~]$/.test(s)){const arr=V.suf[st]||V.suf.p;if(arr.length){const sf=pick(arr);
+  if(/\?$/.test(s))s=m.voice==='hot'?s+'!':m.voice==='shy'?s.replace(/\?$/,'..?'):s+sf;
+  else s=s.replace(/[.!…]+$/,'')+sf;}}
+ return s;}
+
+/* ---------- 오늘 내 입장 (마지막 의심/믿음) ---------- */
+function stance(m,t){let k=null;for(const a of G.acc)if(a.day===G.day&&a.by===m.seat&&a.t===t)k=a.k;return k;}
+/* ---------- 주장 신뢰도 ---------- */
+function noteClaim(by,role){if(G.claim[by]===role)return;(G.claimInfo||(G.claimInfo={}))[by]={role,day:G.day,clock:G.clock,pressed:G.acc.some(a=>a.day===G.day&&a.t===by&&a.k==='acc'&&a.by!==by)};}
+function claimCred(x,c,riv,dr,own,L){if(own||dr.has(c)||!ROLE[c])return 0;const ci=(G.claimInfo||{})[x];
+ if(riv.length){if(!ci)return 0;const rc=riv.map(y=>G.claimInfo[y]).filter(Boolean);const earlier=rc.every(o=>o.day>ci.day||(o.day===ci.day&&o.clock>ci.clock));return earlier?-6:(ci.pressed?10:3);}
+ if(ROLE[c].f!=='C')return 0;const CV=window.__ccv||[24,12,0];let cr=UNVERIF.has(c)?CV[1]:CV[0];
+ if(ci&&ci.pressed)cr*=.75;if(ci&&ci.day<G.day)cr*=CV[2];
+ return -cr*(.75+.35*L)*(window.__ccMul!=null?window.__ccMul:(G.opts.reveal==='job'?1:.5));}
+function doubleRep(x){if(x==null||x==='pro')return null;const rs=G.reports.filter(r=>r.by===x&&SINGLE.has(r.as)&&r.t!=null&&r.t!=='pro'&&r.night!=null);
+ for(let i=0;i<rs.length;i++)for(let j=i+1;j<rs.length;j++)if(rs[i].night===rs[j].night&&rs[i].t!==rs[j].t&&rs[i].as===rs[j].as)return [rs[i],rs[j]];return null;}
+
+/* ---------- 상황 정리 ---------- */
+function recapText(){const parts=[];const cl={};
+ for(const k in G.claim){const x=+k;if(G.P[x].alive)(cl[G.claim[k]]=cl[G.claim[k]]||[]).push(x);}
+ const ent=Object.entries(cl).sort((a,b)=>b[1].length-a[1].length||(THREAT[b[0]]||0)-(THREAT[a[0]]||0)).slice(0,4);
+ if(ent.length)parts.push('직업 주장은 '+ent.map(([r,xs])=>xs.map(x=>x+1).join('·')+'번 '+ROLE[r].n).join(', '));
+ const rs=G.reports.filter(r=>r.t!=null&&r.t!=='pro'&&G.P[r.by].alive&&(EVILRES[r.res]||r.res==='C')&&r.day>=G.day-1).slice(-3);
+ if(rs.length)parts.push('결과는 '+rs.map(r=>`${r.by+1}번→${r.t+1}번 ${RES_SHORT[r.res]||'?'}`).join(', '));
+ const conf=ent.filter(([r,xs])=>xs.length>1).map(([r])=>ROLE[r].n);
+ if(conf.length)parts.push(J.ig(conf.join('·'))+' 겹쳐요');
+ const ex=G.trials.filter(t=>t.exec).slice(-1)[0];if(ex&&ex.day===G.day-1){const w=shownLabel(ex.acc);parts.push(`어제 처형된 ${ex.acc+1}번은 ${w+(hasB(w)?'이었고요':'였고요')}`);}
+ const ld=G.deaths.filter(d=>d.day===G.day-1&&d.night).map(d=>d.seat+1+'번');if(ld.length)parts.push(`어젯밤엔 ${ld.join(', ')}${hasB(ld[ld.length-1])?'이':'가'} 죽었어요`);
+ return parts.join('. ');}
+
+/* ---------- 하루 전체 흐름 (한 번만) ---------- */
+function planGlobal(){
+ if(G.day<2||(window.__off&&__off.pg))return;const D=G.talkDur;const ais=G.P.filter(p=>p.alive&&!p.mind.human).map(p=>p.mind);if(!ais.length)return;
+ const push=(m,type,o)=>m.intents.push(Object.assign({type,pri:5,at:0,done:false},o));
+ const best=f=>ais.reduce((a,b)=>f(b)>f(a)?b:a);
+ const tr=G.trials.filter(t=>t.day===G.day-1&&t.exec).pop();
+ if(tr&&R()<.8)push(best(m=>m.pers.logic+rnd(0,.5)),'execTalk',{tr,pri:6.3,at:rnd(1.5,7)});
+ const al=aliveSeats().length;if(al<=5&&R()<.65)push(pick(ais),'tension',{pri:5.9,at:rnd(0,5)});
+ if((G.claimLog.length>=2||G.reports.length>=1)&&R()<.42)push(best(m=>m.pers.logic*(m.voice==='calm'?1.6:1)+rnd(0,.35)),'recap',{pri:5.6,at:rnd(D*.22,D*.5)});
+ if(tr&&pubEvil(tr.acc)===false&&R()<.55){const yes=tr.yes.filter(x=>G.P[x].alive);const askers=ais.filter(m=>!tr.yes.includes(m.seat)&&m.pers.logic>.45);
+  if(yes.length&&askers.length){const a=pick(askers);const cand=yes.filter(x=>x!==a.seat&&!(a.fac!=='C'&&isTeam(a,x)));if(cand.length){const h=G.human&&cand.includes(G.human.seat)&&R()<.45?G.human.seat:pick(cand);push(a,'askVote',{to:h,t:tr.acc,pri:6,at:rnd(D*.2,D*.6)});}}}
+ const sus=ais.filter(m=>m.pers.aggr>.55);if(G.mood==='heated'&&sus.length)push(pick(sus),'acc',{pri:5.5,at:rnd(2,6),dyn:true});
+}
+
+/* ---------- 추가 반응 ---------- */
+function react2(m,st,clock,add){
+ const me=m.seat,town=m.fac==='C',by=st.by,ty=st.type;if(by==null||by===me)return;
+ const accdBy=x=>G.acc.some(a=>a.day===G.day&&a.by===me&&a.t===x&&a.k==='acc');
+ if(ty==='claim'&&G.P[by].alive&&st.role){
+  const riv=claimersOf(st.role).filter(y=>y!==by&&y!==me);const mine=(town&&m.role===st.role)||m.claimed===st.role;
+  if(accdBy(by)&&!mine){const sus=evalSus(m,!town);let keep;
+   if(town)keep=sus[by]>=54||(riv.length>0&&sus[by]>=45);else keep=!isTeam(m,by)&&((THREAT[st.role]||0)>=55||riv.length>0)&&R()<.45+m.pers.bluff*.4;
+   add(keep?'claimPress':'claimBack',{to:by,role:st.role,riv:riv[0],pri:8.3,d:rnd(1,2.4),k:'cr'+by});}
+  else if(!mine&&(st.cv||0)<1&&R()<.34){st.cv=1;add('claimView',{t:by,role:st.role,pri:5.4,d:rnd(2,4.5),k:'cv'+by});}
+  if(riv.length&&!mine&&(st.cn||0)<1&&R()<.55){st.cn=1;add('conflictSay',{role:st.role,a:riv[0],b:by,pri:6.6,d:rnd(2.2,4.2),k:'cn'+st.role});}
+ }
+ if(ty==='rep'&&st.t!=null&&st.t!=='pro'&&st.t!==me&&G.P[st.t].alive){
+  const ev=EVILRES[st.res],gd=GOODRES[st.res];
+  if(town&&gd&&accdBy(st.t)&&R()<.7){const sus=evalSus(m,false);if(sus[st.t]<56)add('retract',{t:st.t,by,pri:7,d:rnd(1.5,3.5),k:'rt'+st.t});}
+  if(town&&ev&&G.acc.some(a=>a.day>=G.day-1&&a.by===me&&a.t===st.t&&a.k==='def')&&R()<.6)add('betrayed',{t:st.t,pri:6.2,d:rnd(1.5,3.5),k:'bt'+st.t});
+  const d2=doubleRep(by);if(d2&&(st.dc||0)<1&&m.pers.logic>.45&&(town||!isTeam(m,by))&&R()<.75){st.dc=1;add('acc',{t:by,reason:'double',ex:{a:d2[0].t,b:d2[1].t},pri:8.7,d:rnd(1,2.5),k:'dbl'});}
+ }
+ if(ty==='press'&&st.to===me&&R()<.55)add('pushBack',{to:by,pri:7.8,d:rnd(1,2.4)});
+ if(ty==='backoff'&&st.to===me&&R()<.35)add('hmph',{to:by,pri:6,d:rnd(1,2.5),exp:10});
+ if(ty==='vp'&&st.t!==me&&G.P[st.t].alive&&(st.vc||0)<2&&R()<.3){st.vc=(st.vc||0)+1;add('vpResp',{to:by,t:st.t,pri:5.7,d:rnd(1.5,3.2)+st.vc,k:'vr'+st.t});}
+ if(ty==='q'&&st.to===me&&st.q==='voteWhy')add('ansVote',{to:by,t:st.t,pri:8.6,d:rnd(1,2.3)});
+ if((ty==='ans'||ty==='rep'||ty==='healclaim')&&st.to===me){const iq=m.asked&&m.asked[by];if(iq&&iq.day===G.day&&!iq.done){iq.done=true;add('proofResp',{to:by,role:iq.role,q:iq.q,pri:7.4,d:rnd(1,2.4),k:'pr'+by});}}
+}
+
+/* ---------- 추가 발화 ---------- */
+const SPEAK2={
+ react(m,it,T){const s=m.seat;if(G.reactDay===G.day&&G.reactN>=2)return;if(G.reactDay!==G.day){G.reactDay=G.day;G.reactN=0;}G.reactN++;
+  const ld=G.deaths.filter(d=>d.day===G.day-1&&d.night);
+  if(ld.length){const d=pick(ld),x=d.seat;const cl=G.claimLog.filter(c=>c.by===x).pop();const job=G.opts.reveal==='job';
+   if(cl&&job){const sh=G.P[x].shown;if(sh===cl.role)return say(s,T('dClaimTrue',{t:x,role:cl.role}));const w=ROLE[sh].n;return say(s,T('dClaimFalse',{t:x,role:cl.role,txt:w+(hasB(w)?'이었어요':'였어요'),txtC:w+(hasB(w)?'이었음':'였음')}));}
+   if(G.acc.some(a=>a.day===G.day-1&&a.t===x&&a.k==='acc')&&G.P[x].shownFac==='C'&&R()<.6)return say(s,T('dSusDead',{t:x}));
+   if(job&&ROLE[G.P[x].shown]&&ROLE[G.P[x].shown].f!=='C'&&R()<.8)return say(s,T('rdeathE',{t:x,role:G.P[x].shown}));
+   return say(s,job&&R()<.6?T('rdeathR',{t:x,role:G.P[x].shown}):T('rdeath',{t:x}));}
+  if(G.healLog.some(h=>h.day===G.day-1))return say(s,T('rheal'));return say(s,T('rnone'));},
+ execTalk(m,it,T){const s=m.seat,tr=it.tr,a=tr.acc;const w=shownLabel(a);const ev=pubEvil(a);const txt=w+(hasB(w)?'이었어요':'였어요'),txtC=w+(hasB(w)?'이었음':'였음');
+  if(ev){const no=tr.no.filter(x=>G.P[x].alive&&x!==s&&!(m.fac!=='C'&&isTeam(m,x)));
+   if(no.length&&m.pers.logic>.5&&R()<.7){const v=pick(no);return say(s,T('execGoodNo',{t:a,v,txt,txtC,list:no.map(x=>lab(x)+(m.style==='p'?'님':'')).join(', ')}),{type:'acc',t:v,reason:'vote'});}
+   return say(s,T('execGood',{t:a,txt,txtC}));}
+  const ld=[...new Set(G.vps.filter(v=>v.day===tr.day&&v.t===a&&G.P[v.by].alive&&v.by!==s).map(v=>v.by))].filter(x=>!(m.fac!=='C'&&isTeam(m,x)));
+  if(ld.length&&R()<.75){const v=ld[0];return say(s,T('execBadLead',{t:a,v,txt,txtC}),{type:'acc',t:v,reason:'lead'});}
+  return say(s,T('execBad',{t:a,txt,txtC}));},
+ tension(m,it,T){return say(m.seat,T('tension',{n:aliveSeats().length}));},
+ recap(m,it,T){const s=m.seat;const txt=recapText();if(!txt)return;let out=T('recap',{txt});let sts=null;
+  const town=m.fac==='C';const sus=evalSus(m,!town);const c=aliveSeats().filter(x=>x!==s&&!(!town&&isTeam(m,x)));
+  if(c.length&&R()<.65){const t=argmax(c,x=>sus[x]+(!town?threat(m,x)*.1:0));if(sus[t]>=52){out+=T('recapEnd',{t});sts={type:'acc',t,reason:'gut'};}}
+  return say(s,out,sts);},
+ recapTo(m,it,T){const txt=recapText();if(!txt)return say(m.seat,T('stNone',{to:it.to}),null,null,it.to);return say(m.seat,T('recapTo',{to:it.to,txt}),null,null,it.to);},
+ askVote(m,it,T){const t=it.to;if(!G.P[t].alive)return;(m.asked||(m.asked={}))[t]={day:G.day,q:'voteWhy'};return say(m.seat,T('askVote',{to:t,t:it.t}),{type:'q',q:'voteWhy',to:t,t:it.t});},
+ ansVote(m,it,T){const k=m.fac==='C'?'ansVoteC':(R()<.5?'ansVoteE':'ansVoteC');return say(m.seat,T(k,{to:it.to,t:it.t}),{type:'ans',to:it.to},null,it.to);},
+ claimBack(m,it,T){const t=it.to;if(!G.P[t].alive)return;let out=T('claimBack',{to:t,role:it.role});
+  if(INFO_SET.has(it.role)&&it.role!=='doctor'&&R()<.5){out+=' '+T('claimBackInfo',{to:t,role:it.role});}
+  return say(m.seat,out,[{type:'def',t},{type:'backoff',to:t}],null,t);},
+ claimPress(m,it,T){const t=it.to;if(!G.P[t].alive)return;const riv=it.riv!=null&&G.P[it.riv].alive&&G.claim[it.riv]===it.role?it.riv:null;
+  const hasRep=G.reports.some(r=>r.by===t&&r.day===G.day);
+  const txt=riv!=null?T('claimPressConf',{to:t,role:it.role,a:riv}):T(hasRep?'claimPressRep':'claimPress',{to:t,role:it.role});
+  (m.asked||(m.asked={}))[t]={day:G.day,q:'proof',role:it.role};
+  const sts=[{type:'acc',t,reason:'pclaim'}];if(!hasRep&&riv==null)sts.push({type:'q',q:INFO_SET.has(it.role)&&G.day>=2?'result':'proof',to:t,role:it.role});
+  return say(m.seat,txt,sts,null,t);},
+ claimView(m,it,T){const t=it.t;if(!G.P[t].alive)return;const town=m.fac==='C';const sus=evalSus(m,!town);let v=sus[t];if(!town&&isTeam(m,t))v=20;const stc=stance(m,t);if(stc==='def')v=Math.min(v,40);
+  if(v<=45)return say(m.seat,T('cvY',{t,role:it.role}),{type:'def',t});
+  const ci=(G.claimInfo||{})[t];if(v>=58&&ci&&ci.pressed)return say(m.seat,T('cvN',{t,role:it.role}),{type:'acc',t,reason:'pclaim'});
+  return say(m.seat,T('cvM',{t,role:it.role}));},
+ conflictSay(m,it,T){const a=it.a,b=it.b;if(!G.P[a].alive||!G.P[b].alive)return;let out=T('conflictSay',{role:it.role,a,b});let sts=null;
+  const town=m.fac==='C';const sus=evalSus(m,!town);let c=[a,b].filter(x=>x!==m.seat&&!(!town&&isTeam(m,x)));
+  if(c.length){const t=argmax(c,x=>sus[x]+(!town?threat(m,x)*.15:0));const o=t===a?b:a;if(sus[t]-(sus[o]>=0?sus[o]:50)>8||!town){out+=T('conflictLean',{t});sts={type:'acc',t,reason:'conflict'};}}
+  return say(m.seat,out,sts);},
+ proofResp(m,it,T){const t=it.to;if(!G.P[t].alive)return;const town=m.fac==='C';const sus=evalSus(m,!town);const ok=town?sus[t]<58:isTeam(m,t)||R()<.35;
+  return ok?say(m.seat,T('proofOk',{to:t}),[{type:'def',t}],null,t):say(m.seat,T('proofNo',{to:t}),[{type:'acc',t,reason:'pclaim'}],null,t);},
+ retract(m,it,T){const t=it.t;if(!G.P[t].alive)return;return say(m.seat,T('retract',{t,by:it.by}),[{type:'def',t}]);},
+ betrayed(m,it,T){const t=it.t;if(!G.P[t].alive)return;return say(m.seat,T('betrayed',{t}),[{type:'acc',t,reason:'report'}]);},
+ pushBack(m,it,T){const t=it.to,s=m.seat;if(!G.P[t].alive)return;
+  if(!m.claimed&&R()<.4){const role=claimRoleFor(m);if(m.fac!=='C')m.fake=role;say(s,T('pushC',{to:t,role}),[{type:'claim',role,to:t}],null,t);if(m.fac==='C')for(const r of m.pend)if(!r.said&&EVILRES[r.res])m.intents.push({type:'rep',r,pri:8.5,at:G.clock+rnd(1,2.5),done:false});return;}
+  if(R()<m.pers.aggr)return say(s,T('pushA',{to:t}),[{type:'acc',t,reason:'accme'}],null,t);
+  return say(s,T('pushP',{to:t}));},
+ hmph(m,it,T){if(!G.P[it.to].alive)return;return say(m.seat,T('hmph',{to:it.to}),null,null,it.to);},
+ vpResp(m,it,T){const t=it.t,s=m.seat;if(!G.P[t].alive||t===s)return;const town=m.fac==='C';const sus=evalSus(m,!town);let v=sus[t];if(!town)v=isTeam(m,t)?10:v+12;const stc=stance(m,t);if(stc==='acc')v=Math.max(v,60);else if(stc==='def')v=Math.min(v,38);
+  if(v>=55)return say(s,T('vpYes',{to:it.to,t}),[{type:'acc',t,side:1,agreeWith:it.to}],null,it.to);
+  if(v<=42){const c=aliveSeats().filter(x=>x!==s&&x!==t&&!(!town&&isTeam(m,x)));const u=c.length?argmax(c,x=>sus[x]):null;
+   if(u!=null&&sus[u]>=55)return say(s,T('vpNoAlt',{to:it.to,t,v:u}),[{type:'def',t},{type:'acc',t:u,reason:'gut'}],null,it.to);
+   return say(s,T('vpNo',{to:it.to,t}),[{type:'def',t}],null,it.to);}
+  return;}
+};
+
+/* ---------- 말투별 대사 ---------- */
+const TXV={
+ calm:{acc_gut:{p:['{t}님 발언을 쭉 보면 앞뒤가 조금씩 어긋나요.','지금까지 흐름상 {tI} 제일 이득을 보고 있어요.','근거는 약하지만 확률상 {tI} 제일 높아요.']},
+  idle:{p:['아직 확정 정보가 없어요. 직업 주장부터 모아봐요.','감정 말고 근거로 이야기해요.','결과 있는 분이 먼저 말씀해주시면 좋겠어요.']},
+  press:{p:['{to}님, 설명이 논리적으로 안 맞아요.','{to}님, 그 말은 아까 하신 말이랑 충돌해요.']},
+  backoff:{p:['{to}님 설명이 합리적이네요. 철회할게요.']},
+  vp:{p:['남은 근거로 보면 {t} 투표가 맞아요.','확률적으로 {t} 가는 게 이득이에요.']},
+  askWhy:{p:['{to}님, 근거를 하나씩 말해주세요.']},
+  deny:{p:['감정 말고 근거로 봐주세요. 저 아니에요.']},
+  claimBack:{p:['{to}님이 {roleIm} 지금까지 행동이 설명되네요. 철회할게요.']},
+  claimPress:{p:['{to}님, 직업 주장만으로는 증거가 안 돼요. 결과로 보여주세요.']}},
+ hot:{acc_gut:{p:['{t} 진짜 수상하다니까요!','{t} 말하는 거 보면 답 나와요!'],c:['{t} 무조건 마피아임','{t} 딱 봐도 수상하잖아']},
+  deny:{p:['저 아니라고요! 몇 번을 말해요!'],c:['아 나 아니라고!!','몇 번을 말하냐 나 아님']},
+  askWhy:{p:['{to}님 뭔데 저를 찍어요?!'],c:['{to} 뭔데 나 찍냐']},
+  press:{p:['{to}님 그런 변명 안 통해요!'],c:['{to} 그런 변명 안 통함']},
+  vp:{p:['{t} 오늘 무조건 보내요!'],c:['{t} 무조건 보내']},
+  idle:{p:['다들 뭐해요! 말 좀 해요!'],c:['다들 말 좀 해!!']},
+  claimPress:{p:['{to}님 이제 와서 {roleRa}요? 말이 돼요?!'],c:['{to} 이제 와서 {role}? 장난하냐']}},
+ shy:{acc_gut:{p:['{t}님이… 조금 수상한 것 같기도 해요.','저만 그런가요..? {t}님이 좀 이상해요.']},
+  deny:{p:['저, 정말 아니에요…','저는 그냥 시민이에요… 믿어주세요.']},
+  askWhy:{p:['{to}님… 제가 뭘 잘못했나요?']},
+  idle:{p:['저는… 잘 모르겠어요.','다들 무서워요…']},
+  vp:{p:['저는… {t} 찍을게요.']},
+  backoff:{p:['{to}님 말이 맞는 것 같아요… 죄송해요.']},
+  press:{p:['그래도… {to}님이 좀 걸려요.']},
+  claimBack:{p:['아… {roleI}? 죄송해요, 제가 오해했어요.']}},
+ joker:{acc_gut:{p:['{t}님 연기 잘하시네요 ㅋㅋ 근데 다 보여요'],c:['{t} 연기 잘하네 ㅋㅋ 근데 들킴','{t} 눈빛이 마피아임 ㅋㅋ']},
+  deny:{p:['저요? ㅋㅋ 저 완전 시민인데요'],c:['나? ㅋㅋ 나 완전 시민인데','ㅋㅋㅋ 나 아님 진짜']},
+  askWhy:{c:['{to} 나? ㅋㅋ 왜']},
+  idle:{p:['마피아 누구게요~'],c:['마피아 누구게~','다들 표정 관리 중 ㅋㅋ']},
+  vp:{c:['{t} 보내고 맘 편히 자자 ㅋㅋ']},
+  press:{c:['{to} 변명 재밌네 ㅋㅋ 근데 안 믿김']},
+  claimPress:{c:['{to} {role}? ㅋㅋ 타이밍 미쳤네']}},
+ elder:{acc_gut:{p:['허허, {t}님이 영 수상하구먼요.','{t}님, 내 눈은 못 속여요.']},
+  deny:{p:['내가 이 나이에 거짓말을 하겠어요?','허허, 나는 아니에요.']},
+  askWhy:{p:['{to}님, 무슨 근거로 나를 의심하나요?']},
+  idle:{p:['다들 침착하게 하나씩 봅시다.','서두르면 일을 그르쳐요.']},
+  vp:{p:['오늘은 {t}님을 보내는 게 맞겠어요.']},
+  press:{p:['{to}님, 변명이 길면 의심도 길어지는 법이에요.']},
+  backoff:{p:['{to}님 말에도 일리가 있네요. 내가 성급했어요.']},
+  claimBack:{p:['허허, {roleI}? 그럼 믿어보지요.']}},
+ blunt:{acc_gut:{p:['{t}님 수상해요. 이상.','{t}님, 마피아 같아요. 제 판단은 그래요.'],c:['{t} 수상. 이상.','{t} 마피아. 끝.']},
+  deny:{p:['아니에요. 끝.'],c:['아님. 끝.']},
+  askWhy:{p:['{to}님, 근거요.'],c:['{to} 근거.']},
+  vp:{p:['오늘은 {t}. 이견 없죠?'],c:['오늘 {t}. 이견?']},
+  press:{p:['{to}님, 설명 부족해요.'],c:['{to} 설명 부족.']},
+  claimPress:{p:['{to}님, 증거 없으면 {role} 주장은 무효예요.'],c:['{to} 증거 없으면 {role} 무효']}}
+};
+
+/* ---------- 추가 대사 ---------- */
+const TX_MORE={
+ acc_gut:{p:['{t} 아까부터 계속 눈에 밟혀요.','{tI} 말 돌리는 게 좀 걸려요.','왠지 {t} 쪽이 찜찜해요.','{t} 반응이 너무 매끄러워서 오히려 수상해요.','{t}님, 솔직히 좀 의심돼요.','{t}님 표정 관리하는 느낌이에요.'],c:['{t} 뭔가 찜찜함','{t} 말 돌리는 거 봐','{t} 계속 눈에 밟힘','{t} 너무 침착한 게 수상','{t} 좀 쎄한데']},
+ acc_report:{p:['{by}님 결과가 맞다면 {tE} 오늘 보내야 해요.','{by}님 조사에 {tI} 걸렸잖아요. 저는 그 결과 믿어요.','결과 나온 {t}부터 정리하죠.'],c:['{by} 결과 나온 {t} 보내자','{t} 결과 나왔잖아 끝']},
+ acc_vote:{p:['{tI} 어제 표 던진 거 다시 보세요. 이상해요.','{t}님 투표 흐름이 이상한 쪽으로 가요.'],c:['{t} 투표 흐름 이상함','{t} 어제 표 왜 그렇게 줬냐']},
+ acc_quiet:{p:['{t}님은 오늘 존재감이 없네요. 숨는 것 같아요.','{t}님 한마디도 안 하셨잖아요.'],c:['{t} 존재감 0','{t} 숨어있네']},
+ acc_accme:{p:['{tI} 저를 몰아가는 게 너무 급해 보여요.'],c:['{t} 나 몰아가는 거 너무 급함']},
+ acc_echo:{p:['{by}님 말에 동의해요. {t} 수상해요.','{by}님 말 듣고 보니 {t} 진짜 이상하네요.','저도 {by}님이랑 같은 생각이에요. {tI} 걸려요.','{by}님이 잘 짚었어요. {t} 맞는 것 같아요.','{by}님 말 듣고 확신이 생겼어요. {t} 수상해요.'],c:['{by} 말 ㅇㅈ {t} 수상','{by} 말대로 {t} 이상함','나도 {by}이랑 같은 생각 {t} 걸림','{by} 잘 봤네 {t} 맞는듯']},
+ acc_double:{p:['{t}님, 아까는 {a} 조사했다면서 이번엔 {b}요? 하룻밤에 한 명만 볼 수 있잖아요!','{tI} 같은 밤 결과를 두 개나 말했어요. {a}, {b} 둘 다 볼 순 없죠. 가짜예요!'],c:['{t} 아까 {a} 봤다며 이번엔 {b}? 하루에 한명이잖아 가짜네','{t} 결과 두개 말함 ㅋㅋ 구라임']},
+ acc_lead:{p:['{tI} 어제 {v} 투표하자고 앞장섰잖아요. {v} 시민이었는데요.','어제 시민 {vL} 몰아간 게 {t}이에요. 저는 {t} 의심해요.'],c:['{t} 어제 {v} 몰아갔잖아 {v} 시민이었는데','시민 {v} 보낸 거 {tI} 주도했음']},
+ acc_pclaim:{p:['{tI} 의심받자마자 {roleRa} 하네요. 타이밍이 너무 수상해요.','궁지에 몰려서 {roleRa} 하는 거, 마피아들이 자주 쓰는 수법이에요.'],c:['{t} 몰리니까 {role} 까네 ㅋㅋ','{t} 타이밍 수상함 몰리자마자 {role}?']},
+ why_report:{p:['{to}님, {by}님 조사에서 걸렸잖아요.'],c:['{to} {by} 조사에 걸렸잖아']},
+ why_vote:{p:['{to}님, 투표가 계속 시민 쪽으로 갔잖아요.'],c:['{to} 표가 계속 시민한테 갔잖아']},
+ why_gut:{p:['{to}님, 딱 꼬집긴 어려운데 행동이 어색해요.','{to}님, 말할 때마다 조금씩 내용이 달라요.','{to}님, 질문을 계속 피하시는 것 같아서요.'],c:['{to} 말할 때마다 내용 다름','{to} 질문 피하잖아','{to} 그냥 행동이 어색함']},
+ why_double:{p:['{to}님, 하룻밤에 결과를 두 개나 말하셨잖아요.'],c:['{to} 하룻밤에 결과 두개 말했잖아']},
+ why_lead:{p:['{to}님이 어제 {v} 몰아갔잖아요. {v} 시민이었고요.'],c:['{to} 어제 {v} 몰았잖아 시민이었는데']},
+ why_pclaim:{p:['{to}님, 의심받고 나서야 {roleRa} 하셨잖아요.'],c:['{to} 몰리고 나서 {role} 깠잖아']},
+ rebut_double:{p:['{to}님, 말이 헛나왔어요. 진짜 결과는 하나예요.','{to}님, 하나는 그 전날 결과였어요!'],c:['{to} 말 헛나옴 ㅈㅅ','{to} 하나는 전날 거였음']},
+ rebut_lead:{p:['{to}님, 그땐 저도 진짜 수상해 보였어요. 속은 거예요.','{to}님, 어제는 다들 같이 찍었잖아요. 저만 탓하지 마세요.'],c:['{to} 그땐 나도 속았음','{to} 다들 같이 찍었잖아 나만 그럼?']},
+ rebut_pclaim:{p:['{to}님, 숨기고 싶었는데 죽게 생겨서 밝힌 거예요.','{to}님, 직업 까면 밤에 노려지니까 숨겼던 거예요.','{to}님, 처형당하게 생겼는데 어떻게 계속 숨겨요.'],c:['{to} 죽게 생겨서 깐 거임','{to} 까면 밤에 노려지잖아','{to} 처형각인데 어떻게 숨김']},
+ whyDropped:{p:['{to}님, 아까는 그랬는데 지금은 괜찮아요.','{to}님, 그건 이미 풀렸어요. 지금은 의심 안 해요.'],c:['{to} 아까는 그랬는데 지금은 ㄱㅊ','{to} 그건 풀렸음']},
+ rebut_report:{p:['{to}님, 그 결과는 저를 노린 조작이에요. 다음 결과 보면 알 거예요.','{to}님, 그 결과 믿으면 시민 하나 잃는 거예요.'],c:['{to} 조작이라니까','{to} 그거 믿으면 시민 죽음']},
+ rebut_gut:{p:['{to}님, 제 말투가 원래 이래요.','{to}님, 그런 식이면 아무나 다 의심할 수 있잖아요.'],c:['{to} 원래 말투 이럼','{to} 그럼 다 수상하지']},
+ press:{p:['{to}님, 그건 변명으로밖에 안 들려요.','{to}님 설명 들어도 여전히 의심스러워요.','{to}님, 제 생각은 안 바뀌어요.'],c:['{to} 그건 변명이고','{to} 여전히 수상함','{to} 생각 안 바뀜']},
+ backoff:{p:['{to}님, 듣고 보니 제가 성급했네요.','{to}님 말 들으니 좀 납득이 돼요.'],c:['{to} 내가 성급했나','{to} 납득됨 ㅇㅋ']},
+ pushA:{p:['{to}님, 이렇게 끈질기게 몰아가는 게 더 수상해요. 다들 기억해두세요.','{to}님, 저 처형되면 다음은 {to}님 차례예요. 두고 보세요.','다들 {to}님 좀 보세요. 근거도 없이 저만 몰아요.'],c:['{to} 끝까지 나만 모네 너가 더 수상함','다들 {to} 봐 근거 없이 나만 몰아']},
+ pushP:{p:['다들 제 말 좀 들어주세요. 저 진짜 아니에요.','{to}님 말만 듣고 저 보내면 후회하실 거예요.','저를 보내면 마피아만 좋아해요.'],c:['다들 내 말 좀 들어줘 나 아님','나 보내면 마피아만 좋아함']},
+ pushC:{p:['{to}님, 이렇게까지 몰면 어쩔 수 없네요. 저 {roleI}.','더 숨기면 안 되겠네요. {to}님, 저 {roleI}.'],c:['{to} 어쩔 수 없네 나 {role}임','안 까려 했는데 나 {role}임']},
+ hmph:{p:['{to}님, 다음엔 근거 갖고 말해주세요.','{to}님 알아주셔서 다행이에요.','{to}님, 괜히 시간만 썼네요.'],c:['{to} 담엔 근거 갖고 와','휴 다행','{to} 시간 낭비했네']},
+ claimBack:{p:['아, {roleI}? 그럼 일단 믿어볼게요.','{to}님 {roleIm} 얘기가 달라지죠. 일단 보류할게요.','{to}님, {roleRa} 하시니 의심은 접을게요. 대신 지켜볼게요.','그랬군요. {to}님 {role} 주장 믿어볼게요.'],c:['아 {roleY}? ㅇㅋ 일단 믿음','{to} {roleIm} 인정 보류','{to} {roleY}? 그럼 일단 넘어감','ㅇㅋ {to} {role} 믿어봄']},
+ claimBackInfo:{p:['대신 결과는 꼭 말해주세요.','{roleIm} 오늘 밤 결과도 꼭 공유해주세요.'],c:['대신 결과 꼭 말해','결과 공유 꼭 해']},
+ claimPress:{p:['{to}님, 의심받으니까 갑자기 {roleRa}요? 타이밍이 너무 수상해요.','{to}님, {roleIm} 증명해보세요.','궁지에 몰리면 다들 직업 까던데요. {to}님 {role} 주장은 못 믿겠어요.','{to}님, {roleIm} 아까는 왜 숨겼어요?'],c:['{to} 몰리니까 {role} 까네?','{to} {roleIm} 증명해봐','{to} 아까는 왜 숨겼는데','궁지 몰리면 다 직업 까더라']},
+ claimPressRep:{p:['{to}님, 몰리니까 결과까지 내놓으시네요. 그 결과도 지어낼 수 있잖아요.','{to}님, 결과는 누구나 말할 수 있어요. 밤 지나 봐야 알죠.'],c:['{to} 결과는 아무나 지어내지','{to} 몰리니까 결과까지? 밤 지나 보자']},
+ claimPressConf:{p:['{to}님, {roleE} {a}님이 먼저 주장했어요. 둘 중 하나는 가짜죠.','{to}님, {role} 이미 있어요. {a}님이랑 누가 진짜예요?'],c:['{to} {roleE} {a}이 먼저 깠는데?','{role} 벌써 있잖아 {a}이랑 누가 진짜야']},
+ cvY:{p:['{t}님이 {roleIm} 앞뒤가 맞네요.','{t}님 {role} 주장은 그럴듯해요. 일단 빼죠.','{t}님 {roleIm} 믿을 만해요.'],c:['{t} {role} 그럴듯','{t} 빼자 {roleIm} 인정','{t} 말 앞뒤 맞음']},
+ cvN:{p:['의심받자마자 {roleRa} 하니까 좀 애매하네요.','{t}님 {role} 주장, 저는 반반이에요.','{t}님 {roleIm} 왜 이제야 말하죠?'],c:['{t} 몰리자마자 {role} 애매함','{t} {role} 반반','{t} 왜 이제 깜?']},
+ cvM:{p:['{tI} {roleRa}… 일단 지켜볼게요.','{t}님 {role} 주장, 기억해둘게요.'],c:['{t} {role} 주장 일단 메모','{t} {roleY}? 지켜봄']},
+ conflictSay:{p:['{role} 주장이 둘이에요. {a}님, {b}님 중 한 명은 가짜예요.','{a}님이랑 {b}님 둘 다 {roleRa} 하네요. 오늘 이거 정리해야 해요.'],c:['{role} 두명임 {a} {b} 중 하나 가짜','{a} {b} 둘 다 {role}? 하나는 구라']},
+ conflictLean:{p:[' 저는 {tI} 더 의심돼요.',' 제 느낌엔 {t} 쪽이 가짜예요.'],c:[' 난 {t} 쪽 의심',' {t} 구라 같음']},
+ proofOk:{p:['{to}님, 알겠어요. 일단 믿어볼게요.','{to}님, 그 말 기억해둘게요. 오늘은 넘어가죠.'],c:['{to} ㅇㅋ 믿어봄','{to} 기억해둔다']},
+ proofNo:{p:['{to}님, 그 대답으로는 부족해요.','{to}님, 증명도 못 하면서 믿으라는 건 좀…'],c:['{to} 그걸론 부족함','{to} 증명 못하면 못 믿지']},
+ retract:{p:['{by}님 결과로 {tE} 시민이네요. {t}님, 아까 의심해서 미안해요.','제가 잘못 짚었네요. {t}님 미안해요.','{t} 결과가 그렇다면 제가 틀렸어요. 다른 사람 볼게요.'],c:['{t} 시민이네 ㅈㅅ','내가 잘못 봤네 {t} 미안','{t} 아니구나 다른 사람 보자']},
+ betrayed:{p:['{t} 믿었는데… 결과가 그렇다면 다시 봐야겠네요.','{t}님 감쌌던 게 후회되네요.'],c:['{t} 믿었는데 배신감','{t} 감싼 거 후회됨']},
+ execGood:{p:['어제 처형한 {tE} {txt}! 잘 잡았어요.','{t} {txt}. 어제 투표 잘했네요.','어제 {t} 보낸 건 정답이었어요. {txt}.'],c:['어제 {t} {txtC} ㅋㅋ 나이스','{t} 잡은 거 정답이었음']},
+ execGoodNo:{p:['어제 {tE} {txt}. 그런데 반대표 던진 {list}, 왜 반대하셨어요?','{t} {txt}. 반대표 던졌던 {vE} 다시 봐야 해요.'],c:['{t} {txtC}. 근데 반대한 {list} 뭐임?','{t} {txtC}. 반대표 던진 {v} 수상함']},
+ execBad:{p:['어제 처형한 {tE} {txt}… 우리가 실수했어요.','{t} {txt}. 오늘은 신중하게 해요.','시민을 보냈네요… 몰아간 사람들 다시 봐야겠어요.'],c:['어제 {t} {txtC}… 망함','시민 보냈네 ㅠ 몰아간 사람들 다시 보자']},
+ execBadLead:{p:['어제 {t} {txt}. 그때 {vI} 제일 먼저 투표하자고 했죠.','{t} {txt}. {v}님이 어제 몰아갔던 거 기억나요?'],c:['{t} {txtC}. 근데 그거 {vI} 몰아갔음','{t} {txtC}. {v} 어제 {t} 찍자고 했잖아']},
+ tension:{p:['이제 {n}명 남았어요. 이번 투표 틀리면 끝이에요.','{n}명밖에 안 남았네요. 다들 진짜 신중하게 해요.','이제부터는 한 표 한 표가 중요해요.'],c:['{n}명 남음 이번에 틀리면 끝','이제 진짜 신중하자','한 표가 생명임']},
+ recap:{p:['정리할게요. {txt}.','지금까지 정리해보면, {txt}.','한번 정리하죠. {txt}.'],c:['정리하면 {txt}','정리 ㄱ {txt}']},
+ recapEnd:{p:[' 저는 {tI} 제일 걸려요.',' 지금으로선 {t} 쪽이 제일 수상해요.'],c:[' 난 {tI} 제일 걸림',' 지금은 {t} 쪽이 수상']},
+ recapTo:{p:['{to}님, 정리하면 {txt}.','{to}님, 지금까지 {txt}.'],c:['{to} 정리하면 {txt}','{to} 지금까지 {txt}']},
+ askVote:{p:['{to}님, 어제 왜 {t}한테 투표하셨어요? {t} 시민이었잖아요.','{to}님, 어제 {t} 찍은 이유 좀 들어볼 수 있어요?'],c:['{to} 어제 {t} 왜 찍었음? 시민이었는데','{to} 어제 {t} 찍은 이유 뭐임']},
+ ansVoteC:{p:['{to}님, 그땐 {tI} 제일 수상해 보였어요. 제 실수예요.','{to}님, 분위기에 휩쓸렸어요. 오늘은 제대로 볼게요.','{to}님, 다들 찍길래 따라갔어요. 반성해요.'],c:['{to} 그땐 {t} 진짜 수상해 보였음','{to} 분위기 탔음 ㅈㅅ','{to} 다들 찍길래 따라감']},
+ ansVoteE:{p:['{to}님, 그건 다들 마찬가지잖아요. 왜 저만 물어보세요?','{to}님, 저만 찍은 것도 아닌데요.'],c:['{to} 다들 찍었는데 왜 나만?','{to} 나만 찍은 거 아니잖아']},
+ vpYes:{p:['{to}님 동의해요. 저도 {t} 찍을게요.','좋아요, {t} 쪽으로 가죠.','저도 {t} 생각했어요. 표 모아요.'],c:['ㅇㅇ {t} 찍음','{t} ㄱㄱ 나도','콜 {t}']},
+ vpNo:{p:['{to}님, {tE} 아닌 것 같아요. 너무 성급해요.','저는 {t} 반대예요. 근거가 약해요.'],c:['{t} 반대 근거 약함','{to} {tE} 아닌듯']},
+ vpNoAlt:{p:['{to}님, {tE} 아닌 것 같아요. 차라리 {v} 어때요?','{t}보다는 {vI} 더 수상해요.'],c:['{t} 말고 {v} 어때','{t}보단 {v}임']},
+ dClaimTrue:{p:['{t}님 {roleRa} 하더니 진짜였네요… 그래서 노렸나 봐요.','{role} 주장하던 {tI} 죽었어요. 마피아가 겁먹었나 봐요.','진짜 {role} 잃었네요… 아까워요.'],c:['{t} {role} 진짜였네 ㅠ','진짜 {role} 죽음… 아깝다']},
+ dClaimFalse:{p:['{t}님 {roleRa} 했는데 실제론 {txt}! 거짓말이었네요.','{tI} {role} 주장했던 거 거짓말이었어요. 실제론 {txt}'],c:['{t} {role} 주장 구라였네 실제론 {txtC}','{t} 구라였네 ㅋㅋ 실제론 {txtC}']},
+ rdeathE:{p:['{t}님이 {roleI}? 오히려 잘됐네요.','{roleG} 죽었네요. 한숨 돌렸어요.','{t}님 정체가 {roleI}… 누가 처리해준 거죠?'],c:['{role} 죽음 ㅋㅋ 다행','{t} {roleY}? 잘됐네','{role} 누가 잡았지?']},
+ dSusDead:{p:['어제 의심받던 {tI} 죽었네요. 마피아가 판을 흔들려는 것 같아요.','{tE} 의심받았는데 밤에 죽었어요. 시민이었던 거죠.'],c:['어제 의심받던 {t} 죽음 ㄷㄷ','{t} 시민이었나 보네 밤에 죽은 거 보니']},
+ deny:{p:['억울해요. 저 정말 아니에요.','저 시민 맞아요. 다른 사람 보세요.','왜 다들 저만 봐요?','진짜 저 아니라니까요!'],c:['억울하네 진짜','나 아니라고 다른 사람 봐','왜 다 나만 봐']},
+ def:{p:['{t}님은 말하는 게 일관돼요. 시민 같아요.','{t}님은 아니라고 봐요.'],c:['{t} 일관적임 시민 같음','{tE} 아님']},
+ agree:{p:['{t} 얘기 나올 줄 알았어요.','그쵸, {t} 이상하죠?'],c:['{t} 나올 줄 알았음','{t} 이상하지 ㄹㅇ']},
+ vp:{p:['시간 없어요. {t}한테 표 모아요.','저는 {t} 찍을 거예요.','{t} 처형 가죠.'],c:['{t}한테 몰아주자','난 {t} 찍음']},
+ askWhy:{p:['{to}님, 저를 의심하는 이유가 뭐예요?','{to}님, 근거부터 말해주세요.','{to}님? 갑자기 저요?'],c:['{to} 갑자기 나?','{to} 근거부터 대']},
+ idle:{p:['누가 마피아일까요…','정보가 너무 없네요.','다들 너무 조용해요.','이럴 때일수록 정보직이 나서야 해요.','의견 없는 분들이 제일 수상해요.'],c:['다들 조용하네','정보직 뭐함','마피아 누구냐','의견 없는 사람이 제일 수상']},
+ greet:{p:['다들 침착하게 해요.','{pro}… 원수는 꼭 갚아요.'],c:['{pro} 원수 갚자','긴장된다 ㅋㅋ']},
+ rdeath:{p:['{t}님… 안타깝네요.','{t}님까지… 범인 꼭 잡아요.'],c:['{t}까지 죽음…','범인 꼭 잡자']},
+ rheal:{p:['의사 덕분에 살았네요! 누군지 몰라도 고마워요.'],c:['의사 ㄱㅅ ㅋㅋ']},
+ claim:{p:['밝힐게요. 저 {roleI}.','이제 말할게요. 저 {roleI}.'],c:['이제 깐다 나 {role}임','밝힘 나 {roleY}']},
+ counter:{p:['{t}님, 제 앞에서 {role} 사칭하시면 안 되죠. 진짜는 저예요.'],c:['{t} 내 앞에서 {role} 사칭? 진짜 나임']},
+ plead:{p:['제발 한 번만 더 생각해주세요. 저 시민이에요.','저 보내고 밤 되면 후회하실 거예요.'],c:['한번만 더 생각해줘','나 보내면 후회함']},
+ last:{p:['제가 시민이었다는 거 알게 될 거예요…'],c:['나 시민이었다 기억해라']},
+ sideA:{p:['{a}님 말 맞아요. 저도 {b} 쪽이 걸렸어요.'],c:['{a} 말 맞음 {b} 걸림']},
+ sideB:{p:['{a}님, {b}님 말도 들어봐야죠.','{b}만 몰면 진짜 마피아가 좋아해요.'],c:['{b} 말도 들어봐','{b}만 몰면 마피아 좋아함']},
+ judgeY:{p:['그 정도면 납득돼요.'],c:['납득']},
+ judgeN:{p:['그건 좀 억지 같은데요.'],c:['억지 같은데']},
+ ack:{p:['일리 있네요','그건 맞아요'],c:['ㅇㅈ','그건 맞음']},
+ askRole:{p:['{to}님, 오늘은 직업 좀 들어볼까요?'],c:['{to} 직업 좀 듣자']}
+};
+for(const k in TX_MORE){if(!TX[k])TX[k]={p:[],c:[]};for(const st of ['p','c'])if(TX_MORE[k][st])TX[k][st]=(TX[k][st]||[]).concat(TX_MORE[k][st]);}
 /* ================= 자유 채팅 이해 v3 ================= */
 const KNUM={'십일':11,'일':1,'삼':3,'사':4,'오':5,'육':6,'칠':7,'팔':8,'구':9,'십':10};
 const RW=[['killer',['연쇄살인마','살인마']],['amnesiac',['기억상실자','기억상실']],['veteran',['퇴역군인','퇴역','퇴군']],['hypno',['최면술사','최면']],['pickpocket',['소매치기','소매']],['coroner',['검시관','검시']],['witness',['목격자']],['reporter',['기자']],['detective',['탐정']],['guard',['경비원','경비']],['merc',['용병']],['sniper',['저격수']],['hunter',['사냥꾼']],['recruit',['신병']],['police',['경찰']],['doctor',['의사','닥터']],['spy',['스파이']],['thief',['도둑']],['gisaeng',['기생']],['ghoul',['구울']],['zombie',['좀비']],['alien',['외계인']],['mafia',['마피아','마피']]];
@@ -1333,6 +1636,7 @@ function parseText(txt){
   if(RE.ROLL.test(C)&&!hasPron&&!/(하지\s*말|말자|하지\s*마|안\s*돼|반대|노노|ㄴㄴ|싫)/.test(C)&&(RE.ROLLG.test(C)||(RE.Q.test(C)&&/다들|모두|전부|다\s*같이|다같이|각자/.test(C)))&&!(/직업\s*뭐/.test(C)&&!/다들|모두|전부|다\s*같이|다같이|각자/.test(C))&&!/^(저|제|나|내|난)\s/.test(C)&&(!others.length||/부터/.test(C))){let start=null;const mm=C.match(/(\d{1,2})\s*번?\s*부터/);if(mm){const n=+mm[1];if(n>=1&&n<=N)start=n-1;}else if(/(나|저|제)\s*부터/.test(C))start=me;else{const nm=others.find(x=>/^\s*(번)?\s*(님)?\s*부터/.test(C.slice(x.i+x.l)));if(nm)start=nm.s;}out.push({type:'rollcall',start});continue;}
   if(!others.length&&RE.ABST.test(C)){out.push({type:'abstain'});continue;}
   {const rr=rolesIn(C);if(!others.length&&rr.length&&/(죽었|죽음|사망|살아\s*있|살았|생존)/.test(C)&&RE.Q.test(C)){out.push({type:'stateQ',k:'role',role:rr[0].r});continue;}}
+  if(!others.length&&/(정리|요약|브리핑)/.test(C)&&!/정리\s*(됐|됨|끝|했)/.test(C)&&(RE.Q.test(C)||/(해\s*줘|해줄|해\s*봐|하자|해요|해주세요|좀|ㄱ)/.test(C))){out.push({type:'stateQ',k:'summary'});continue;}
   if(!others.length&&RE.STATEQ.test(C)){out.push({type:'stateQ',k:/(마피아|마피|중립|시민)\s*(는\s*|가\s*|은\s*)?(몇|총|수)/.test(C)?'facN':/몇\s*명|남은|살아/.test(C)?'alive':/어제/.test(C)?'last':'dead'});continue;}
   if(!others.length&&/겹치는\s*(사람|직업)|직업\s*겹치|중복\s*(된|인)\s*(사람|직업)/.test(C)){out.push({type:'ask'});continue;}
   const rs=rolesIn(C);
@@ -1405,7 +1709,7 @@ function descSt(st){const L=lab;switch(st.type){
  case 'healclaim':return `치료 대상: ${L(st.t)}`;case 'mention':return `${L(st.to)} 부름`;
  case 'conflictNote':return `${ROLE[st.role].n} 겹침 지적`;case 'whoSusMe':return '누가 날 의심하는지 질문';case 'deny':return '해명(결백 주장)';
  case 'endTalk':return '토론 끝내고 투표하자';case 'thanksTo':return `${L(st.to)}에게 고마움`;case 'sorryTo':return `${L(st.to)}에게 사과`;case 'insult':return `${L(st.to)} 비난`;
- case 'deadNote':return `${L(st.t)}은 이미 죽었어요`;case 'aboutAll':return `모두에게 ${L(st.t)}에 대한 의견 요청`;case 'stateQ':return '상황 질문';case 'emo':return '감정 표현';default:return st.type;}}
+ case 'deadNote':return `${L(st.t)}은 이미 죽었어요`;case 'aboutAll':return `모두에게 ${L(st.t)}에 대한 의견 요청`;case 'stateQ':return st.k==='summary'?'상황 정리 요청':'상황 질문';case 'emo':return '감정 표현';default:return st.type;}}
 /* 밤 채팅 */
 function parseMafiaNight(txt,m){const me=m.seat;const toks=seatTok(txt,me).filter(x=>x.s!==me&&G.P[x.s].alive&&!isTeam(m,x.s));let t=toks.length?toks[0].s:null;
  if(t==null){const rs=rolesIn(txt).filter(h=>ROLE[h.r].f!=='M');for(const h of rs){const c=aliveSeats().find(x=>!isTeam(m,x)&&((m.know[x]&&m.know[x].role===h.r)||G.claim[x]===h.r));if(c!=null){t=c;break;}}}
@@ -1461,7 +1765,7 @@ async function prologue(){const g=G.gen;
 async function dayTalk(){const g=G.gen;
  G.phase='talk';G.talkDur=G.day===1?Math.min(45,G.opts.talk):G.opts.talk;
  setPhase(`${G.day}일차 · 토론`);if(!G.sim){SC.nightTarget=0;SC.acc=-1;SC.vc=null;banner(G.day===1?'☀️ 1일차 — 토론':'💬 토론 시간');}
- G.humanQ=[];for(const p of G.P)if(p.alive&&!p.mind.human)planDay(p.mind);
+ G.humanQ=[];for(const p of G.P)if(p.alive&&!p.mind.human)planDay(p.mind);planGlobal();
  G.nextSpeak=rnd(.6,1.8);G.ui={};renderAct();
  await phaseTimer(G.talkDur,c=>talkTick(c));
 }
@@ -1596,11 +1900,12 @@ function renderTalk(el){
  const pre=u.to!=null?lab(u.to)+'님, ':'';
  let pk='',qb='';
  const hq=G.humanQ[G.humanQ.length-1];
- if(hq&&!u.q&&G.phase==='talk'){const f=hq.from;const QT={role:'직업이 뭐예요?',why:'왜 저를 의심하세요?',result:'결과 있어요?',heal:'어젯밤 누구 치료했어요?',proof:'증명할 수 있어요?'}[hq.q];let btns='';
+ if(hq&&!u.q&&G.phase==='talk'){const f=hq.from;const QT={role:'직업이 뭐예요?',why:'왜 저를 의심하세요?',result:'결과 있어요?',heal:'어젯밤 누구 치료했어요?',proof:'증명할 수 있어요?',voteWhy:'어제 왜 그 사람한테 투표했어요?'}[hq.q];let btns='';
   if(hq.q==='role')btns='<button class="chip" data-qa="claim">🎭 직업 밝히기</button><button class="chip" data-qa="secret">🤐 비밀이에요</button><button class="chip" data-qa="back">↩️ 되묻기</button>';
   else if(hq.q==='why')btns=[['report','📊 조사 결과'],['vote','🗳️ 투표가 이상해서'],['conflict','🎭 직업이 겹쳐서'],['quiet','🤫 말이 없어서'],['gut','💭 그냥 느낌']].map(([k,l])=>`<button class="chip" data-qa="why:${k}">${l}</button>`).join('');
   else if(hq.q==='result')btns='<button class="chip" data-qa="rep">📢 결과 말하기</button><button class="chip" data-qa="nores">아직 없어요</button>';
   else if(hq.q==='heal')btns='<button class="chip" data-qa="heal">💉 치료한 사람 말하기</button><button class="chip" data-qa="nores">말 안 할래요</button>';
+  else if(hq.q==='voteWhy')btns=[['sus','🤔 수상해 보여서'],['flow','🌊 분위기 따라'],['oops','😓 실수였어요']].map(([k,l])=>`<button class="chip" data-qa="vw:${k}">${l}</button>`).join('');
   else btns='<button class="chip" data-qa="proof">🙏 믿어달라고 하기</button>';
   qb=`<div class="qbox"><div class="atl">❓ ${sn(f)}님이 물어요: "${QT}" <span class="muted">— 대답 안 하면 의심받아요</span></div><div class="chips">${btns}<button class="chip" data-qa="ignore">무시</button></div></div>`;}
  if(u.q==='claim')pk=`<div class="pick"><div class="atl">🎭 ${u.to!=null?sn(u.to)+'님에게 ':''}어떤 직업이라고 밝힐까요? (거짓말도 가능)</div><div class="chips">${ROLE_ORDER.map(r=>`<button class="chip${r===G.human.role?' sel':''}" data-r="${r}">${ROLE[r].ic} ${ROLE[r].n}</button>`).join('')}</div><button class="chip" data-x="1">취소</button></div>`;
@@ -1620,6 +1925,7 @@ function renderTalk(el){
   else if(k==='nores')hp({type:'ans',to:f},L+(hq.q==='heal'?'그건 말 못 해요.':'아직 결과는 없어요.'),hq.id);
   else if(k==='heal'){G.ui={q:'healpick',to:f,qid:hq.id};renderAct();}
   else if(k==='proof')hp({type:'ans',to:f},L+'증명은 못 하지만 믿어주세요.',hq.id);
+  else if(k.startsWith('vw:'))hp({type:'ans',to:f,k:k.slice(3)},L+{sus:'그땐 그 사람이 제일 수상해 보였어요.',flow:'솔직히 분위기 따라갔어요.',oops:'제 실수였어요. 오늘은 신중하게 할게요.'}[k.slice(3)],hq.id);
   else if(k==='ignore'){G.humanQ=G.humanQ.filter(q=>q.id!==hq.id);const a=G.P[f];if(a.alive&&!a.mind.human)a.mind.intents.push({type:'noAns',to:me,pri:8.2,at:G.clock+1,done:false});renderAct();}});
  el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const r=b.dataset.r;hp({type:'claim',role:r,to:u.to},`${pre}저 ${ROLE[r].n}입니다.`,u.qid);});
  el.querySelectorAll('[data-res]').forEach(b=>b.onclick=()=>{const res=b.dataset.res,as=G.claim[me]||G.human.role,t=u.t;const cp=G.claim[me]===as?'':`${ROLE[as].n}입니다. `;hp({type:'rep',as,t,res,to:u.to},`${pre}${cp}${lab(t)} 결과: ${RES_TXT[res]}!`,u.qid);});
