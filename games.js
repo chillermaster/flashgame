@@ -72,5 +72,6 @@ window.GAMES = [
   { title:"정화의 플라스크", sub:"로웬 마나 정화전 · VS AI", tags:["퍼즐","전략","로웬"], post:52, play:"rowen-flask.html", verify:"rowen-flask-verify.html" },
   { title:"로웬 : 황혼의 가면", sub:"해와 달의 맹약이 깨진 밤, 국왕의 연회장에서", tags:["로웬"], post:0, play:"rowen-masks.html", verify:"rowen-masks-verify.html" },
   { title:"맹약의 깃발", sub:"로웬 용병단 오토배틀 토너먼트", tags:["전략","오토배틀","로웬"], post:53, play:"rowen-mercenary.html", verify:"rowen-mercenary-verify.html" },
+  { title:"제국의 금괴 : 금괴 돌리기", sub:"음악이 멈추면 금괴를 쥔 갱단이 끌려간다", tags:["액션","서부","12인"], post:54, play:"imperial-gold.html", verify:"imperial-gold-verify.html" },
 
 ];
