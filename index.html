@@ -211,6 +211,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:30px 10px}
 
   /* 이벤트 */
   $q.addEventListener("input", function(){ state.q = $q.value; render(); });
+  $sort.value = state.sort;   // 화면의 선택값과 실제 정렬을 일치시킴
   $sort.addEventListener("change", function(){ state.sort = $sort.value; render(); });
   $tabs.addEventListener("click", function(e){
     var b = e.target.closest(".tab"); if(!b) return;
