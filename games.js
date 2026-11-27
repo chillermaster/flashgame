@@ -17,7 +17,7 @@
 
 window.SITE = {
   title: "오늘의 점심 내기 · 브라우저별 기록 저장이 되는 플래시게임 모음",
-  desc: "브라우저에서 바로 즐기는 웹게임",
+  desc: "브라우저에서 바로 즐기는 웹게임 ■ 업로드 예정인 게임은 페이지를 찾을 수 없다고 나옵니다. 게임이 등록되면 플레이가 가능합니다",
   blog: "https://todaylunch.tistory.com/",
   pages: "https://chillermaster.github.io/flashgame/"   // 게임 파일이 올라가는 주소
 };
