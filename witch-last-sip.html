@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>마녀의 마지막 잔 — 로웬 늪의 연회</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#140f22}
+body{font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;color:#f1e8ff;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;transition:filter .8s}
+#cv.frogv{filter:saturate(1.15) hue-rotate(-18deg) brightness(.95)}
+#cv.wob{animation:wob 1.3s ease}
+@keyframes wob{0%{transform:none}20%{transform:scale(1.06) skewX(3deg)}40%{transform:scale(.97) skewX(-3deg)}60%{transform:scale(1.03) skewX(2deg)}100%{transform:none}}
+button{font-family:inherit;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{cursor:default;opacity:.42}
+.hide{display:none!important}
+.bh{font-family:'Black Han Sans',system-ui,sans-serif;font-weight:400;letter-spacing:.02em}
+#tags,#floats{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:11px;line-height:1.25;padding:3px 7px;border-radius:9px;background:rgba(22,15,40,.74);border:1px solid rgba(196,168,255,.35);text-align:center;will-change:transform}
+.tag b{font-size:12px;color:#fff}
+.tag .s{display:block;opacity:.85;font-size:10.5px}
+.tag .tl{display:block;font-size:11px;font-weight:800;color:#ffe6a8}
+.tag.act{background:rgba(96,54,150,.92);border-color:#ffd479;box-shadow:0 0 14px rgba(255,212,121,.55)}
+.tag.frog{background:rgba(28,58,30,.72);border-color:rgba(143,227,107,.55)}
+.tag .bet{display:block;margin-top:2px;font-weight:800;color:#ffd479;font-size:11.5px}
+.fl{position:absolute;left:0;top:0;font-weight:900;font-size:19px;white-space:nowrap;text-shadow:0 2px 0 rgba(0,0,0,.6),0 0 10px rgba(0,0,0,.45);will-change:transform,opacity}
+.fl.g{color:#ffe08a}.fl.f{color:#9dff7a}.fl.b{color:#9fd8ff}.fl.s{font-size:14px;color:#ffd479}.fl.e{font-size:30px}
+#hud{position:absolute;left:0;right:0;top:0;z-index:4;padding:max(6px,env(safe-area-inset-top)) 8px 0;pointer-events:none}
+.hrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.pill{pointer-events:auto;background:rgba(22,15,40,.8);border:1px solid rgba(196,168,255,.35);border-radius:999px;padding:4px 9px;font-size:12.5px;font-weight:700;white-space:nowrap;color:#f1e8ff}
+button.pill{font-family:inherit}
+.pill.gold{color:#ffd479;border-color:rgba(255,212,121,.6)}
+.pill.frogc{color:#a6ff86;border-color:rgba(143,227,107,.6)}
+.pill.whim{color:#e9d4ff;border-color:rgba(201,139,255,.7);background:rgba(60,30,96,.85)}
+.sp{flex:1}
+.ib{pointer-events:auto;background:rgba(22,15,40,.8);border:1px solid rgba(196,168,255,.35);color:#f1e8ff;border-radius:999px;min-width:32px;height:28px;padding:0 8px;font-size:13px;font-weight:800}
+.ib.off{opacity:.45}
+#hRow2{margin-top:5px;justify-content:center}
+#hCups{letter-spacing:1px;font-size:13px}
+#hCups i{font-style:normal;color:#b48cff}#hCups i.d{color:#5a4b72}#hCups i.c{color:#ffd479;text-shadow:0 0 6px #ffd479}
+#infoNote{display:block;margin:5px auto 0;width:max-content;max-width:94vw;text-align:center;white-space:normal;line-height:1.4}
+#bottom{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:0 8px max(8px,env(safe-area-inset-bottom));pointer-events:none}
+#log{font-size:12px;line-height:1.45;max-width:560px;margin:0 auto 4px;text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.85)}
+#log div.o1{opacity:.72}#log div.o2{opacity:.48}#log div.o3{opacity:.3}
+#log .m{color:#d2b4ff}#log .g{color:#ffe08a}#log .f{color:#a6ff86}
+#status{text-align:center;font-weight:800;font-size:14px;margin:0 auto 6px;text-shadow:0 2px 3px #000,0 0 8px rgba(0,0,0,.7);max-width:620px}
+#ctrl{display:flex;gap:8px;align-items:stretch;justify-content:center;max-width:640px;margin:0 auto;pointer-events:auto}
+#hand{display:flex;gap:5px;flex:1;min-width:0;overflow-x:auto;padding-bottom:2px}
+.card{flex:0 0 auto;width:58px;height:76px;border-radius:9px;border:2px solid #8f6cc4;background:linear-gradient(160deg,#3b2a5c,#21173a);color:#f4ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:800;box-shadow:0 3px 0 #120c20;padding:2px;line-height:1.1}
+.card .ce{font-size:22px;line-height:1}
+.card.pas{border-color:#5aa6d8}
+.card.on{border-color:#ffd479;box-shadow:0 0 10px rgba(255,212,121,.5),0 3px 0 #120c20}
+.card.emp{opacity:.22;border-style:dashed;background:none;box-shadow:none}
+#acts{display:flex;flex-direction:column;gap:6px;width:116px;flex:0 0 auto}
+.big{border:0;border-radius:11px;background:linear-gradient(#8e5bd6,#5b2fa0);color:#fff;font-size:17px;padding:10px 8px;box-shadow:0 4px 0 #2e1658,0 6px 14px rgba(0,0,0,.35);font-family:'Black Han Sans',system-ui,sans-serif;font-weight:400;line-height:1.15}
+.big small{display:block;font-family:system-ui,sans-serif;font-size:11px;font-weight:700;opacity:.9}
+.big.go{background:linear-gradient(#6fd06a,#2f8f3a);box-shadow:0 4px 0 #1b5a22,0 6px 14px rgba(0,0,0,.35)}
+.mid,.sec{border:2px solid #8f6cc4;border-radius:10px;background:#2a1d45;color:#f1e8ff;font-size:14px;font-weight:800;padding:7px 10px}
+#ff{display:block;margin:2px auto 0;pointer-events:auto;font-size:16px;padding:10px 22px}
+.panel{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(94vw,410px);z-index:8;background:rgba(26,18,46,.97);border:2px solid #8f6cc4;border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.55);max-height:78vh;overflow-y:auto;touch-action:pan-y}
+.panel.top{bottom:auto;top:calc(max(6px,env(safe-area-inset-top)) + 70px)}
+.ph{font-weight:900;font-size:15px;margin-bottom:8px;text-align:center}
+.ph small{font-weight:600;opacity:.7;font-size:11px;margin-left:4px}
+.prow{display:flex;gap:8px;margin-top:10px}.prow>*{flex:1}
+.cpE{font-size:40px;text-align:center}.cpN{text-align:center;font-family:'Black Han Sans';font-size:22px;margin-top:2px}
+.cpD{text-align:center;font-size:13px;line-height:1.55;color:#d8caef;margin-top:6px}
+.cpD b{color:#ffd479}
+.lst{display:grid;gap:6px;margin-top:8px}
+.lst button{text-align:left;border:2px solid #5d4590;border-radius:10px;background:#231839;color:#f1e8ff;padding:8px 10px;font-size:14px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lst button small{display:block;font-size:11px;font-weight:500;opacity:.78}
+.lst button .pr{color:#ffd479;white-space:nowrap}
+.lst button.own{border-color:#5aa6d8}
+#pOdds{text-align:center;font-size:13px;color:#d8caef}
+#pKnow{text-align:center;margin-top:6px;font-weight:900;color:#ffd479}
+#pClues{text-align:center;margin-top:6px;font-size:12.5px;line-height:1.55;color:#c9ffb0;font-weight:700}
+.stakes{display:flex;gap:6px;justify-content:center;margin-top:8px;align-items:center;font-size:12px}
+.stakes button{border:2px solid #5d4590;background:#231839;color:#f1e8ff;border-radius:999px;padding:5px 12px;font-weight:900;font-size:13px}
+.stakes button.sel{border-color:#ffd479;color:#ffd479;background:#3a2760}
+.pBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.pBtns button{border:0;border-radius:11px;padding:10px 6px;font-family:'Black Han Sans';font-size:17px;color:#fff;line-height:1.15}
+.pBtns button small{display:block;font-family:system-ui;font-size:12px;font-weight:800;opacity:.92}
+#pFrog{background:linear-gradient(#6fd06a,#2f8f3a);box-shadow:0 4px 0 #1b5a22}
+#pSafe{background:linear-gradient(#f0c45a,#b8862a);box-shadow:0 4px 0 #6e4c12}
+#pOthers{min-height:1.4em;margin-top:8px;font-size:12px;display:flex;flex-wrap:wrap;gap:4px 8px;justify-content:center;color:#ffd479}
+.timer{height:5px;border-radius:9px;background:#3a2c58;margin-top:8px;overflow:hidden}.timer i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#a565ff,#ffd479)}
+.rost{font-size:12.5px;line-height:1.5}
+.rost div{display:flex;justify-content:space-between;gap:8px;padding:4px 2px;border-bottom:1px solid rgba(196,168,255,.15)}
+.rost div.dead{opacity:.6}.rost div.me{color:#ffd479}
+.legend{font-size:11.5px;color:#cbb8ea;margin-top:8px;line-height:1.55}
+#banner{position:absolute;left:0;right:0;top:28%;z-index:6;text-align:center;pointer-events:none;opacity:0;padding:0 10px}
+#banner.on{animation:bn var(--d,1400ms) ease forwards}
+@keyframes bn{0%{opacity:0;transform:scale(.8)}12%{opacity:1;transform:scale(1.04)}20%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+.b1{font-family:'Black Han Sans',system-ui,sans-serif;font-size:clamp(28px,8.5vw,52px);color:#f0dcff;text-shadow:0 3px 0 #3b1a6a,0 6px 16px rgba(0,0,0,.6),0 0 26px rgba(170,110,255,.6)}
+.b2{font-size:15px;font-weight:800;color:#e8ffd9;margin-top:4px;text-shadow:0 2px 4px #000}
+#tint{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0}
+#tint.on{animation:tn 1s ease forwards}
+@keyframes tn{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+#vign{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity 1s;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 52%,rgba(40,120,40,.5))}
+#vign.on{opacity:1}
+#tense{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 42%,rgba(25,0,12,.72))}
+#tense.on{opacity:1;animation:pulse .72s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.85}30%{opacity:1}}
+.screen{position:absolute;inset:0;z-index:10;display:flex;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:max(14px,env(safe-area-inset-top)) 12px max(20px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 35%,rgba(40,24,70,.3),rgba(12,8,22,.86))}
+.box{margin:auto;width:min(100%,430px);background:rgba(28,19,50,.93);border:2px solid #8f6cc4;border-radius:16px;padding:16px 16px 18px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.logo{text-align:center;font-family:'Black Han Sans',system-ui,sans-serif;font-size:clamp(30px,9vw,42px);color:#e9d4ff;text-shadow:0 3px 0 #3b1a6a,0 0 22px rgba(170,110,255,.6);line-height:1.15}
+.logo small{display:block;font-family:system-ui,sans-serif;font-size:13px;color:#a6ff86;letter-spacing:.2em;font-weight:800;text-shadow:none;margin-top:4px}
+.story{font-size:13px;line-height:1.65;color:#d8caef;margin:10px 0 6px;text-align:center}
+.story b{color:#c9ffb0}
+label.lb{display:block;font-size:12px;font-weight:800;color:#c9a8ff;margin:11px 0 5px}
+#nm{width:100%;font:700 16px system-ui,sans-serif;padding:10px 12px;border-radius:9px;border:2px solid #8f6cc4;background:#f6efff;color:#2a1a40;-webkit-user-select:text;user-select:text;touch-action:manipulation}
+.opts{display:grid;gap:6px}.opts.two{grid-template-columns:1fr 1fr}
+.opts button{text-align:left;padding:9px 10px;border-radius:10px;border:2px solid #5d4590;background:#231839;color:#f1e8ff;line-height:1.35;font-size:14px;font-weight:800}
+.opts button small{display:block;font-weight:500;font-size:11.5px;opacity:.8}
+.opts button.sel{border-color:#ffd479;background:#3a2760;box-shadow:0 0 12px rgba(255,212,121,.35)}
+details.rules{margin-top:12px;background:#1f1533;border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.65}
+details.rules summary{font-weight:900;cursor:pointer;color:#ffd479}
+details.rules ul{padding-left:18px;margin-top:6px}
+#best{text-align:center;font-size:12px;color:#ffd479;margin-top:8px;min-height:1em}
+.rT{text-align:center;font-size:clamp(24px,7.5vw,32px);color:#f0dcff}
+.rS{text-align:center;font-size:13px;color:#d8caef;margin:4px 0 8px;line-height:1.5}
+.rScore{text-align:center;font-family:'Black Han Sans',system-ui,sans-serif;font-size:46px;color:#ffd479;text-shadow:0 0 18px rgba(255,212,121,.5)}
+dl.rd{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin:10px 0}
+dl.rd dt{color:#c9a8ff;font-weight:800}dl.rd dd{text-align:right}
+#rec{width:100%;height:11em;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#f6efff;color:#2a1a40;border:2px solid #8f6cc4;border-radius:9px;padding:8px;resize:none;-webkit-user-select:text;user-select:text;touch-action:pan-y}
+.vlink{display:block;text-align:center;margin-top:9px;color:#a6ff86;font-weight:800;font-size:14px;text-decoration:none}
+.rbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+@media (max-width:430px){.pill{padding:3px 7px;font-size:11.5px}.ib{min-width:27px;height:26px;padding:0 5px;font-size:12px}.hrow{gap:4px}#hCups{letter-spacing:0}}
+@media (max-height:520px){
+ .card{width:50px;height:58px;font-size:10px;gap:2px}.card .ce{font-size:18px}
+ #acts{flex-direction:row;width:auto}.big{font-size:15px;padding:8px}.mid{padding:5px 8px}
+ #log{font-size:11px}#log div.o2,#log div.o3{display:none}#status{font-size:13px;margin-bottom:4px}
+ .panel{max-height:88vh;padding:9px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="cv"></canvas>
+<div id="tags"></div>
+<div id="floats"></div>
+<div id="tint"></div>
+<div id="vign"></div>
+<div id="tense"></div>
+
+<div id="hud" class="hide">
+ <div class="hrow">
+  <span class="pill" id="hRound">🌙 잔치 1</span><span class="pill" id="hAlive">🧑 8/8</span>
+  <span class="sp"></span>
+  <button class="pill gold" id="hStar">✦ 100</button>
+  <button class="ib" id="bSpeed">1×</button><button class="ib" id="bProph">🔮</button><button class="ib" id="bRoster">👥</button><button class="ib" id="bMute">🔊</button>
+ </div>
+ <div class="hrow" id="hRow2">
+  <button class="pill whim" id="hWhim">🌙 고요한 밤</button><span class="pill" id="hCups"></span><span class="pill frogc" id="hOdds"></span><span class="pill" id="hDir"></span><span class="pill gold hide" id="hOb"></span>
+ </div>
+ <span class="pill gold hide" id="infoNote"></span>
+</div>
+
+<div id="bottom" class="hide">
+ <div id="log"></div>
+ <div id="status"></div>
+ <div id="ctrl">
+  <div id="hand"></div>
+  <div id="acts"><button id="bDrink" class="big go" disabled>🧪 마시기</button><button id="bShop" class="mid" disabled>🛒 좌판</button></div>
+ </div>
+ <button id="ff" class="big hide">⏩ 결과 바로 보기</button>
+</div>
+
+<div id="cardPop" class="panel hide"><div class="cpE" id="cpE"></div><div class="cpN" id="cpN"></div><div class="cpD" id="cpD"></div>
+ <div class="prow"><button id="cpUse" class="big">사용</button><button class="sec" data-close>닫기</button></div></div>
+<div id="pickPop" class="panel hide"><div class="ph" id="pickT"></div><div class="lst" id="pickList"></div>
+ <div class="prow" id="pickCancel"><button class="sec" data-close>취소</button></div></div>
+<div id="shop" class="panel hide"><div class="ph">🛒 모르가나의 좌판 <small>한 차례에 한 장 · 별빛으로 산다</small></div><div class="lst" id="shopList"></div>
+ <div class="prow"><button class="sec" data-close>닫기</button></div></div>
+<div id="relicPop" class="panel hide"><div class="ph" id="rpT">🏺 모르가나의 유물 좌판</div><div class="cpD" id="rpInfo"></div><div class="lst" id="rpList"></div>
+ <div class="prow"><button class="sec" id="rpSkip">사지 않기</button></div></div>
+<div id="proph" class="panel hide">
+ <div class="ph" id="pWho">🔮 예언</div>
+ <div id="pOdds"></div>
+ <div id="pKnow" class="hide"></div>
+ <div id="pClues"></div>
+ <div class="stakes" id="pStakes">바칠 별빛 <button data-s="10">10</button><button data-s="25">25</button><button data-s="50">50</button></div>
+ <div class="pBtns"><button id="pFrog">🐸 개구리 잔<small id="pFm"></small></button><button id="pSafe">✨ 맑은 잔<small id="pSm"></small></button></div>
+ <div id="pOthers"></div>
+ <div class="prow"><button id="pSkip" class="sec">예언하지 않기</button></div>
+ <div class="timer"><i id="pBar"></i></div>
+</div>
+<div id="roster" class="panel top hide"><div class="ph">👥 연회 손님 <small>앉은 순서</small></div><div class="rost" id="rosterList"></div>
+ <div class="legend">🫣 신중파: 표정을 잘 못 숨긴다 · 🧮 계산파: 표정이 잘 안 드러난다 · 🔥 대담파: 허세로 웃어 보이기도 한다</div>
+ <div class="prow"><button class="sec" data-close>닫기</button></div></div>
+
+<div id="banner"><div class="b1"></div><div class="b2"></div></div>
+
+<div id="title" class="screen">
+ <div class="box">
+  <div class="logo">🧪 마녀의 마지막 잔<small>로웬 늪의 연회</small></div>
+  <p class="story">맹약이 깨진 밤, 검은물 늪. 역병 마녀 <b>모르가나</b>가 길 잃은 원정대를 연회에 불러 앉혔다. 회전대 위 잔 가운데에는 <b>개구리 저주</b>가 든 잔이 숨어 있다. 마지막까지 사람으로 남은 자만이 늪을 건널 수 있다.</p>
+  <label class="lb" for="nm">👤 이름</label><input id="nm" maxlength="12" placeholder="이름을 입력하세요" autocomplete="off">
+  <label class="lb">🪑 연회 규모</label>
+  <div class="opts two" id="modes">
+   <button data-m="8">8인 연회<small>회전대 6잔 · 개구리 1 · ×1.0</small></button>
+   <button data-m="12">12인 대연회<small>8잔 · 개구리 2 → 6명부터 6잔 · ×1.4</small></button>
+  </div>
+  <label class="lb">🎚️ 난이도</label><div class="opts" id="diffs"></div>
+  <button id="bStart" class="big go" style="width:100%;margin-top:14px;font-size:20px">🧪 연회에 앉기</button>
+  <div id="best"></div>
+  <details class="rules"><summary>📜 연회 규칙</summary><ul>
+   <li>회전대의 잔을 차례대로 한 잔씩 마신다. 개구리 잔을 마시면 <b>개구리</b>가 되어 탈락한다.</li>
+   <li>잔이 줄어들수록 확률이 오른다 (6잔이면 1/6 → 1/5 → … → 1/1).</li>
+   <li>맑은 잔을 마시고 버티면 카드 1장. 카드: 🔍엿보기 · 🔄다시 돌리기 · ↪️떠넘기기 · 🔃역회전 · 👉지목 · ✌️두 잔 · 🛡️해독제 · ✋되받기</li>
+   <li>🔮 <b>예언</b>: 다른 손님이 잔을 들면 🐸개구리 잔인지 ✨맑은 잔인지 예언하고 별빛을 바친다. 맞히면 확률에 맞춘 보상.</li>
+   <li>👀 <b>단서</b>: 엿본 손님의 표정(💦 😮‍💨 😏 😐)과 잔에서 오르는 🫧초록 기포를 읽자. 성향마다 표정이 거짓일 수도 있다.</li>
+   <li>🏺 <b>유물</b>: 잔치가 바뀔 때마다 모르가나가 유물 3개를 펼친다. 별빛으로 1개를 사면 판 끝까지 효과가 남는다. 산 값은 점수에 그대로 들어간다.</li>
+   <li>🌕 <b>모르가나의 변덕</b>: 잔치마다 규칙이 하나씩 바뀐다 (보름달·늪안개·축배·소용돌이·침묵·촛불 의식·늪비).</li>
+   <li>누군가 개구리가 될 때마다 회전대를 새로 채우고, 살아남은 손님은 ✦10. 개구리가 되어도 예언은 계속할 수 있다.</li>
+   <li>점수 = 순위 점수 + 1위 보너스 500 + 버틴 잔 ×30 + 남은 별빛 + 유물 값, × 연회·난이도 배율</li>
+  </ul></details>
+ </div>
+</div>
+
+<div id="result" class="screen hide"><div class="box">
+ <div class="rT bh" id="rT"></div><div class="rS" id="rS"></div>
+ <div class="rScore" id="rScore"></div>
+ <dl class="rd" id="rDl"></dl>
+ <textarea id="rec" readonly></textarea>
+ <button id="bCopy" class="big" style="width:100%;margin-top:8px">📋 기록 복사</button>
+ <a class="vlink" id="vlink" target="_blank" rel="noopener">🔎 점수검증기 열기</a>
+ <div class="rbtns"><button id="bAgain" class="sec">🔁 다시 하기</button><button id="bHome" class="sec">🏠 처음으로</button></div>
+</div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const VERIFY_URL='https://chillermaster.github.io/flashgame/witch-last-sip-verify.html';
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}};
+const TAU=Math.PI*2;
+const fmt=n=>Number(n).toLocaleString('ko-KR');
+
+//#ENGINE
+const rnd=Math.random;
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a};
+const CARDS={
+ peek:{e:'🔍',n:'엿보기',price:30,k:'free',d:'지금 잔이 개구리 잔인지 나만 몰래 확인한다. 다른 손님은 내가 엿봤다는 것만 안다.'},
+ spin:{e:'🔄',n:'다시 돌리기',price:40,k:'free',d:'회전대를 새로 채워 돌린다. 확률이 처음으로 돌아간다. 그다음 내가 마셔야 한다.'},
+ pass:{e:'↪️',n:'떠넘기기',price:30,k:'end',d:'내 차례를 진행 방향의 다음 손님에게 넘긴다. 잔은 그대로.'},
+ rev:{e:'🔃',n:'역회전',price:30,k:'end',d:'진행 방향을 뒤집고 반대쪽 손님에게 차례를 넘긴다.'},
+ point:{e:'👉',n:'지목',price:40,k:'end',d:'좌우 2칸 안의 손님 한 명을 골라 차례를 넘긴다.'},
+ double:{e:'✌️',n:'두 잔',price:50,k:'end',d:'다음 손님이 한 잔 더 마셔야 한다. 넘어온 두 잔에 쓰면 세 잔! (최대 3잔)'},
+ anti:{e:'🛡️',n:'해독제',price:80,k:'pass',d:'개구리 잔을 마셔도 한 번 버틴다. 들고만 있으면 자동으로 발동한다.'},
+ back:{e:'✋',n:'되받기',price:40,k:'end',d:'카드로 넘어온 차례를, 넘긴 손님에게 그대로 되돌린다.'}
+};
+const CK=['peek','spin','pass','rev','point','double','anti','back'];
+const DRAW_W={peek:3,spin:2,pass:3,rev:2,point:2,double:2,anti:1,back:2};
+const RELICS={
+ crystal:{e:'🔮',n:'점술사의 수정구',price:70,d:'회전대가 채워질 때마다 맑은 잔 2개의 자리를 알려 준다.'},
+ crown:{e:'👑',n:'개구리 왕관',price:60,d:'🐸 개구리 잔 예언이 맞으면 보상 ×1.5.'},
+ feather:{e:'🪶',n:'잿빛 깃털',price:50,d:'떠넘기기·역회전·지목·두 잔·되받기를 쓸 때마다 ✦15.'},
+ mirror:{e:'🧿',n:'저주 거울',price:60,d:'카드로 나에게 차례를 넘긴 손님은 다음 차례에 한 잔을 더 마셔야 한다.'},
+ honey:{e:'🍯',n:'늪꿀 사탕',price:50,d:'잔을 버텨 카드를 받을 때 2장 중에서 골라 받는다.'},
+ holy:{e:'💧',n:'새벽 성수',price:60,d:'잔치가 시작될 때마다 카드 1장을 받는다.'},
+ stone:{e:'💎',n:'마력석 원석',price:40,d:'잔치가 바뀔 때 받는 생존 수당이 ✦10 → ✦35.'},
+ crow:{e:'👁️',n:'까마귀 눈',price:60,d:'다른 손님이 엿보기를 쓰면 절반 확률로 그 잔을 함께 본다.'}
+};
+const RK=Object.keys(RELICS);
+const WHIMS={
+ calm:{e:'🌙',n:'고요한 밤',d:'변덕 없음. 평범한 연회.'},
+ moon:{e:'🌕',n:'보름달',d:'개구리 잔이 하나 더 들어간다.'},
+ fog:{e:'🌫️',n:'늪안개',d:'남은 잔과 확률이 가려진다. 예언 보상은 🐸×4 · ✨×1.3 고정.'},
+ feast:{e:'🎉',n:'축배',d:'잔을 버티면 카드를 2장 받는다.'},
+ swirl:{e:'🌀',n:'소용돌이',d:'한 잔 마실 때마다 진행 방향이 뒤집힌다.'},
+ silence:{e:'🤫',n:'침묵',d:'카드를 쓰거나 살 수 없다. 대신 예언 보상 ×2.'},
+ candle:{e:'🕯️',n:'촛불 의식',d:'잔치가 시작될 때 모두에게 🔍 엿보기 1장.'},
+ rain:{e:'🌧️',n:'늪비',d:'한 잔 마실 때마다 회전대가 새로 채워진다. 확률이 오르지 않는다.'}
+};
+const WK=['moon','fog','feast','swirl','silence','candle','rain'];
+const TELLS={sweat:{e:'💦',d:'손이 떨린다'},relief:{e:'😮‍💨',d:'안도의 한숨'},grin:{e:'😏',d:'씩 웃는다'},calm:{e:'😐',d:'표정이 없다'}};
+const GT=[.5,.4,.3],GF=[.08,.1,.14];
+const DIFFS=[
+ {e:'🌱',n:'늪가 손님',M:1.0,d:'손님들이 어수룩하다. 표정도 잘 드러난다.'},
+ {e:'🌿',n:'늪뿌리 연회',M:1.3,d:'손님들이 확률과 단서를 따지고, 좌판에서 카드를 산다.'},
+ {e:'🌑',n:'모르가나의 만찬',M:1.6,d:'손님들이 단서로 예언하고 당신을 노린다. 표정도 잘 숨긴다.'}
+];
+const MODES={8:{M:1.0,n:'8인 연회'},12:{M:1.4,n:'12인 대연회'}};
+const START_STAR=100,HAND_MAX=5,STAKES=[10,25,50];
+const PERS={bold:{e:'🔥',n:'대담파',thr:.36},calc:{e:'🧮',n:'계산파',thr:.24},shy:{e:'🫣',n:'신중파',thr:.17}};
+const GUILDS={knight:{n:'은빛 서약 기사단',e:'⚔️'},archer:{n:'녹엽 순찰대',e:'🏹'},mage:{n:'별탑 학회',e:'✦'},priest:{n:'새벽 성당',e:'☀'},shaman:{n:'늪뿌리 부족',e:'❖'},rogue:{n:'잿빛 망토 길드',e:'🗡️'}};
+const GUESTS=[
+ {n:'카엘',g:'knight',pe:'bold'},{n:'브리엔',g:'archer',pe:'calc'},{n:'오스릭',g:'mage',pe:'calc'},{n:'세라핀',g:'priest',pe:'shy'},
+ {n:'모르탄',g:'shaman',pe:'bold'},{n:'리세나',g:'rogue',pe:'calc'},{n:'하르덴',g:'knight',pe:'shy'},{n:'이졸데',g:'mage',pe:'bold'},
+ {n:'베일',g:'rogue',pe:'bold'},{n:'노아크',g:'shaman',pe:'calc'},{n:'펠릭스',g:'archer',pe:'shy'},{n:'아셀라',g:'priest',pe:'calc'}
+];
+const RPREF={bold:['crown','feather','mirror','stone','crow','honey','holy','crystal'],calc:['crystal','crow','honey','stone','holy','crown','mirror','feather'],shy:['holy','crystal','mirror','honey','stone','crow','feather','crown']};
+function calcScore(mode,diff,rank,drinks,star,relic){const raw=(mode-rank)*100+(rank===1?500:0)+drinks*30+star+(relic||0);return Math.max(0,Math.round(raw*MODES[mode].M*DIFFS[diff].M))}
+const floor2=x=>Math.floor(x*100+1e-9)/100;
+function drawCard(){let tot=0;for(const k of CK)tot+=DRAW_W[k];let r=rnd()*tot;for(const k of CK){r-=DRAW_W[k];if(r<0)return k}return'peek'}
+
+let G=null;
+let H={};
+function newGame(mode,diff,name){
+ const ps=[{i:0,name,human:true,g:'player',pe:null}];
+ const gs=shuffle(GUESTS.slice(0,mode-1).map(x=>Object.assign({},x)));
+ gs.forEach((x,k)=>ps.push({i:k+1,name:x.n,human:false,g:x.g,pe:x.pe}));
+ for(const p of ps){Object.assign(p,{alive:true,hand:[],star:START_STAR,drinks:0,know:null,vis:null,rank:0,hits:0,tries:0,saved:0,bet:null,relics:[],relicVal:0,cursed:false});
+  const nc=(!p.human&&diff===2)?3:2;for(let k=0;k<nc;k++)p.hand.push(drawCard())}
+ G={mode,diff,N:mode,ps,dir:1,car:null,turn:null,round:1,stamp:0,peeks:[],tells:[],elim:[],whim:'calm',t0:Date.now(),t1:0,over:false,ff:false,auto:false,humanOut:false,turns:0,drinksAll:0};
+ return G;
+}
+const has=(P,r)=>P.relics.includes(r);
+const aliveCount=()=>G.ps.filter(p=>p.alive).length;
+function nextAlive(i,d){let j=i;for(let k=0;k<G.N;k++){j=(j+d+G.N)%G.N;if(G.ps[j].alive)return j}return i}
+function carCfg(){return(G.mode===12&&aliveCount()>6)?{n:8,f:2}:{n:6,f:1}}
+function refill(){const c=carCfg();const f=Math.min(c.n-2,c.f+(G.whim==='moon'?1:0));const cups=Array(c.n).fill(false);for(const x of shuffle([...Array(c.n).keys()]).slice(0,f))cups[x]=true;
+ G.car={n:c.n,f,cups,idx:0,stamp:++G.stamp,gl:null};G.peeks=[];G.tells=[];
+ const safe=[...Array(c.n).keys()].filter(j=>!cups[j]);
+ for(const P of G.ps)P.vis=has(P,'crystal')?{stamp:G.car.stamp,safe:shuffle(safe.slice()).slice(0,2)}:null}
+const cupsLeft=()=>G.car.n-G.car.idx;
+function frogsLeft(){let c=0;for(let j=G.car.idx;j<G.car.n;j++)if(G.car.cups[j])c++;return c}
+const odds=()=>frogsLeft()/cupsLeft();
+function kinfo(P){const k=P.know,c=G.car;if(!c)return null;if(k&&k.stamp===c.stamp&&k.idx===c.idx)return{frog:k.frog,src:k.src||'peek'};
+ const v=P.vis;if(v&&v.stamp===c.stamp&&v.safe.includes(c.idx))return{frog:false,src:'crystal'};return null}
+function knows(P){const k=kinfo(P);return k?k.frog:null}
+function glint(){const c=G.car;if(!c)return false;if(!c.gl||c.gl.idx!==c.idx){const fr=c.cups[c.idx];c.gl={idx:c.idx,on:fr?rnd()<GT[G.diff]:rnd()<GF[G.diff]}}return c.gl.on}
+function pointTargets(pi){const s=new Set();let a=pi,b=pi;for(let k=0;k<2;k++){a=nextAlive(a,1);b=nextAlive(b,-1);s.add(a);s.add(b)}s.delete(pi);return[...s]}
+function canBack(pi){const t=G.turn;return!!(t&&t.p===pi&&t.from!=null&&t.from!==pi&&G.ps[t.from].alive)}
+function oddsMult(p){let m=G.whim==='fog'?{frog:4,safe:1.3}:{frog:floor2(.9/p),safe:floor2(.9/(1-p))};if(G.whim==='silence')m={frog:m.frog*2,safe:floor2(m.safe*2)};return m}
+function handoff(to,ob){const from=G.turn.p;G.turn={p:to,ob,from,bought:false}}
+function okBuy(P,c){return G.whim!=='silence'&&!!CARDS[c]&&!G.turn.bought&&P.star>=CARDS[c].price&&P.hand.length<HAND_MAX}
+function aiOdds(P){const c=G.car,d=G.diff;let p=G.whim==='fog'?c.f/c.n:odds();if(d===0||p<=0||p>=1)return p;
+ const a=GT[d],b=GF[d];p=glint()?p*a/(p*a+(1-p)*b):p*(1-a)/(p*(1-a)+(1-p)*(1-b));
+ const t=G.turn,same=x=>x.stamp===c.stamp&&x.idx===c.idx;
+ if(t.from!=null&&t.from!==P.i&&G.peeks.some(x=>same(x)&&x.pi===t.from))p=Math.max(p,.55);
+ return p}
+function makeTell(P,frog){const d=G.diff,pe=P.pe||'calc',r=rnd();
+ if(pe==='shy'){const h=.88-.1*d;return r<h?(frog?'sweat':'relief'):(frog?'relief':'sweat')}
+ if(pe==='calc')return r<.55-.12*d?(frog?'sweat':'relief'):'calm';
+ if(frog)return r<.5+.1*d?'grin':'sweat';return r<.75?'grin':'calm'}
+function pickTarget(P){const ts=pointTargets(P.i);if(G.diff===2&&ts.includes(0)&&G.ps[0].alive&&rnd()<.6)return 0;
+ if(G.diff===0)return pick(ts);ts.sort((a,b)=>G.ps[a].hand.length-G.ps[b].hand.length);return ts[0]}
+function aiEscape(P){const h=P.hand,o=[];
+ const pri=G.diff===2?['back','point','double','pass','rev']:['back','pass','rev','point','double'];
+ for(const c of pri){if(c==='back'?(h.includes('back')&&canBack(P.i)):h.includes(c))o.push(c)}
+ if(!o.length)return null;const c=G.diff===0?pick(o):o[0];
+ return c==='point'?{type:'card',c,target:pickTarget(P)}:{type:'card',c}}
+function aiAction(P){
+ if(G.whim==='silence')return{type:'drink'};
+ const t=G.turn,d=G.diff,h=P.hand,hs=c=>h.includes(c);
+ const k=knows(P),p=aiOdds(P),base=G.car.f/G.car.n;
+ let thr=PERS[P.pe||'calc'].thr;if(d===0)thr+=(rnd()-.5)*.24;if(t.ob>=2)thr*=.8;
+ if(k===false)return{type:'drink'};
+ if(k===true||p>=.999){const e=aiEscape(P);if(e)return e;if(hs('spin'))return{type:'card',c:'spin'};if(hs('anti'))return{type:'drink'};
+  if(d>=1&&okBuy(P,'pass'))return{type:'buy',c:'pass'};return{type:'drink'}}
+ if(p>=thr){
+  if(hs('peek')&&(d>0||rnd()<.6))return{type:'card',c:'peek'};
+  if(hs('spin')&&p>base+.04)return{type:'card',c:'spin'};
+  if(hs('anti')&&p<.5)return{type:'drink'};
+  const e=aiEscape(P);if(e&&(d>0||rnd()<.7))return e;
+  if(d>=1&&P.star>=CARDS.peek.price+30&&okBuy(P,'peek'))return{type:'buy',c:'peek'};
+ }
+ return{type:'drink'}}
+function aiBet(B,di,p){
+ if(B.star<10)return null;const d=G.diff,k=knows(B),mx=Math.min(B.star,50);
+ if(k!==null){if(d===0&&rnd()<.5)return null;return{side:k?'frog':'safe',stake:Math.min(mx,d===2?50:25)}}
+ if(d>=1){const c=G.car,same=x=>x.stamp===c.stamp&&x.idx===c.idx,t=G.turn;
+  const tl=G.tells.filter(x=>same(x)&&x.pi!==B.i);
+  if(t.from!=null&&G.peeks.some(x=>same(x)&&x.pi===t.from&&x.pi!==B.i)&&rnd()<(d===2?.8:.5))return{side:'frog',stake:Math.min(mx,d===2?25:10)};
+  if(tl.some(x=>x.emo==='sweat')&&rnd()<(d===2?.55:.35))return{side:'frog',stake:Math.min(mx,d===2?25:10)};
+  if(glint()&&rnd()<(d===2?.45:.3))return{side:'frog',stake:Math.min(mx,d===2?25:10)};
+  if(G.peeks.some(x=>same(x)&&x.pi===di)&&rnd()<(d===2?.7:.4))return{side:'safe',stake:Math.min(mx,25)};
+  if(tl.some(x=>x.emo==='relief')&&rnd()<.3)return{side:'safe',stake:Math.min(mx,25)}}
+ const r=rnd(),pe=B.pe||'calc';
+ if(pe==='bold'&&r<.3)return{side:p>=.25?'frog':'safe',stake:Math.min(mx,p>=.25?10:25)};
+ if(pe==='shy'&&r<.05)return{side:'safe',stake:10};
+ if(d===0&&r<.15)return{side:rnd()<.5?'frog':'safe',stake:10};
+ return null}
+function aiPickCard(o){const pr=['anti','peek','back','point','pass','double','rev','spin'];for(const c of pr)if(o.includes(c))return c;return o[0]}
+function aiRelic(P,offers){const d=G.diff,ok=offers.filter(r=>!has(P,r)&&P.star-RELICS[r].price>=20);if(!ok.length)return null;
+ if(rnd()>[.4,.7,.9][d])return null;if(d===0)return pick(ok);for(const r of RPREF[P.pe||'calc'])if(ok.includes(r))return r;return ok[0]}
+function okRelic(P,r,offers){return!!RELICS[r]&&offers.includes(r)&&!has(P,r)&&P.star>=RELICS[r].price}
+async function relicPhase(){
+ const offers=shuffle(RK.slice()).slice(0,3),bought=[];
+ for(const P of G.ps){if(!P.alive||P.human)continue;const r=aiRelic(P,offers);if(r){P.star-=RELICS[r].price;P.relics.push(r);P.relicVal+=RELICS[r].price;bought.push({pi:P.i,r})}}
+ const hu=G.ps[0];
+ if(hu.alive){let r=null;if(G.auto)r=aiRelic(hu,offers);else if(!G.ff)r=await H.relicShop(offers);
+  if(r&&okRelic(hu,r,offers)){hu.star-=RELICS[r].price;hu.relics.push(r);hu.relicVal+=RELICS[r].price;bought.unshift({pi:0,r})}}
+ await H.relics(bought)}
+function roundGrants(){for(const P of G.ps){if(!P.alive)continue;
+ if(has(P,'holy')&&P.hand.length<HAND_MAX)P.hand.push(drawCard());
+ if(G.whim==='candle'&&P.hand.length<HAND_MAX)P.hand.push('peek')}}
+async function runGame(){
+ G.whim='calm';await relicPhase();
+ refill();G.turn={p:Math.floor(rnd()*G.N),ob:1,from:null,bought:false};roundGrants();
+ await H.round(true);
+ while(!G.over)await takeTurn();
+}
+async function giveDraws(P,pi){const n=G.whim==='feast'?2:1;
+ for(let k=0;k<n;k++){if(P.hand.length>=HAND_MAX)break;let c;
+  if(has(P,'honey')){const o=[drawCard(),drawCard()];c=(P.human&&!G.auto)?await H.choose(o):aiPickCard(o);if(!o.includes(c))c=o[0]}else c=drawCard();
+  P.hand.push(c);await H.draw(pi,c)}}
+async function takeTurn(){
+ const t=G.turn,P=G.ps[t.p];G.turns++;
+ await H.turn(t.p);
+ if(P.cursed){P.cursed=false;t.ob=Math.min(3,t.ob+1);await H.cursed(t.p)}
+ for(let guard=0;;guard++){
+  const human=P.human&&!G.auto;
+  let a;if(human)a=await H.human();else{await H.think(t.p);a=aiAction(P)}
+  if(guard>30)a={type:'drink'};
+  if(a.type==='buy'){if(okBuy(P,a.c)){P.star-=CARDS[a.c].price;P.hand.push(a.c);t.bought=true;await H.buy(t.p,a.c);continue}if(human)continue;a={type:'drink'}}
+  if(a.type==='card'){
+   const c=a.c,ix=P.hand.indexOf(c);let ok=ix>=0&&c!=='anti'&&G.whim!=='silence';
+   if(c==='back'&&!canBack(t.p))ok=false;
+   if(c==='point'&&!pointTargets(t.p).includes(a.target))ok=false;
+   if(!ok){if(human)continue;a={type:'drink'}}
+   else{
+    P.hand.splice(ix,1);
+    if(c==='peek'){const st=G.car.stamp,ci=G.car.idx,fr=G.car.cups[ci];P.know={stamp:st,idx:ci,frog:fr,src:'peek'};G.peeks.push({pi:t.p,stamp:st,idx:ci});
+     let tell=null;if(!P.human){tell=makeTell(P,fr);G.tells.push({pi:t.p,stamp:st,idx:ci,emo:tell})}
+     const crow=[];for(const B of G.ps){if(B===P||!has(B,'crow'))continue;if(rnd()<.5){B.know={stamp:st,idx:ci,frog:fr,src:'crow'};crow.push(B.i)}}
+     await H.card(t.p,c,null,{tell,crow});continue}
+    if(c==='spin'){refill();await H.card(t.p,c,null,{});continue}
+    const ob=t.ob;let to;
+    if(c==='pass'){to=nextAlive(t.p,G.dir);handoff(to,ob)}
+    else if(c==='rev'){G.dir*=-1;to=nextAlive(t.p,G.dir);handoff(to,ob)}
+    else if(c==='point'){to=a.target;handoff(to,ob)}
+    else if(c==='double'){to=nextAlive(t.p,G.dir);handoff(to,Math.min(3,ob+1))}
+    else{to=t.from;handoff(to,ob)}
+    const ex={};if(has(P,'feather')){P.star+=15;ex.feather=true}
+    if(to!==t.p&&has(G.ps[to],'mirror')){P.cursed=true;ex.mirror=true}
+    await H.card(t.p,c,to,ex);return}
+  }
+  const r=await drink(t.p);
+  if(r==='frog'){await eliminate(t.p);return}
+  t.ob--;t.from=null;
+  if(t.ob<=0){G.turn={p:nextAlive(t.p,G.dir),ob:1,from:null,bought:false};return}
+  await H.again(t.p);
+ }
+}
+async function drink(pi){
+ const P=G.ps[pi],c=G.car,frog=c.cups[c.idx],p=odds(),bets=[];G.drinksAll++;glint();
+ if(p>0&&p<1){const m=oddsMult(p),hu=G.ps[0];
+  for(const B of G.ps){if(B.i===pi||B.human||!B.alive)continue;const b=aiBet(B,pi,p);if(b){b.stake=Math.min(b.stake,B.star);if(b.stake>0){B.star-=b.stake;bets.push({pi:B.i,side:b.side,stake:b.stake,m:m[b.side]})}}}
+  let shown=false;
+  if(pi!==0&&hu.star>=10&&!G.ff){let hb=null;
+   if(G.auto)hb=aiBet(hu,pi,p);else{hb=await H.prophecy(pi,p,m,bets);shown=true}
+   if(hb&&hb.stake>0&&hb.stake<=hu.star){hu.star-=hb.stake;bets.push({pi:0,side:hb.side,stake:hb.stake,m:m[hb.side]})}}
+  if(!shown&&bets.length)await H.bets(bets);
+ }
+ const saved=frog&&P.hand.includes('anti');
+ await H.drink(pi,frog,saved);
+ const res=[];
+ for(const b of bets){const B=G.ps[b.pi];B.tries++;const win=(b.side==='frog')===frog;let pay=0;
+  if(win){let mm=b.m;if(b.side==='frog'&&has(B,'crown'))mm*=1.5;pay=Math.floor(b.stake*mm);B.star+=pay;B.hits++}
+  res.push(Object.assign({},b,{win,pay}))}
+ if(res.length)await H.payout(res,frog);
+ if(frog){if(saved){P.hand.splice(P.hand.indexOf('anti'),1);P.saved++;P.drinks++;refill();if(G.whim==='swirl')G.dir*=-1;await H.saved(pi);return'saved'}return'frog'}
+ c.idx++;P.drinks++;
+ await giveDraws(P,pi);
+ if(G.whim==='swirl'){G.dir*=-1;await H.swirl()}
+ if(G.whim==='rain'){refill();await H.rain()}
+ return'safe'}
+async function eliminate(pi){
+ const P=G.ps[pi];P.alive=false;P.rank=aliveCount()+1;P.hand=[];P.cursed=false;G.elim.push(pi);if(P.human)G.humanOut=true;
+ await H.frog(pi);
+ if(aliveCount()<=1){const w=G.ps.find(x=>x.alive);if(w)w.rank=1;G.over=true;G.t1=Date.now();await H.over();return}
+ for(const q of G.ps)if(q.alive)q.star+=has(q,'stone')?35:10;
+ G.car=null;G.round++;G.whim=pick(WK.filter(w=>w!==G.whim));
+ await relicPhase();
+ refill();G.turn={p:nextAlive(pi,G.dir),ob:1,from:null,bought:false};roundGrants();
+ await H.round(false);
+}
+//#/ENGINE
+
+/* ================= 검증코드 ================= */
+const SALT='witchlastsip/luca/v1#a83c-5d2f';
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,11),b=h53(s+a,173);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64e(s){const b=new TextEncoder().encode(s);let bin='';b.forEach(x=>{bin+=String.fromCharCode(x)});return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function ymd(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')}
+
+/* ================= 오디오 ================= */
+const AU={ctx:null,muted:LS.get('wls_mute','0')==='1',musicOn:false};
+function auInit(){
+ if(AU.ctx){if(AU.ctx.state==='suspended')AU.ctx.resume();return}
+ const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+ try{const ctx=new C();AU.ctx=ctx;
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(ctx.destination);
+  AU.master=ctx.createGain();AU.master.gain.value=AU.muted?0:.9;AU.master.connect(comp);
+  AU.music=ctx.createGain();AU.music.gain.value=0;AU.music.connect(AU.master);
+  AU.sfx=ctx.createGain();AU.sfx.gain.value=.9;AU.sfx.connect(AU.master);
+  const nb=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;AU.noise=nb;
+ }catch(e){AU.ctx=null}}
+const mf=n=>440*Math.pow(2,(n-69)/12);
+const quiet=()=>!AU.ctx||(G&&G.ff);
+function tone(o){if(!AU.ctx)return;const C=AU.ctx,t=o.t||C.currentTime+.01,dur=Math.max(.03,o.dur),a=Math.min(o.a||.005,dur*.5);
+ const os=C.createOscillator();os.type=o.type||'sine';os.frequency.setValueAtTime(o.f,t);if(o.f2)os.frequency.exponentialRampToValueAtTime(o.f2,t+(o.glide||dur));
+ const g=C.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(o.vol,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ let n=os;if(o.lp){const fl=C.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.lp,t);fl.Q.value=o.q||.7;n.connect(fl);n=fl}
+ n.connect(g);g.connect(o.dest||AU.sfx);
+ if(o.vib){const l=C.createOscillator();l.frequency.value=o.vib;const lg=C.createGain();lg.gain.value=o.vibD||o.f*.02;l.connect(lg);lg.connect(os.frequency);l.start(t);l.stop(t+dur+.05)}
+ os.start(t);os.stop(t+dur+.05)}
+function nz(o){if(!AU.ctx)return;const C=AU.ctx,t=o.t||C.currentTime+.01,dur=Math.max(.02,o.dur);
+ const s=C.createBufferSource();s.buffer=AU.noise;const fl=C.createBiquadFilter();fl.type=o.ft||'bandpass';fl.frequency.setValueAtTime(o.f||1000,t);if(o.f2)fl.frequency.exponentialRampToValueAtTime(o.f2,t+dur);fl.Q.value=o.q||1;
+ const g=C.createGain(),a=Math.min(o.a||.003,dur*.5);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(o.vol,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ s.connect(fl);fl.connect(g);g.connect(o.dest||AU.sfx);s.start(t,Math.random()*.4);s.stop(t+dur+.05)}
+const now=()=>AU.ctx.currentTime+.01;
+const SFX={
+ card(){if(quiet())return;nz({dur:.2,vol:.22,f:3200,f2:700,q:.8})},
+ lift(){if(quiet())return;tone({f:520,f2:760,dur:.14,vol:.07})},
+ gulp(){if(quiet())return;const t=now();for(let k=0;k<3;k++)tone({type:'sine',f:240,f2:130,t:t+k*.13,dur:.1,vol:.2})},
+ safe(){if(quiet())return;const t=now();[880,1109,1319,1760].forEach((f,k)=>tone({f,t:t+k*.07,dur:.35,vol:.1}))},
+ frog(){if(quiet())return;const t=now();nz({t,dur:.55,vol:.4,ft:'lowpass',f:1400,f2:180});
+  for(const dt of[.2,.5])tone({type:'square',f:150,f2:92,t:t+dt,dur:.26,vol:.11,lp:900,vib:28,vibD:18})},
+ shield(){if(quiet())return;const t=now();tone({f:660,f2:990,t,dur:.4,vol:.12});tone({f:1320,t:t+.18,dur:.4,vol:.07})},
+ chime(){if(quiet())return;const t=now();tone({f:1320,t,dur:.3,vol:.09});tone({f:1760,t:t+.09,dur:.35,vol:.08})},
+ relic(){if(quiet())return;const t=now();[659,880,1175,1568].forEach((f,k)=>tone({type:'triangle',f,t:t+k*.08,dur:.5,vol:.09}))},
+ bad(){if(quiet())return;const t=now();tone({type:'triangle',f:330,f2:220,t,dur:.4,vol:.12})},
+ whim(){if(quiet())return;const t=now();tone({type:'triangle',f:220,f2:440,t,dur:.6,vol:.1});tone({f:1320,f2:660,t:t+.15,dur:.7,vol:.05})},
+ heart(){if(quiet())return;const t=now();tone({f:62,f2:42,t,dur:.14,vol:.42});tone({f:58,f2:40,t:t+.19,dur:.14,vol:.3})},
+ glint(){if(quiet())return;const t=now();for(let k=0;k<3;k++)tone({f:700+k*160,f2:900+k*160,t:t+k*.06,dur:.06,vol:.035})},
+ refill(){if(quiet())return;const t=now();nz({t,dur:.75,vol:.16,f:380,f2:1700,q:1.2});for(let k=0;k<5;k++)tone({f:300+Math.random()*500,f2:600+Math.random()*600,t:t+k*.11,dur:.09,vol:.05})},
+ myturn(){if(quiet())return;const t=now();tone({f:784,t,dur:.5,vol:.11});tone({f:1175,t:t+.12,dur:.5,vol:.07})},
+ win(){if(quiet())return;const t=now();[523,659,784,1047,1319].forEach((f,k)=>tone({type:'triangle',f,t:t+k*.12,dur:.5,vol:.13}))},
+ lose(){if(quiet())return;const t=now();[392,330,262,196].forEach((f,k)=>tone({type:'triangle',f,t:t+k*.18,dur:.5,vol:.12}))}
+};
+const CHORDS=[[50,53,57],[46,50,53],[48,52,55],[45,49,52]];
+const MUSIC_VOL=.34;
+function musicStart(){if(!AU.ctx||AU.musicOn)return;AU.musicOn=true;AU.music.gain.setTargetAtTime(MUSIC_VOL,AU.ctx.currentTime,.6);AU.step=0;AU.next=AU.ctx.currentTime+.15;AU.timer=setInterval(musicTick,90)}
+function musicTick(){const C=AU.ctx;if(!C)return;const spb=60/104/2;
+ while(AU.next<C.currentTime+.3){const s=AU.step,bar=Math.floor(s/6)%4,k=s%6,ch=CHORDS[bar],t=AU.next;
+  if(k===0)tone({type:'triangle',f:mf(ch[0]-12),t,dur:1.65,vol:.17,a:.03,dest:AU.music});
+  if(k===3&&bar%2===1)tone({type:'triangle',f:mf(ch[2]-12),t,dur:.8,vol:.09,a:.03,dest:AU.music});
+  const arp=[0,1,2,1,2,1];tone({type:'triangle',f:mf(ch[arp[k]]+12),t,dur:.55,vol:k===0?.07:.045,lp:1700,dest:AU.music});
+  if(s%48===40&&Math.random()<.7)tone({type:'square',f:120,f2:86,t,dur:.2,vol:.035,lp:650,vib:26,vibD:14,dest:AU.music});
+  AU.step++;AU.next+=spb}}
+function setMuteIcon(){$('bMute').textContent=AU.muted?'🔇':'🔊'}
+function toggleMute(){AU.muted=!AU.muted;LS.set('wls_mute',AU.muted?'1':'0');if(AU.master)AU.master.gain.value=AU.muted?0:.9;setMuteIcon()}
+
+/* ================= Three.js 장면 ================= */
+const canvas=$('cv');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const SKY=0x2a2346;
+const scene=new THREE.Scene();scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,13,34);
+const camera=new THREE.PerspectiveCamera(62,1,.05,90);scene.add(camera);
+scene.add(new THREE.HemisphereLight(0xcdbcff,0x2f4433,.68));
+const moonL=new THREE.DirectionalLight(0xdfe5ff,.62);moonL.position.set(-7,13,5);moonL.castShadow=true;moonL.shadow.mapSize.set(1024,1024);
+{const s=moonL.shadow.camera;s.left=-10;s.right=10;s.top=10;s.bottom=-10;s.near=1;s.far=40}moonL.shadow.bias=-.0008;scene.add(moonL);
+const lamp=new THREE.PointLight(0xffc27a,.78,15,1.6);lamp.position.set(0,3.3,0);scene.add(lamp);
+const matC={};
+function M(c,opt){const k=c+'_'+(opt||'');if(!matC[k]){matC[k]=opt==='b'?new THREE.MeshBasicMaterial({color:c}):opt==='bn'?new THREE.MeshBasicMaterial({color:c,fog:false}):new THREE.MeshPhongMaterial({color:c,flatShading:true,shininess:5})}return matC[k]}
+function mesh(geo,c,opt,sh){const m=new THREE.Mesh(geo,M(c,opt));if(sh!==false&&opt!=='b'&&opt!=='bn'){m.castShadow=true;m.receiveShadow=true}return m}
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+const GEO={puff:new THREE.SphereGeometry(.12,7,5),spark:new THREE.OctahedronGeometry(.045),bub:new THREE.SphereGeometry(.05,6,4),gb:new THREE.SphereGeometry(.03,6,4)};
+
+/* 정적인 늪 */
+const FF=[],BUBS=[];
+(function buildWorld(){
+ const g=mesh(new THREE.CircleGeometry(45,28),0x2c4636);g.rotation.x=-Math.PI/2;g.castShadow=false;scene.add(g);
+ for(let k=0;k<10;k++){const a=rnd()*TAU,r=10+rnd()*14,s=1.6+rnd()*2.6;const w=mesh(new THREE.CircleGeometry(s,14),0x33596a);w.rotation.x=-Math.PI/2;w.position.set(Math.sin(a)*r,.02,Math.cos(a)*r);w.castShadow=false;scene.add(w);
+  for(let q=0;q<3;q++){const l=mesh(new THREE.CircleGeometry(.28+rnd()*.2,7),0x5f9a4a);l.rotation.x=-Math.PI/2;l.position.set(w.position.x+(rnd()-.5)*s,.04,w.position.z+(rnd()-.5)*s);l.castShadow=false;scene.add(l)}}
+ for(let k=0;k<16;k++){const a=k/16*TAU+rnd()*.3,r=14+rnd()*9,t=new THREE.Group();
+  const tr=mesh(new THREE.CylinderGeometry(.16,.32,3.4,6),0x3e322d);tr.position.y=1.7;t.add(tr);
+  for(let b=0;b<3;b++){const br=mesh(new THREE.CylinderGeometry(.05,.1,1.4,5),0x3e322d);br.position.set(b%2?-.4:.4,2.2+b*.4,0);br.rotation.z=(b%2?1:-1)*(.7+rnd()*.4);t.add(br)}
+  for(let m=0;m<3;m++){const ms=mesh(new THREE.ConeGeometry(.11,.9,5),0x5a7a4a);ms.rotation.x=Math.PI;ms.position.set((rnd()-.5)*.9,2.3+rnd()*.7,(rnd()-.5)*.6);t.add(ms)}
+  t.position.set(Math.sin(a)*r,0,Math.cos(a)*r);t.rotation.y=rnd()*TAU;t.scale.setScalar(.9+rnd()*.6);scene.add(t)}
+ const moon=new THREE.Mesh(new THREE.SphereGeometry(1.6,16,12),M(0xfff3cf,'bn'));moon.position.set(-14,17,-26);scene.add(moon);
+ const sg=new THREE.BufferGeometry(),sp=[];for(let k=0;k<240;k++){const a=rnd()*TAU,e=.12+rnd()*1.25,r=38;sp.push(Math.cos(e)*Math.sin(a)*r,Math.sin(e)*r+2,Math.cos(e)*Math.cos(a)*r)}
+ sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xfff6dd,size:.2,fog:false})));
+ for(let k=0;k<30;k++){const m=new THREE.Mesh(new THREE.SphereGeometry(.035,5,4),M(0xd7ff7a,'b'));const a=rnd()*TAU,r=4.5+rnd()*9;m.userData={x:Math.sin(a)*r,z:Math.cos(a)*r,y:.6+rnd()*2.4,ph:rnd()*TAU,sp:.4+rnd()*.7};scene.add(m);FF.push(m)}
+})();
+
+/* 탁자·손님 (모드마다 다시 만든다) */
+const tableG=new THREE.Group();scene.add(tableG);
+let R=2.95,RS=3.57,TN=8;
+const SEATS=[];
+let carousel=null,cupObjs=[],hiRing=null,peekOrb=null,crystal=null,actRing=null,morg=null,crysM=[];
+let carCur=0,carExtra=0;
+const SKINS=[0xf3d3b5,0xe9bc98,0xd09a72,0xf7dfc8,0xc68b63];
+const GLOOK={knight:{body:0x9aa6b4,trim:0x3f5f9e},archer:{body:0x5d8f47,trim:0x8a6a3a},mage:{body:0x4f6cb8,trim:0xe6c35a},priest:{body:0xefe6cf,trim:0xd9a93a},shaman:{body:0x6c6a3c,trim:0xbfa27a},rogue:{body:0x4d4d5e,trim:0x8b2f3a}};
+function makeHat(g){const h=new THREE.Group();
+ if(g==='mage'){h.add(mesh(new THREE.CylinderGeometry(.34,.34,.03,10),0x3f5aa6));const c=mesh(new THREE.ConeGeometry(.22,.58,8),0x3f5aa6);c.position.y=.29;c.rotation.z=.12;h.add(c);const s=mesh(new THREE.OctahedronGeometry(.06),0xf2d16b);s.position.set(.05,.3,.19);h.add(s)}
+ else if(g==='knight'){const c=mesh(new THREE.CylinderGeometry(.215,.23,.2,8),0xb9c3cd);c.position.y=-.02;h.add(c);const v=mesh(new THREE.BoxGeometry(.3,.05,.05),0x2e3440);v.position.set(0,-.06,.2);h.add(v);const p=mesh(new THREE.ConeGeometry(.06,.28,5),0xd24b4b);p.position.y=.2;h.add(p)}
+ else if(g==='rogue'){const c=mesh(new THREE.ConeGeometry(.29,.55,8),0x55556a);c.position.y=.08;h.add(c);const m=mesh(new THREE.BoxGeometry(.36,.06,.05),0x1c1c24);m.position.set(0,-.08,.19);h.add(m)}
+ else if(g==='archer'){const c=mesh(new THREE.ConeGeometry(.24,.22,7),0x4f7f3a);c.position.y=.04;c.rotation.x=-.25;h.add(c);const f=mesh(new THREE.BoxGeometry(.03,.34,.06),0xf0d36b);f.position.set(.16,.14,-.04);f.rotation.z=-.5;h.add(f)}
+ else if(g==='priest'){const c=mesh(new THREE.CylinderGeometry(.1,.19,.36,4),0xf6f0de);c.position.y=.12;c.rotation.y=Math.PI/4;h.add(c);const b=mesh(new THREE.BoxGeometry(.05,.3,.05),0xd9a93a);b.position.set(0,.12,.12);h.add(b)}
+ else if(g==='shaman'){const m=mesh(new THREE.BoxGeometry(.3,.16,.06),0xe8dcc0);m.position.set(0,-.02,.19);h.add(m);for(const s of[-1,1]){const hn=mesh(new THREE.ConeGeometry(.05,.3,5),0xe8dcc0);hn.position.set(s*.16,.14,0);hn.rotation.z=-s*.5;h.add(hn)}const f=mesh(new THREE.BoxGeometry(.03,.26,.05),0x7fbf5a);f.position.set(-.08,.2,-.08);h.add(f)}
+ return h}
+function makeFrog(g){const f=new THREE.Group();const b=mesh(new THREE.SphereGeometry(.3,9,7),0x78c85a);b.scale.set(1.05,.72,1);b.position.y=.72;f.add(b);
+ const bl=mesh(new THREE.SphereGeometry(.22,8,6),0xcdeca4);bl.scale.set(1,.7,.6);bl.position.set(0,.68,.16);f.add(bl);
+ for(const s of[-1,1]){const e=mesh(new THREE.SphereGeometry(.1,8,6),0xffffff);e.position.set(s*.13,.95,.1);f.add(e);const pu=mesh(new THREE.SphereGeometry(.05,6,4),0x161616,null,false);pu.position.set(s*.13,.97,.19);f.add(pu);
+  const lg=mesh(new THREE.SphereGeometry(.12,6,5),0x66b04a);lg.scale.set(.8,.45,1.3);lg.position.set(s*.26,.55,.12);f.add(lg)}
+ const m=mesh(new THREE.TorusGeometry(.12,.015,4,10,Math.PI),0x2f5a24,null,false);m.position.set(0,.8,.24);m.rotation.z=Math.PI;f.add(m);
+ const hat=makeHat(g);hat.scale.setScalar(.75);hat.position.y=1.07;f.add(hat);return f}
+function makeGuest(p){const L=GLOOK[p.g]||GLOOK.mage,skin=pick(SKINS),root=new THREE.Group(),body=new THREE.Group();root.add(body);
+ const torso=mesh(new THREE.CylinderGeometry(.21,.33,.62,8),L.body);torso.position.y=.84;body.add(torso);
+ const belt=mesh(new THREE.CylinderGeometry(.3,.31,.06,8),L.trim);belt.position.y=.66;body.add(belt);
+ const head=mesh(new THREE.IcosahedronGeometry(.2,1),skin);head.position.y=1.33;body.add(head);
+ for(const s of[-1,1]){const e=mesh(new THREE.SphereGeometry(.028,6,4),0x1b1420,null,false);e.position.set(s*.075,1.36,.18);body.add(e)}
+ const hat=makeHat(p.g);hat.position.y=1.49;body.add(hat);
+ const arms=[];for(const s of[-1,1]){const pv=new THREE.Group();pv.position.set(s*.27,1.06,0);const a=mesh(new THREE.CylinderGeometry(.06,.055,.42,6),L.body);a.position.y=-.21;pv.add(a);const hd=mesh(new THREE.SphereGeometry(.07,6,5),skin);hd.position.y=-.43;pv.add(hd);pv.rotation.x=-1.05;body.add(pv);arms.push(pv)}
+ const frog=makeFrog(p.g);frog.visible=false;root.add(frog);
+ return{root,body,head,arms,frog,ph:rnd()*TAU,shake:0}}
+function makeCup(){const g=new THREE.Group();const b=mesh(new THREE.CylinderGeometry(.075,.085,.025,8),0xb7c0cc);b.position.y=.012;g.add(b);
+ const st=mesh(new THREE.CylinderGeometry(.022,.022,.1,6),0xb7c0cc);st.position.y=.07;g.add(st);
+ const bowl=mesh(new THREE.CylinderGeometry(.1,.055,.14,9),0xc9d4df);bowl.position.y=.19;g.add(bowl);
+ const liq=new THREE.Mesh(new THREE.CylinderGeometry(.088,.088,.012,9),M(0xa565ff,'b'));liq.position.y=.262;g.add(liq);
+ g.userData.liq=liq;return g}
+function buildCarousel(n){
+ if(carousel)tableG.remove(carousel);
+ carousel=new THREE.Group();carousel.position.y=.93;tableG.add(carousel);
+ const rc=n===8?1.0:.82;
+ const base=mesh(new THREE.CylinderGeometry(rc+.2,rc+.26,.09,24),0x4b2f5e);base.position.y=.045;carousel.add(base);
+ const rim=mesh(new THREE.TorusGeometry(rc+.2,.03,5,24),0xd9b25a,null,false);rim.rotation.x=Math.PI/2;rim.position.y=.09;carousel.add(rim);
+ const sp=mesh(new THREE.CylinderGeometry(.05,.11,.5,8),0xd9b25a);sp.position.y=.34;carousel.add(sp);
+ crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.13),M(0xc98bff,'b'));crystal.position.y=.68;carousel.add(crystal);
+ cupObjs=[];for(let j=0;j<n;j++){const a=j/n*TAU,c=makeCup();c.position.set(Math.sin(a)*rc,.09,Math.cos(a)*rc);c.userData.slot=c.position.clone();carousel.add(c);cupObjs.push(c)}
+ hiRing=new THREE.Mesh(new THREE.TorusGeometry(.15,.018,6,18),M(0xffd56b,'b'));hiRing.rotation.x=Math.PI/2;carousel.add(hiRing);
+ peekOrb=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshBasicMaterial({color:0xffffff}));peekOrb.visible=false;carousel.add(peekOrb);
+ crysM=[];for(let k=0;k<2;k++){const m=new THREE.Mesh(new THREE.OctahedronGeometry(.055),M(0xffe08a,'b'));m.visible=false;carousel.add(m);crysM.push(m)}
+ carousel.userData.n=n}
+function makeMorgana(){const g=new THREE.Group();
+ const robe=mesh(new THREE.ConeGeometry(.62,1.7,9),0x3b2350);robe.position.y=.85;g.add(robe);
+ const sh=mesh(new THREE.CylinderGeometry(.34,.42,.25,9),0x2b183c);sh.position.y=1.55;g.add(sh);
+ const hd=mesh(new THREE.IcosahedronGeometry(.27,1),0xa9cf8c);hd.position.y=1.92;g.add(hd);
+ for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(.04,6,4),M(0xffe066,'b'));e.position.set(s*.1,1.96,.23);g.add(e)}
+ const no=mesh(new THREE.ConeGeometry(.05,.18,5),0x95bd78);no.rotation.x=Math.PI/2;no.position.set(0,1.88,.3);g.add(no);
+ const br=mesh(new THREE.CylinderGeometry(.56,.56,.04,12),0x221632);br.position.y=2.12;g.add(br);
+ const hc=mesh(new THREE.ConeGeometry(.3,.8,9),0x221632);hc.position.y=2.52;g.add(hc);
+ const tip=mesh(new THREE.ConeGeometry(.12,.42,6),0x221632);tip.position.set(.12,3.0,0);tip.rotation.z=-.7;g.add(tip);
+ const staff=mesh(new THREE.CylinderGeometry(.035,.035,2.3,6),0x5a3d2a);staff.position.set(.6,1.15,.1);g.add(staff);
+ const orb=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),M(0x7dff8a,'b'));orb.position.set(.6,2.35,.1);g.add(orb);
+ for(const s of[-1,1]){const a=mesh(new THREE.CylinderGeometry(.07,.09,.7,6),0x3b2350);a.position.set(s*.42,1.3,.08);a.rotation.z=s*.35;g.add(a)}
+ g.userData.orb=orb;g.scale.setScalar(1.55);return g}
+function makeCauldron(){const g=new THREE.Group();
+ const pot=mesh(new THREE.SphereGeometry(.75,12,9,0,TAU,Math.PI*.28,Math.PI*.72),0x26242c);pot.position.y=.72;g.add(pot);
+ const liq=new THREE.Mesh(new THREE.CircleGeometry(.57,14),M(0x6dff85,'b'));liq.rotation.x=-Math.PI/2;liq.position.y=1.17;g.add(liq);
+ for(let k=0;k<3;k++){const a=k/3*TAU;const lg=mesh(new THREE.CylinderGeometry(.06,.06,.3,5),0x26242c);lg.position.set(Math.sin(a)*.45,.12,Math.cos(a)*.45);g.add(lg);
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.12,.35,5),M(0xff9a3c,'b'));fl.position.set(Math.sin(a+1)*.22,.15,Math.cos(a+1)*.22);g.add(fl)}
+ for(let k=0;k<6;k++){const b=new THREE.Mesh(GEO.bub,M(0x9dffad,'b'));b.userData={ph:rnd(),x:(rnd()-.5)*.6,z:(rnd()-.5)*.6};g.add(b);BUBS.push(b)}
+ const L=new THREE.PointLight(0x7dff8a,.9,7,2);L.position.y=1.7;g.add(L);return g}
+function seatPos(i,y){const a=SEATS[i]?SEATS[i].ang:i/TN*TAU;return V3(Math.sin(a)*RS,y,Math.cos(a)*RS)}
+function setSceneFog(thick){if(thick){scene.fog.near=2.2;scene.fog.far=RS+8}else{scene.fog.near=RS+9;scene.fog.far=RS+31}}
+function buildTable(N,players){
+ while(tableG.children.length)tableG.remove(tableG.children[0]);
+ carousel=null;SEATS.length=0;$('tags').innerHTML='';BUBS.length=0;
+ TN=N;R=N===12?3.75:2.95;RS=R+.62;setSceneFog(false);
+ const plat=mesh(new THREE.CylinderGeometry(RS+1.7,RS+1.8,.24,22),0x58402c);plat.position.y=.12;tableG.add(plat);
+ const top=mesh(new THREE.CylinderGeometry(R,R,.14,30),0x6a4630);top.position.y=.86;tableG.add(top);
+ const run=mesh(new THREE.RingGeometry(R*.52,R*.86,30),0x4a2f63,null,false);run.rotation.x=-Math.PI/2;run.position.y=.935;run.receiveShadow=true;tableG.add(run);
+ const leg=mesh(new THREE.CylinderGeometry(.35,.6,.8,10),0x5a3d2a);leg.position.y=.4;tableG.add(leg);
+ for(let k=0;k<4;k++){const a=k/4*TAU+Math.PI/4,pr=RS+1.35;const po=mesh(new THREE.CylinderGeometry(.07,.09,2.2,6),0x4a3424);po.position.set(Math.sin(a)*pr,1.2,Math.cos(a)*pr);tableG.add(po);
+  const ln=new THREE.Mesh(new THREE.BoxGeometry(.22,.28,.22),M(0xffd27a,'b'));ln.position.set(Math.sin(a)*pr,2.4,Math.cos(a)*pr);tableG.add(ln)}
+ morg=makeMorgana();morg.position.set(-1.7,0,-(RS+3.3));morg.rotation.y=Math.atan2(1.7,RS+3.3);tableG.add(morg);
+ const cd=makeCauldron();cd.position.set(1.5,0,-(RS+3.0));tableG.add(cd);
+ actRing=new THREE.Mesh(new THREE.TorusGeometry(.5,.035,6,24),M(0xffd479,'b'));actRing.rotation.x=Math.PI/2;actRing.visible=false;tableG.add(actRing);
+ for(let i=0;i<N;i++){const ang=i/N*TAU,S={ang};
+  if(i>0){const cg=new THREE.Group();cg.position.set(Math.sin(ang)*(RS+.05),0,Math.cos(ang)*(RS+.05));cg.rotation.y=ang+Math.PI;
+   const st=mesh(new THREE.BoxGeometry(.62,.08,.58),0x5a3d2a);st.position.y=.5;cg.add(st);const bk=mesh(new THREE.BoxGeometry(.62,.8,.08),0x5a3d2a);bk.position.set(0,.9,-.3);cg.add(bk);
+   for(const sx of[-1,1])for(const sz of[-1,1]){const l=mesh(new THREE.BoxGeometry(.06,.46,.06),0x4a3122);l.position.set(sx*.26,.25,sz*.24);cg.add(l)}
+   tableG.add(cg);
+   const p=players[i]||GUESTS[(i-1)%GUESTS.length];const parts=makeGuest(p);parts.root.position.set(Math.sin(ang)*RS,0,Math.cos(ang)*RS);parts.root.rotation.y=ang+Math.PI;tableG.add(parts.root);S.parts=parts;
+   const tg=document.createElement('div');tg.className='tag';$('tags').appendChild(tg);S.tag=tg}
+  SEATS.push(S)}
+ buildCarousel(N===12?8:6);carCur=0}
+
+/* 1인칭 손 (내가 마실 때만 아래에서 올라온다) */
+const FPH=[];
+{const h=new THREE.Group();const hd=mesh(new THREE.SphereGeometry(.045,8,6),0xf1c9a5,null,false);hd.scale.set(1.15,.9,1);h.add(hd);
+ const sl=mesh(new THREE.CylinderGeometry(.045,.056,.4,7),0x4a3470,null,false);sl.position.y=-.22;h.add(sl);
+ h.position.set(.16,-.7,-.42);h.userData.home=h.position.clone();h.visible=false;camera.add(h);FPH.push(h,h)}
+
+/* 트윈·파티클·떠오르는 글자 */
+const TW=[];let SPEED=+LS.get('wls_speed','1')||1;
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const easeBack=t=>{const c=1.7;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
+function tween(ms,fn,ease){return new Promise(res=>{if((G&&G.ff)||ms<=0){fn(1);res();return}TW.push({t:0,d:ms/SPEED,fn,ease:ease||easeIO,res})})}
+function flushTweens(){const a=TW.splice(0);for(const w of a){try{w.fn(1)}catch(e){}w.res()}}
+function stepTweens(dt){for(let i=TW.length-1;i>=0;i--){const w=TW[i];w.t+=dt*1000;const k=Math.min(1,w.t/w.d);w.fn(w.ease(k));if(k>=1){TW.splice(i,1);w.res()}}}
+const wait=ms=>(G&&G.ff)?Promise.resolve():new Promise(r=>setTimeout(r,ms/SPEED));
+const PARTS=[];
+function spawn(m,v,max,grow,grav){scene.add(m);PARTS.push({m,v,life:0,max,grow:grow||0,grav:grav||0})}
+function tmat(c,o){return new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o||.85,depthWrite:false})}
+function puff(pos,col,n){if(G&&G.ff)return;for(let k=0;k<n;k++){const m=new THREE.Mesh(GEO.puff,tmat(col));m.position.copy(pos).add(V3((rnd()-.5)*.3,(rnd()-.2)*.3,(rnd()-.5)*.3));spawn(m,V3((rnd()-.5)*1.2,rnd()*1.1+.3,(rnd()-.5)*1.2),.9+rnd()*.4,1.6)}}
+function sparkle(pos,col,n){if(G&&G.ff)return;for(let k=0;k<n;k++){const m=new THREE.Mesh(GEO.spark,tmat(col,1));m.position.copy(pos);spawn(m,V3((rnd()-.5)*2.2,rnd()*2+.5,(rnd()-.5)*2.2),.8+rnd()*.5,0,-3.2)}}
+function greenBub(pos){if(G&&G.ff)return;const m=new THREE.Mesh(GEO.gb,tmat(0x7dff6a,.95));m.position.copy(pos).add(V3((rnd()-.5)*.08,0,(rnd()-.5)*.08));spawn(m,V3((rnd()-.5)*.1,.55,(rnd()-.5)*.1),.9,.6)}
+function bubble(pos){if(G&&G.ff)return;const m=new THREE.Mesh(new THREE.SphereGeometry(.34,14,10),tmat(0x9fd8ff,.45));m.position.copy(pos);spawn(m,V3(0,0,0),.95,.9)}
+function stepParts(dt){for(let i=PARTS.length-1;i>=0;i--){const p=PARTS[i];p.life+=dt;const k=p.life/p.max;if(k>=1){scene.remove(p.m);p.m.material.dispose();if(!Object.values(GEO).includes(p.m.geometry))p.m.geometry.dispose();PARTS.splice(i,1);continue}
+ p.m.position.addScaledVector(p.v,dt);p.v.multiplyScalar(1-dt*1.8);if(p.grav)p.v.y+=p.grav*dt;if(p.grow)p.m.scale.setScalar(1+k*p.grow);p.m.material.opacity=(1-k)*.9;p.m.rotation.y+=dt*4}}
+const FLS=[];
+function floatAt(pos,text,cls){if(G&&G.ff)return;const el=document.createElement('div');el.className='fl '+(cls||'');el.textContent=text;$('floats').appendChild(el);FLS.push({el,pos:pos.clone(),life:0,max:cls==='e'?2.2:1.6})}
+const _v=new THREE.Vector3();
+function scr(pos){_v.copy(pos).project(camera);return{x:(_v.x+1)/2*innerWidth,y:(1-_v.y)/2*innerHeight,z:_v.z,nx:_v.x}}
+function updateFloats(dt){for(let i=FLS.length-1;i>=0;i--){const f=FLS[i];f.life+=dt;if(f.life>=f.max){f.el.remove();FLS.splice(i,1);continue}
+ const p=f.pos.clone();p.y+=f.life*.35;const s=scr(p);f.el.style.transform=`translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px) translate(-50%,-50%)`;f.el.style.opacity=s.z>1?0:(f.life>f.max*.7?1-(f.life-f.max*.7)/(f.max*.3):1)}}
+const camFront=()=>camera.localToWorld(V3(0,-.02,-1.1));
+const seatTagPos=i=>seatPos(i,1.75);
+
+/* 카메라·긴장 */
+let camMode='title',FOV0=62;
+const camLook=V3(0,.95,0),camLookT=V3(0,.95,0);
+function camBase(){const por=camera.aspect<.8;if(camMode==='frog')return{y:por?1.4:1.05,b:por?.9:-.05};return{y:por?2.1:1.62,b:por?1.3:.35}}
+function camFocus(i,k){const ly=camera.aspect<.8?1.15:1.05;if(i==null||i===0||!SEATS[i]){camLookT.set(0,camMode==='frog'?1.2:ly,0);return}const h=seatPos(i,1.25);camLookT.set(0,ly,0).lerp(h,k||.42)}
+const TENSE={on:false,hb:null};
+function layout(){const w=innerWidth,h=innerHeight;camera.aspect=w/h;FOV0=camera.aspect<.8?72:camera.aspect<1.2?66:58;camera.fov=FOV0-(TENSE.on?9:0);camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+function tenseCond(){return!!(G&&G.car&&!G.ff&&G.whim!=='fog'&&frogsLeft()>0&&(cupsLeft()<=2||odds()>=.5))}
+function setTense(on){if(G&&G.ff)on=false;if(TENSE.on===on)return;TENSE.on=on;$('tense').classList.toggle('on',on);
+ if(AU.ctx&&AU.music&&AU.musicOn)AU.music.gain.setTargetAtTime(on?.03:MUSIC_VOL,AU.ctx.currentTime,.25);
+ clearInterval(TENSE.hb);if(on){SFX.heart();TENSE.hb=setInterval(()=>SFX.heart(),760)}}
+addEventListener('resize',layout);layout();
+
+/* 화면 동기화 */
+const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;return d};
+function syncCups(){if(!G||!G.car||!carousel)return;const c=G.car,fog=G.whim==='fog';for(let j=0;j<cupObjs.length;j++)cupObjs[j].userData.liq.visible=fog||j>=c.idx;
+ const cur=cupObjs[Math.min(c.idx,cupObjs.length-1)];if(cur){hiRing.position.set(cur.userData.slot.x,.1,cur.userData.slot.z)}}
+let T=0,last=performance.now(),gT=0;
+function frame(nw){requestAnimationFrame(frame);const dt=Math.min(.05,(nw-last)/1000);last=nw;T+=dt;
+ stepTweens(dt);stepParts(dt);
+ const live=!!(G&&G.car&&camMode!=='title'&&!G.over);
+ if(carousel){let tgt=carCur+dt*.15;
+  if(G&&G.turn&&G.car&&camMode!=='title'){const n=carousel.userData.n;tgt=SEATS[G.turn.p].ang-Math.min(G.car.idx,n-1)/n*TAU}
+  carCur+=angDiff(tgt,carCur)*(1-Math.exp(-dt*5));carousel.rotation.y=carCur+carExtra;
+  crystal.rotation.y+=dt*1.5;crystal.position.y=.68+Math.sin(T*2)*.03;hiRing.scale.setScalar(1+Math.sin(T*5)*.08);
+  const hk=live?knows(G.ps[0]):null;
+  if(hk!==null&&cupObjs[G.car.idx]){const s=cupObjs[G.car.idx].userData.slot;peekOrb.visible=true;peekOrb.position.set(s.x,.5+Math.sin(T*4)*.03,s.z);peekOrb.material.color.setHex(hk?0x7dff6a:0xffd56b)}else peekOrb.visible=false;
+  const v=live?G.ps[0].vis:null;
+  for(let k=0;k<crysM.length;k++){const m=crysM[k];if(v&&v.stamp===G.car.stamp&&v.safe[k]>=G.car.idx&&cupObjs[v.safe[k]]){const s=cupObjs[v.safe[k]].userData.slot;m.visible=true;m.position.set(s.x,.42+Math.sin(T*3+k)*.03,s.z);m.rotation.y+=dt*2}else m.visible=false}
+  if(live){gT-=dt;if(gT<=0){gT=.26;if(glint()){const cup=cupObjs[G.car.idx];if(cup&&cup.parent===carousel){const p=cup.getWorldPosition(V3(0,0,0));p.y+=.27;greenBub(p)}}}}}
+ for(const f of FF){const u=f.userData;f.position.set(u.x+Math.sin(T*u.sp+u.ph)*.6,u.y+Math.sin(T*u.sp*1.7+u.ph)*.25,u.z+Math.cos(T*u.sp*.8+u.ph)*.6);f.visible=Math.sin(T*2.3+u.ph*3)>-.6}
+ for(const b of BUBS){const u=b.userData;u.ph=(u.ph+dt*.5)%1;b.position.set(u.x,1.17+u.ph*.55,u.z);b.scale.setScalar(1-u.ph*.6)}
+ if(morg){morg.rotation.z=Math.sin(T*.9)*.03;morg.userData.orb.scale.setScalar(1+Math.sin(T*3)*.12)}
+ for(let i=1;i<SEATS.length;i++){const P=SEATS[i].parts;if(!P)continue;if(P.shake>0)P.shake-=dt;P.body.position.y=Math.sin(T*1.6+P.ph)*.012;P.body.position.x=P.shake>0?Math.sin(T*60)*.025:0;if(P.frog.visible)P.frog.position.y=TENSE.on?0:Math.abs(Math.sin(T*2+P.ph))*.04}
+ if(actRing){const a=G&&G.turn&&!G.over&&camMode!=='title'?G.turn.p:null;if(a&&G.ps[a].alive){actRing.visible=true;const p=seatPos(a,.26);actRing.position.copy(p);actRing.scale.setScalar(1+Math.sin(T*4)*.06)}else actRing.visible=false}
+ const ft=FOV0-(TENSE.on?9:0);if(Math.abs(camera.fov-ft)>.02){camera.fov+=(ft-camera.fov)*(1-Math.exp(-dt*3.5));camera.updateProjectionMatrix()}
+ if(camMode==='title'){const a=T*.08;camera.position.set(Math.sin(a)*(RS+5.5),3.6,Math.cos(a)*(RS+5.5));camLook.set(0,1,0)}
+ else{const b=camBase();camera.position.lerp(V3(0,b.y,RS+b.b),1-Math.exp(-dt*3));camLook.lerp(camLookT,1-Math.exp(-dt*3.2))}
+ camera.lookAt(camLook);
+ renderer.render(scene,camera);
+ updateTags();updateFloats(dt)}
+function updateTags(){for(let i=1;i<SEATS.length;i++){const S=SEATS[i];if(!S.tag)continue;
+ if(camMode==='title'||!G){S.tag.style.display='none';continue}
+ const P=G.ps[i];const s=scr(seatPos(i,P&&!P.alive?1.35:1.95));
+ if(s.z>1||s.nx<-1.2||s.nx>1.2){S.tag.style.display='none';continue}
+ S.tag.style.display='';S.tag.style.transform=`translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px) translate(-50%,-100%)`}}
+requestAnimationFrame(frame);
+
+/* ================= UI ================= */
+const UI={res:null,myTurn:false,prophOn:LS.get('wls_proph','1')==='1',timers:[],mode:LS.get('wls_mode','8')==='12'?12:8,diff:Math.min(2,Math.max(0,+LS.get('wls_diff','1')||0)),pStake:+LS.get('wls_stake','25')||25,pFin:null,rpFin:null,chFin:null,gk:''};
+const LOGS=[];
+const nm=i=>i===0?'당신':G.ps[i].name;
+function log(s,cls){LOGS.unshift({s,cls:cls||''});LOGS.length=Math.min(LOGS.length,4);if(G&&G.ff)return;
+ $('log').innerHTML=LOGS.map((l,k)=>`<div class="${l.cls}${k?' o'+k:''}">${esc(l.s)}</div>`).join('')}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function status(s){$('status').textContent=s}
+function banner(a,b,ms){if(G&&G.ff)return;const el=$('banner');el.querySelector('.b1').textContent=a;el.querySelector('.b2').textContent=b||'';el.style.setProperty('--d',(ms||1400)+'ms');el.classList.remove('on');void el.offsetWidth;el.classList.add('on')}
+function tintFx(c){if(G&&G.ff)return;const el=$('tint');const col={gold:'rgba(255,214,110,.35)',green:'rgba(90,220,80,.5)',blue:'rgba(120,200,255,.4)',purple:'rgba(170,110,255,.4)'}[c];el.style.background=`radial-gradient(ellipse at center,rgba(0,0,0,0) 30%,${col})`;el.classList.remove('on');void el.offsetWidth;el.classList.add('on')}
+const relicIcons=P=>P.relics.map(r=>RELICS[r].e).join('');
+function curTells(){const c=G.car;return c?G.tells.filter(x=>x.stamp===c.stamp&&x.idx===c.idx):[]}
+function clues(di){const c=G.car,out=[];if(!c)return out;const same=x=>x.stamp===c.stamp&&x.idx===c.idx,t=G.turn;
+ if(glint())out.push('🫧 잔에서 초록 기포가 올라온다');
+ for(const x of curTells()){const T_=TELLS[x.emo];out.push(`${T_.e} ${G.ps[x.pi].name}(엿봄): ${T_.d}`)}
+ if(t&&t.from!=null&&t.from!==0&&G.peeks.some(x=>same(x)&&x.pi===t.from))out.push(`↪️ ${G.ps[t.from].name} 엿보고 넘겼다`);
+ if(di!=null&&di!==0&&G.peeks.some(x=>same(x)&&x.pi===di))out.push(`🔍 ${G.ps[di].name} 엿보고 직접 마신다`);
+ return out}
+function knowText(P){const k=kinfo(P);if(!k)return null;const r=k.frog?'🐸 개구리 잔!':'✨ 맑은 잔';return{peek:'🔍 엿본 지금 잔: ',crow:'👁️ 까마귀 눈으로 본 잔: ',crystal:'🔮 수정구가 알려 준 잔: '}[k.src]+r}
+function refreshTags(){if(!G)return;const ct=curTells();for(let i=1;i<SEATS.length;i++){const S=SEATS[i],P=G.ps[i];if(!S.tag||!P)continue;const pe=PERS[P.pe];
+ S.tag.className='tag'+(P.alive?'':' frog')+(G.turn&&G.turn.p===i&&P.alive&&!G.over?' act':'');
+ const tl=P.alive?ct.find(x=>x.pi===i):null,ri=relicIcons(P);
+ S.tag.innerHTML=(P.alive?`<b>${pe.e} ${esc(P.name)}</b><span class="s">🃏${P.hand.length} · ✦${P.star}${ri?' · '+ri:''}${P.cursed?' · 🧿':''}</span>`:`<b>🐸 ${esc(P.name)}</b><span class="s">${P.rank}위</span>`)
+  +(tl?`<span class="tl">${TELLS[tl.emo].e} ${TELLS[tl.emo].d}</span>`:'')+(P.bet?`<span class="bet">🔮${P.bet.side==='frog'?'🐸':'✨'} ${P.bet.stake}</span>`:'')}}
+function refreshHud(){if(!G)return;const hu=G.ps[0],W=WHIMS[G.whim],ri=relicIcons(hu);
+ $('hStar').textContent=`✦ ${hu.star}${ri?' · '+ri:''}`;$('hWhim').textContent=`${W.e} ${W.n}`;
+ $('hRound').textContent=`🌙 잔치 ${G.round}`;$('hAlive').textContent=`🧑 ${aliveCount()}/${G.N}`;$('hDir').textContent=G.dir===1?'진행 ➡':'⬅ 진행';
+ if(!G.car){$('infoNote').classList.add('hide');$('hCups').textContent='🧪 …';$('hOdds').textContent='🐸 …';$('hOb').classList.add('hide');return}const c=G.car,fog=G.whim==='fog';
+ if(fog){$('hCups').textContent='🧪 ❓❓❓';$('hOdds').textContent='🐸 ? · ??%'}
+ else{let s='🧪 ';for(let j=0;j<c.n;j++)s+=`<i class="${j<c.idx?'d':j===c.idx?'c':''}">${j<c.idx?'○':'●'}</i>`;$('hCups').innerHTML=s;$('hOdds').textContent=`🐸 ${frogsLeft()}/${cupsLeft()} · ${Math.round(odds()*100)}%`}
+ $('hDir').textContent=G.dir===1?'진행 ➡':'⬅ 진행';
+ const t=G.turn,ob=t&&t.ob>1;$('hOb').classList.toggle('hide',!ob);if(ob)$('hOb').textContent=`✌️ ${t.ob}잔 차례`;
+ const parts=[],kt=knowText(hu);if(kt)parts.push(kt);if(!G.over)for(const x of clues(t?t.p:null))parts.push(x);
+ $('infoNote').classList.toggle('hide',!parts.length);if(parts.length)$('infoNote').textContent=parts.join(' · ');
+ const gk=c.stamp+'_'+c.idx;if(!G.over&&glint()&&UI.gk!==gk){UI.gk=gk;log('🫧 지금 잔에서 초록 기포가 올라온다…','f');SFX.glint()}}
+function playable(c){if(!UI.myTurn||G.whim==='silence')return false;if(c==='anti')return false;if(c==='back')return canBack(0);if(c==='point')return pointTargets(0).length>0;return true}
+function renderHand(){const el=$('hand');el.innerHTML='';if(!G)return;const hu=G.ps[0];
+ for(let k=0;k<HAND_MAX;k++){const c=hu.hand[k],b=document.createElement('button');
+  if(!c){b.className='card emp';b.disabled=true;el.appendChild(b);continue}
+  const C=CARDS[c];b.className='card'+(c==='anti'?' pas':'')+(playable(c)?' on':'');b.innerHTML=`<span class="ce">${C.e}</span>${C.n}`;b.onclick=()=>openCard(c);el.appendChild(b)}}
+function closePanels(){for(const id of['cardPop','pickPop','shop','roster'])$(id).classList.add('hide')}
+function showControls(on){UI.myTurn=on;const t=G.turn,hu=G.ps[0];$('bDrink').disabled=!on;$('bShop').disabled=!on||t.bought||hu.hand.length>=HAND_MAX||G.whim==='silence';
+ if(on){$('bDrink').innerHTML=t.ob>1?`🧪 마시기<small>${t.ob}잔 남음</small>`:'🧪 마시기';
+  let st=`🧪 당신의 차례 — 개구리 확률 ${G.whim==='fog'?'??':Math.round(odds()*100)}%`;if(t.from!=null)st+=` · ${nm(t.from)}에게서 넘어옴`;if(G.whim==='silence')st+=' · 🤫 카드 금지';status(st)}
+ else $('bDrink').innerHTML='🧪 마시기';
+ renderHand()}
+function act(a){if(!UI.res)return;const r=UI.res;UI.res=null;closePanels();showControls(false);r(a)}
+function openInfo(e,n,d){closePanels();$('cpE').textContent=e;$('cpN').textContent=n;$('cpD').innerHTML=d;$('cpUse').classList.add('hide');$('cardPop').classList.remove('hide')}
+function openCard(c){const C=CARDS[c];closePanels();$('cpE').textContent=C.e;$('cpN').textContent=C.n;
+ let d=esc(C.d);if(c==='back'&&UI.myTurn&&!canBack(0))d+=' (지금은 카드로 넘어온 차례가 아니다)';if(G&&G.whim==='silence')d+='<br>🤫 침묵 — 이번 잔치엔 카드를 쓸 수 없다';$('cpD').innerHTML=d;
+ const u=$('cpUse');u.classList.remove('hide');u.disabled=!playable(c);u.textContent=c==='anti'?'자동 발동':UI.myTurn?'사용':'내 차례에 사용';
+ u.onclick=()=>{if(!playable(c))return;if(c==='point')openPick();else act({type:'card',c})};$('cardPop').classList.remove('hide')}
+function openPick(){closePanels();$('pickT').innerHTML='👉 누구를 지목할까? <small>좌우 2칸 이내</small>';$('pickCancel').classList.remove('hide');const el=$('pickList');el.innerHTML='';
+ for(const i of pointTargets(0)){const P=G.ps[i],b=document.createElement('button');
+  b.innerHTML=`<span>${PERS[P.pe].e} ${esc(P.name)}<small>${GUILDS[P.g].n} · ${PERS[P.pe].n}${P.relics.length?' · '+relicIcons(P):''}</small></span><span class="pr">🃏${P.hand.length}</span>`;b.onclick=()=>act({type:'card',c:'point',target:i});el.appendChild(b)}
+ $('pickPop').classList.remove('hide')}
+function openShop(){if(!UI.myTurn||G.whim==='silence')return;closePanels();const hu=G.ps[0],el=$('shopList');el.innerHTML='';
+ for(const c of CK){const C=CARDS[c],b=document.createElement('button');b.disabled=hu.star<C.price||G.turn.bought||hu.hand.length>=HAND_MAX;
+  b.innerHTML=`<span>${C.e} ${C.n}<small>${C.d}</small></span><span class="pr">✦${C.price}</span>`;b.onclick=()=>act({type:'buy',c});el.appendChild(b)}
+ $('shop').classList.remove('hide')}
+function openRoster(){if(!G)return;const el=$('rosterList');el.innerHTML='';
+ for(let i=0;i<G.N;i++){const P=G.ps[i],d=document.createElement('div');d.className=(P.alive?'':'dead')+(i===0?' me':'');
+  const who=i===0?`👤 ${esc(P.name)} (나)`:`${PERS[P.pe].e} ${esc(P.name)} <small>${GUILDS[P.g].e}${GUILDS[P.g].n}</small>`;
+  d.innerHTML=`<span>${P.alive?'':'🐸 '}${who}${P.relics.length?' '+relicIcons(P):''}</span><span>${P.alive?`🃏${P.hand.length} `:P.rank+'위 '}✦${P.star} 🧪${P.drinks}</span>`;el.appendChild(d)}
+ $('roster').classList.remove('hide')}
+function openMyRelics(){if(!G)return;const hu=G.ps[0];if(!hu.relics.length){openInfo('🏺','유물 없음','잔치가 바뀔 때 모르가나의 유물 좌판에서 별빛으로 살 수 있다.');return}
+ openInfo('🏺','내 유물',hu.relics.map(r=>`${RELICS[r].e} <b>${RELICS[r].n}</b> — ${RELICS[r].d}`).join('<br>'))}
+
+/* 연출 */
+async function spinAnim(ms){SFX.refill();sparkle(V3(0,1.45,0),0xc98bff,14);let half=false;
+ await tween(ms||850,k=>{carExtra=k*TAU*2;if(k>.5&&!half){half=true;syncCups()}});carExtra=0;syncCups()}
+function toFrog(pi,instant){
+ if(pi===0){SFX.frog();tintFx('green');const cv=$('cv');cv.classList.add('wob');setTimeout(()=>cv.classList.remove('wob'),1350);camMode='frog';cv.classList.add('frogv');$('vign').classList.add('on');FPH.forEach(h=>h.visible=false);camFocus(null);return}
+ const S=SEATS[pi];if(!instant){SFX.frog();puff(S.parts.root.position.clone().setY(1.0),0x8fe36b,14)}
+ S.parts.body.visible=false;S.parts.frog.visible=true;
+ if(!instant){S.parts.frog.scale.setScalar(.01);tween(420,k=>S.parts.frog.scale.setScalar(.01+k*.99),easeBack)}}
+async function returnCup(cup){const from=cup.getWorldPosition(V3(0,0,0));if(cup.parent)cup.parent.remove(cup);scene.add(cup);cup.position.copy(from);cup.rotation.set(0,0,0);cup.rotation.order='XYZ';
+ const slotW=carousel.localToWorld(cup.userData.slot.clone());
+ await tween(380,k=>{cup.position.lerpVectors(from,slotW,k);cup.position.y+=Math.sin(k*Math.PI)*.2});
+ scene.remove(cup);carousel.add(cup);cup.position.copy(cup.userData.slot);cup.rotation.set(0,0,0)}
+async function drinkAnim(pi,frog,saved){
+ const cup=cupObjs[G.car.idx],tense=TENSE.on,slow=tense?1.7:1;
+ if(G.ff||!cup){if(cup)cup.userData.liq.visible=false;if(frog&&!saved)toFrog(pi,true);return}
+ SFX.lift();const wp=cup.getWorldPosition(V3(0,0,0));carousel.remove(cup);
+ if(pi===0){camera.add(cup);const from=camera.worldToLocal(wp.clone());cup.rotation.set(0,0,0);const to=V3(.03,-.17,-.4),h=FPH[1],hh=h.userData.home.clone(),hto=V3(.035,-.11,-.39);h.visible=true;
+  await tween(620*slow,k=>{cup.position.lerpVectors(from,to,k);cup.position.y+=Math.sin(k*Math.PI)*.08;h.position.lerpVectors(hh,hto,k)});
+  if(tense)await wait(500);
+  SFX.gulp();await tween(430*slow,k=>{cup.rotation.x=k*1.15;cup.position.y=-.17+k*.05})}
+ else{const S=SEATS[pi];scene.add(cup);cup.position.copy(wp);cup.rotation.order='YXZ';cup.rotation.set(0,S.ang+Math.PI,0);
+  const head=S.parts.head.getWorldPosition(V3(0,0,0)),dir=V3(-Math.sin(S.ang),0,-Math.cos(S.ang)),to=head.clone().addScaledVector(dir,.24);to.y-=.16;const arm=S.parts.arms[1];
+  await tween(620*slow,k=>{cup.position.lerpVectors(wp,to,k);cup.position.y+=Math.sin(k*Math.PI)*.3;arm.rotation.x=-1.05-k*1.0});
+  if(tense)await wait(450);
+  SFX.gulp();await tween(430*slow,k=>{cup.rotation.x=-k*1.2;arm.rotation.x=-2.05-k*.35})}
+ cup.userData.liq.visible=false;await wait(tense?450:200);
+ setTense(false);
+ const at=pi===0?camFront():SEATS[pi].parts.head.getWorldPosition(V3(0,0,0));
+ if(!frog){SFX.safe();sparkle(at,0xffe08a,16);floatAt(at,'✨ 무사!','g');if(pi===0)tintFx('gold')}
+ else if(saved){SFX.shield();bubble(at);floatAt(at,'🛡️ 해독제!','b');if(pi===0)tintFx('blue')}
+ else{toFrog(pi,false);floatAt(at,'🐸 개굴!','f');if(morg)tween(700,k=>morg.position.y=Math.abs(Math.sin(k*Math.PI*3))*.25,t=>t)}
+ await returnCup(cup);
+ if(pi!==0)SEATS[pi].parts.arms[1].rotation.x=-1.05;else{FPH[1].position.copy(FPH[1].userData.home);FPH[1].visible=false}
+ syncCups()}
+function clearBets(){for(const P of G.ps)P.bet=null}
+function revealBets(bets){for(const b of bets)G.ps[b.pi].bet=b;refreshTags()}
+const MLINES=['개굴개굴~ 아주 잘 어울리는구나!','히히, 연잎 위가 더 편하지?','저주는 공평하단다~','다음 잔은 누구 차례일까?','늪의 손님이 하나 늘었네~'];
+
+/* 엔진 훅 */
+H={
+ relicShop(offers){return new Promise(res=>{const hu=G.ps[0],W=WHIMS[G.whim];closePanels();refreshHud();refreshTags();
+  $('rpT').textContent=G.round===1?'🏺 연회 입장 — 모르가나의 유물 좌판':`🏺 ${G.round}번째 잔치 — 모르가나의 유물 좌판`;
+  $('rpInfo').innerHTML=`이번 잔치의 변덕: <b>${W.e} ${W.n}</b> — ${esc(W.d)}<br>내 별빛 <b>✦${hu.star}</b>${hu.relics.length?' · 가진 유물 '+relicIcons(hu):''}<br><small>산 유물 값은 점수에 그대로 남는다</small>`;
+  const el=$('rpList');el.innerHTML='';
+  const done=v=>{if(!UI.rpFin)return;UI.rpFin=null;$('relicPop').classList.add('hide');res(v)};UI.rpFin=done;
+  for(const r of offers){const R_=RELICS[r],b=document.createElement('button'),own=has(hu,r);b.disabled=own||hu.star<R_.price;if(own)b.className='own';
+   b.innerHTML=`<span>${R_.e} ${R_.n}${own?' (보유)':''}<small>${R_.d}</small></span><span class="pr">✦${R_.price}</span>`;b.onclick=()=>done(r);el.appendChild(b)}
+  $('rpSkip').onclick=()=>done(null);
+  status('🏺 잔치 사이 — 유물을 하나 살 수 있다');$('relicPop').classList.remove('hide');SFX.chime()})},
+ async relics(list){if(!list.length)return;const mine=list.find(x=>x.pi===0),others=list.filter(x=>x.pi!==0);
+  if(mine){const R_=RELICS[mine.r];log(`🏺 ${R_.e} ${R_.n} 손에 넣었다!`,'g');SFX.relic();tintFx('purple')}
+  if(others.length)log('🏺 '+others.map(x=>`${G.ps[x.pi].name}${RELICS[x.r].e}`).join(' · ')+' 유물을 샀다');
+  refreshHud();refreshTags();await wait(mine?500:250)},
+ async round(first){
+  setTense(false);
+  if(!carousel||carousel.userData.n!==G.car.n){if(!first)puff(V3(0,1.2,0),0xb48cff,18);buildCarousel(G.car.n);if(!first)log('🧙‍♀️ 모르가나: "손님이 줄었으니 회전대도 작게 바꿔 주지~"','m')}
+  setSceneFog(G.whim==='fog');
+  syncCups();refreshHud();refreshTags();camFocus(G.turn.p);renderHand();
+  const W=WHIMS[G.whim];status(`${W.e} ${W.n}`);
+  if(first){banner('🌙 연회의 시작',`회전대 ${G.car.n}잔 · 개구리 물약 ${G.car.f}`,1600);log('🧙‍♀️ 모르가나: "자, 한 잔씩 돌려 마셔 볼까? 개구리 저주가 든 잔도 있단다~"','m')}
+  else{banner(`${W.e} ${W.n}`,`${G.round}번째 잔치 · ${W.d}`,2300);SFX.whim();log(`🧙‍♀️ 모르가나의 변덕: ${W.e} ${W.n} — ${W.d}`,'m')}
+  if(G.whim==='candle')log('🕯️ 촛불 의식 — 모두에게 🔍 엿보기 1장');
+  if(has(G.ps[0],'holy')&&G.ps[0].alive)log('💧 새벽 성수 — 카드 1장을 받았다','g');
+  await spinAnim();refreshHud();await wait(first?900:1100)},
+ async turn(pi){refreshHud();refreshTags();camFocus(pi);status(pi===0?'🧪 당신의 차례!':`▶ ${G.ps[pi].name}의 차례`);
+  if(pi===0){SFX.myturn();setTense(tenseCond())}else setTense(false);await wait(pi===0?250:550)},
+ async cursed(pi){log(`🧿 저주 거울 — ${nm(pi)} 한 잔 더 마셔야 한다! (${G.turn.ob}잔)`,'m');floatAt(pi===0?camFront():seatTagPos(pi),'🧿 +1잔','s');refreshHud();refreshTags();await wait(600)},
+ async think(){await wait(420+rnd()*420)},
+ human(){return new Promise(res=>{UI.res=res;showControls(true)})},
+ choose(o){return new Promise(res=>{closePanels();$('pickT').innerHTML='🍯 늪꿀 사탕 — 한 장을 골라 받자';$('pickCancel').classList.add('hide');const el=$('pickList');el.innerHTML='';
+  const done=c=>{if(!UI.chFin)return;UI.chFin=null;$('pickPop').classList.add('hide');res(c)};UI.chFin=done;
+  o.forEach(c=>{const C=CARDS[c],b=document.createElement('button');b.innerHTML=`<span>${C.e} ${C.n}<small>${C.d}</small></span>`;b.onclick=()=>done(c);el.appendChild(b)});
+  $('pickPop').classList.remove('hide')})},
+ async card(pi,c,to,ex){ex=ex||{};const C=CARDS[c];setTense(false);SFX.card();floatAt(pi===0?camFront():seatTagPos(pi),`${C.e} ${C.n}`,'s');let msg=`${nm(pi)} · ${C.e} ${C.n}`;
+  if(c==='peek'){const cup=cupObjs[G.car.idx];if(cup){const cp=cup.getWorldPosition(V3(0,0,0));cp.y+=.45;floatAt(cp,'👁️','s')}
+   if(pi===0){const f=knows(G.ps[0]);msg+=f?' → 🐸 개구리 잔이다!':' → ✨ 맑은 잔이다';if(f)SFX.bad();else SFX.chime()}
+   else{msg+=' (몰래 들여다봤다)';if(ex.tell){const T_=TELLS[ex.tell],S=SEATS[pi];if(ex.tell==='sweat'&&S.parts)S.parts.shake=1.4;
+     setTimeout(()=>{floatAt(seatPos(pi,1.55),T_.e,'e');log(`${T_.e} ${G.ps[pi].name} — ${T_.d}`)},350/SPEED)}}
+   if(ex.crow&&ex.crow.includes(0)&&pi!==0){const f=knows(G.ps[0]);setTimeout(()=>{log(`👁️ 까마귀 눈: ${G.ps[pi].name}의 잔을 함께 봤다 → ${f?'🐸 개구리 잔!':'✨ 맑은 잔'}`,'g');SFX.chime();refreshHud()},500/SPEED)}}
+  else if(c==='spin'){msg+=' — 확률이 처음으로';log(msg,pi===0?'g':'');refreshHud();await spinAnim();refreshHud();refreshTags();if(pi===0)renderHand();await wait(250);return}
+  else if(to!=null){msg+=` → ${nm(to)}`;if(c==='double')msg+=` (${G.turn.ob}잔)`;if(c==='rev')msg+=' (방향 반전)'}
+  log(msg,pi===0?'g':'');
+  if(ex.feather)log(`🪶 잿빛 깃털 — ${nm(pi)} ✦+15`,pi===0?'g':'');
+  if(ex.mirror)log(`🧿 ${nm(to)}의 저주 거울 — ${nm(pi)} 다음 차례에 한 잔 더`,'m');
+  refreshHud();refreshTags();if(pi===0)renderHand();await wait(c==='peek'?(pi===0?900:1100):700)},
+ async again(pi){refreshHud();status(pi===0?`🧪 한 잔 더! (남은 ${G.turn.ob}잔)`:`▶ ${G.ps[pi].name} — 한 잔 더 (${G.turn.ob})`);await wait(350)},
+ prophecy(di,p,m,bets){return new Promise(res=>{
+  const hu=G.ps[0];
+  if(!UI.prophOn){revealBets(bets);setTimeout(()=>res(null),Math.min(700,150+bets.length*90)/SPEED);return}
+  const D=G.ps[di];$('pWho').textContent=`🔮 예언 · ${D.name}의 잔`;
+  $('pOdds').textContent=G.whim==='fog'?'🌫️ 늪안개 — 확률을 알 수 없다':`개구리 확률 ${Math.round(p*100)}% (남은 ${cupsLeft()}잔 중 🐸${frogsLeft()})`+(G.whim==='silence'?' · 🤫 보상 ×2':'');
+  const kt=knowText(hu);$('pKnow').classList.toggle('hide',!kt);if(kt)$('pKnow').textContent=kt;
+  const cl=clues(di);$('pClues').innerHTML=cl.length?'👀 단서<br>'+cl.map(esc).join('<br>'):'<span style="opacity:.6">👀 눈에 띄는 단서가 없다</span>';
+  const fm=has(hu,'crown')?m.frog*1.5:m.frog;
+  $('pFm').textContent=`적중 ×${fm.toFixed(2)}${has(hu,'crown')?' 👑':''}`;$('pSm').textContent=`적중 ×${m.safe.toFixed(2)}`;
+  const setSt=()=>{for(const b of $('pStakes').querySelectorAll('button')){const s=+b.dataset.s;b.disabled=s>hu.star;b.classList.toggle('sel',s===UI.pStake)}};
+  if(UI.pStake>hu.star)UI.pStake=hu.star>=25?25:10;setSt();
+  for(const b of $('pStakes').querySelectorAll('button'))b.onclick=()=>{UI.pStake=+b.dataset.s;LS.set('wls_stake',UI.pStake);setSt()};
+  $('pOthers').innerHTML='';
+  const dur=(cl.length||kt?5600:4300)/Math.min(SPEED,1.6);let done=false,to=null;
+  const fin=v=>{if(done)return;done=true;clearTimeout(to);UI.timers.forEach(clearTimeout);UI.timers=[];UI.pFin=null;$('proph').classList.add('hide');revealBets(bets);
+   if(v)log(`🔮 예언: ${v.side==='frog'?'🐸 개구리 잔':'✨ 맑은 잔'} · ✦${v.stake}`,'g');res(v)};
+  UI.pFin=fin;
+  $('pFrog').onclick=()=>fin({side:'frog',stake:Math.min(UI.pStake,hu.star)});
+  $('pSafe').onclick=()=>fin({side:'safe',stake:Math.min(UI.pStake,hu.star)});
+  $('pSkip').onclick=()=>fin(null);
+  const bar=$('pBar');bar.style.transition='none';bar.style.width='100%';void bar.offsetWidth;bar.style.transition=`width ${dur}ms linear`;bar.style.width='0%';
+  $('proph').classList.remove('hide');SFX.chime();
+  bets.forEach(b=>{UI.timers.push(setTimeout(()=>{if(done)return;const P=G.ps[b.pi];P.bet=b;refreshTags();const sp=document.createElement('span');sp.textContent=`${P.name} ${b.side==='frog'?'🐸':'✨'}${b.stake}`;$('pOthers').appendChild(sp)},(250+rnd()*1900)/Math.min(SPEED,1.6)))});
+  to=setTimeout(()=>fin(null),dur)})},
+ async bets(bets){revealBets(bets);await wait(450)},
+ async drink(pi,frog,saved){status(pi===0?'🧪 꿀꺽…':`🧪 ${G.ps[pi].name} — 꿀꺽…`);
+  if(tenseCond()){setTense(true);if(pi!==0)camFocus(pi,.6)}
+  await drinkAnim(pi,frog,saved);setTense(false)},
+ async payout(res){let my=null;for(const r of res){if(r.pi===0)my=r;else if(r.win&&G.ps[r.pi].alive)floatAt(seatTagPos(r.pi),`+✦${r.pay}`,'s')}
+  if(my){if(my.win){log(`🔮 예언 적중! +✦${my.pay}`,'g');floatAt(camFront(),`🔮 +✦${my.pay}`,'g');SFX.chime()}else log(`🔮 예언이 빗나갔다… ✦${my.stake}를 잃었다`)}
+  const ws=res.filter(r=>r.win&&r.pi!==0).length;if(ws)log(`🔮 예언을 맞힌 손님 ${ws}명`);
+  refreshHud();await wait(750);clearBets();refreshTags()},
+ async saved(pi){log(`🛡️ ${nm(pi)} 해독제로 버텼다! 모르가나가 회전대를 새로 채운다`,'g');await spinAnim();refreshHud();refreshTags();if(pi===0)renderHand();await wait(300)},
+ async draw(pi,c){if(pi===0){log(`🃏 버틴 보상: ${CARDS[c].e} ${CARDS[c].n}`,'g');renderHand()}refreshTags();refreshHud()},
+ async swirl(){log('🌀 소용돌이 — 진행 방향이 뒤집혔다','m');refreshHud();await wait(300)},
+ async rain(){log('🌧️ 늪비 — 회전대가 새로 채워진다','m');await spinAnim(480);refreshHud();refreshTags()},
+ async buy(pi,c){if(pi===0){log(`🛒 좌판에서 ${CARDS[c].e} ${CARDS[c].n} 구매`,'g');renderHand()}else log(`🛒 ${nm(pi)} 좌판에서 카드 1장을 샀다`);SFX.chime();refreshTags();refreshHud();await wait(pi===0?150:500)},
+ async frog(pi){const P=G.ps[pi];setTense(false);refreshTags();refreshHud();
+  if(pi===0){banner('🐸 개구리가 되었다…','개굴. 남은 연회를 지켜보며 예언으로 별빛을 모으자',2400);log(`🐸 당신은 개구리가 되었다! (${P.rank}위)`,'f');$('ctrl').classList.add('hide');if(aliveCount()>1){$('ff').classList.remove('hide');status('🐸 관전 중 — 예언은 계속할 수 있다')}}
+  else{log(`🐸 ${P.name} 개구리가 되었다! — ${P.rank}위`,'f');if(rnd()<.6)log(`🧙‍♀️ 모르가나: "${pick(MLINES)}"`,'m')}
+  await wait(pi===0?1900:1100)},
+ async over(){const hu=G.ps[0],w=G.ps.find(p=>p.rank===1);setTense(false);setSceneFog(false);$('ff').classList.add('hide');if(UI.pFin)UI.pFin(null);refreshTags();refreshHud();status('');$('infoNote').classList.add('hide');
+  if(hu.rank===1){banner('🏆 마지막까지 사람으로!','모르가나의 연회에서 살아남았다',2400);SFX.win();sparkle(camFront(),0xffe08a,30)}
+  else{banner(`🐸 ${w?w.name:''} 최후의 생존!`,`당신은 ${hu.rank}위`,2200);SFX.lose()}
+  await wait(2300);finish();showResult()}
+};
+
+/* 결과 */
+function finish(){const hu=G.ps[0],rank=hu.rank||1,secs=Math.max(1,Math.round(((G.t1||Date.now())-G.t0)/1000)),D=DIFFS[G.diff],Mo=MODES[G.mode];
+ const score=calcScore(G.mode,G.diff,rank,hu.drinks,hu.star,hu.relicVal),date=ymd(),nonce=Math.random().toString(36).slice(2,8).padEnd(6,'0');
+ const rc=hu.relics.join('.')||'-';
+ const payload=['2',hu.name,G.mode,G.diff,rank,hu.drinks,hu.star,hu.relicVal,rc,hu.hits,hu.tries,secs,date,nonce,score].join('~');
+ const code='WS2.'+b64e(payload)+'.'+sign(payload);
+ const ptime=Math.floor(secs/60)+'분 '+(secs%60)+'초',dstr=date.slice(0,4)+'-'+date.slice(4,6)+'-'+date.slice(6),mult=+(Mo.M*D.M).toFixed(2);
+ const rtxt=hu.relics.length?relicIcons(hu)+' (✦'+hu.relicVal+')':'없음';
+ const text=['🧪 마녀의 마지막 잔 — 늪의 연회 기록','👤 플레이어: '+hu.name,'🪑 연회: '+Mo.n+' (×'+Mo.M+')','🎚️ 난이도: '+D.n+' (×'+D.M+')',
+  '🏆 순위: '+rank+'위 / '+G.mode+'명'+(rank===1?' — 마지막까지 사람으로!':''),'🧪 버틴 잔: '+hu.drinks+'잔','🔮 예언 적중: '+hu.hits+' / '+hu.tries+'회','✦ 남은 별빛: '+hu.star,'🏺 유물: '+rtxt,
+  '⌛ 플레이 시간: '+ptime,'📅 날짜: '+dstr,'💯 점수: '+fmt(score),'🔐 검증코드: '+code,'🔎 점수검증기: '+VERIFY_URL].join('\n');
+ const bk='wls_best_'+G.mode+'_'+G.diff,best=parseInt(LS.get(bk,'0'),10)||0,isBest=score>best;if(isBest)LS.set(bk,score);
+ G.res={rank,score,text,isBest,rows:[['연회',Mo.n],['난이도',D.e+' '+D.n],['순위',rank+'위 / '+G.mode+'명'],['순위 점수',fmt((G.mode-rank)*100)],['1위 보너스',rank===1?'500':'0'],
+  ['버틴 잔 ×30',hu.drinks+'잔 → '+fmt(hu.drinks*30)],['남은 별빛',fmt(hu.star)],['유물 값',hu.relics.length?relicIcons(hu)+' '+fmt(hu.relicVal):'0'],['예언 적중',hu.hits+' / '+hu.tries+'회'],['배율','×'+mult],['플레이 시간',ptime]]};
+ window.__wlsLast=G.res}
+function showResult(){const r=G.res;if(!r)return;
+ $('rT').textContent=r.rank===1?'🏆 마지막까지 사람으로!':'🐸 개굴… '+r.rank+'위';
+ $('rS').textContent=(r.rank===1?'모르가나가 혀를 차며 늪의 길을 열어 주었다':'연잎 위에서 연회의 끝을 지켜보았다')+(r.isBest?' · 🏅 최고 기록!':'');
+ $('rScore').textContent=fmt(r.score);$('rDl').innerHTML=r.rows.map(([a,b])=>`<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
+ $('rec').value=r.text;$('bCopy').textContent='📋 기록 복사';$('vlink').href=VERIFY_URL;$('result').classList.remove('hide');$('result').scrollTop=0}
+function copyText(s){const done=()=>{$('bCopy').textContent='✅ 복사 완료! 댓글에 붙여넣으세요';setTimeout(()=>{$('bCopy').textContent='📋 기록 복사'},1800)};
+ const fb=()=>{const ta=$('rec');ta.removeAttribute('readonly');ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.setAttribute('readonly','');ta.blur();if(ok)done();else $('bCopy').textContent='기록 칸을 길게 눌러 직접 복사해 주세요'};
+ if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(s).then(done,fb);else fb()}
+
+/* 흐름 */
+function demoTable(){buildTable(8,[null].concat(GUESTS.slice(0,7)));camMode='title'}
+async function startGame(mode,diff,name,auto){
+ flushTweens();for(const p of PARTS.splice(0)){scene.remove(p.m)}for(const f of FLS.splice(0))f.el.remove();
+ setTense(false);
+ newGame(mode,diff,name);G.auto=!!auto;LOGS.length=0;$('log').innerHTML='';UI.gk='';
+ buildTable(mode,G.ps);camMode='play';camLook.set(0,.95,0);camFocus(null);
+ $('cv').classList.remove('frogv');$('vign').classList.remove('on');FPH.forEach(h=>{h.visible=false;h.position.copy(h.userData.home)});
+ $('hud').classList.remove('hide');$('bottom').classList.remove('hide');$('ctrl').classList.remove('hide');$('ff').classList.add('hide');$('result').classList.add('hide');$('title').classList.add('hide');
+ UI.myTurn=false;showControls(false);refreshHud();refreshTags();musicStart();
+ try{await runGame()}catch(e){console.error(e)}}
+function startFromTitle(){auInit();let n=$('nm').value.replace(/[~\r\n\t]/g,'').trim().slice(0,12);if(!n)n='이름없는 나그네';LS.set('wls_name',n);$('nm').blur();startGame(UI.mode,UI.diff,n,false)}
+function toTitle(){$('result').classList.add('hide');$('hud').classList.add('hide');$('bottom').classList.add('hide');$('cv').classList.remove('frogv');$('vign').classList.remove('on');setTense(false);FPH.forEach(h=>h.visible=false);G=null;demoTable();$('title').classList.remove('hide');selOpts()}
+function selOpts(){[...$('modes').children].forEach(b=>b.classList.toggle('sel',+b.dataset.m===UI.mode));[...$('diffs').children].forEach((b,i)=>b.classList.toggle('sel',i===UI.diff));
+ const b=parseInt(LS.get('wls_best_'+UI.mode+'_'+UI.diff,'0'),10)||0;$('best').textContent=b?`🏅 ${MODES[UI.mode].n} · ${DIFFS[UI.diff].n} 최고 기록: ${fmt(b)}점`:''}
+
+/* 이벤트 */
+$('diffs').innerHTML=DIFFS.map(d=>`<button>${d.e} ${d.n} <span style="color:#ffd479">×${d.M}</span><small>${d.d}</small></button>`).join('');
+[...$('diffs').children].forEach((b,i)=>b.onclick=()=>{UI.diff=i;LS.set('wls_diff',i);selOpts()});
+[...$('modes').children].forEach(b=>b.onclick=()=>{UI.mode=+b.dataset.m;LS.set('wls_mode',UI.mode);selOpts()});
+$('nm').value=LS.get('wls_name','');
+$('bStart').onclick=startFromTitle;
+$('nm').addEventListener('keydown',e=>{if(e.key==='Enter')startFromTitle()});
+$('bDrink').onclick=()=>{if(UI.myTurn)act({type:'drink'})};
+$('bShop').onclick=openShop;
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closePanels);
+$('bMute').onclick=()=>{auInit();toggleMute()};setMuteIcon();
+const setSpeedIcon=()=>{$('bSpeed').textContent=SPEED+'×'};setSpeedIcon();
+$('bSpeed').onclick=()=>{SPEED=SPEED===1?2:1;LS.set('wls_speed',SPEED);setSpeedIcon()};
+const setProphIcon=()=>{$('bProph').classList.toggle('off',!UI.prophOn);$('bProph').title=UI.prophOn?'예언창 켜짐':'예언창 꺼짐'};setProphIcon();
+$('bProph').onclick=()=>{UI.prophOn=!UI.prophOn;LS.set('wls_proph',UI.prophOn?'1':'0');setProphIcon();log(UI.prophOn?'🔮 예언창을 켰다':'🔮 예언창을 껐다 (다른 손님의 예언만 보인다)')};
+$('bRoster').onclick=()=>{if($('roster').classList.contains('hide'))openRoster();else closePanels()};
+$('hWhim').onclick=()=>{if(!G)return;const W=WHIMS[G.whim];openInfo(W.e,'모르가나의 변덕 · '+W.n,esc(W.d))};
+$('hStar').onclick=openMyRelics;
+$('ff').onclick=()=>{if(!G||G.over)return;G.ff=true;if(UI.pFin)UI.pFin(null);flushTweens();setTense(false);$('ff').classList.add('hide');status('⏩ 남은 연회를 빠르게 넘기는 중…')};
+$('bCopy').onclick=()=>copyText($('rec').value);
+$('bAgain').onclick=()=>{if(!G)return;const n=G.ps[0].name,m=G.mode,d=G.diff;startGame(m,d,n,false)};
+$('bHome').onclick=toTitle;
+addEventListener('keydown',e=>{if(!UI.myTurn||e.target.tagName==='INPUT')return;if(e.code==='Space'||e.key==='Enter'){e.preventDefault();act({type:'drink'})}});
+document.addEventListener('pointerdown',()=>auInit(),{once:true});
+
+/* 모바일 더블탭 확대 방지 */
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('input,textarea'))return;const n=Date.now();if(n-lt<350){e.preventDefault();const b=e.target.closest('button');if(b&&!b.disabled)b.click()}lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+
+demoTable();selOpts();
+window.__wls={start:(m,d,auto,sp)=>{if(sp)SPEED=sp;startGame(m,d,'TEST',auto)},get G(){return G},get res(){return window.__wlsLast}};
+</script>
+</body>
+</html>

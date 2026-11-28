@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>마녀의 마지막 잔 — 점수검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:radial-gradient(ellipse at 50% 0%,#3a2660,#140f22 70%) fixed;color:#f1e8ff}
+body{font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent;padding:max(16px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom))}
+.box{max-width:520px;margin:0 auto;background:rgba(28,19,50,.94);border:2px solid #8f6cc4;border-radius:16px;padding:18px 16px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+h1{font-family:'Black Han Sans',system-ui,sans-serif;font-weight:400;text-align:center;font-size:clamp(24px,7vw,32px);color:#e9d4ff;text-shadow:0 3px 0 #3b1a6a,0 0 20px rgba(170,110,255,.55)}
+.sub{text-align:center;font-size:13px;color:#a6ff86;font-weight:800;letter-spacing:.12em;margin-top:4px}
+p.help{font-size:13px;line-height:1.6;color:#d8caef;margin:12px 0 8px}
+textarea{width:100%;height:12em;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#f6efff;color:#2a1a40;border:2px solid #8f6cc4;border-radius:10px;padding:9px;resize:vertical}
+.btns{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:9px}
+button{font-family:inherit;touch-action:manipulation;cursor:pointer;border-radius:11px}
+.go{border:0;background:linear-gradient(#6fd06a,#2f8f3a);color:#fff;font-family:'Black Han Sans',system-ui,sans-serif;font-size:19px;padding:11px;box-shadow:0 4px 0 #1b5a22}
+.sec{border:2px solid #8f6cc4;background:#2a1d45;color:#f1e8ff;font-size:14px;font-weight:800;padding:9px}
+#out{margin-top:14px}
+.verdict{text-align:center;border-radius:12px;padding:14px 10px;font-family:'Black Han Sans',system-ui,sans-serif;font-size:24px;line-height:1.3}
+.verdict small{display:block;font-family:system-ui,sans-serif;font-size:13px;font-weight:700;margin-top:4px;opacity:.92}
+.ok{background:linear-gradient(#2f7a38,#1d4f25);border:2px solid #8fe36b;color:#eaffdf}
+.bad{background:linear-gradient(#7a2f3a,#4f1d25);border:2px solid #ff8f9a;color:#ffe6e9}
+.warn{margin-top:8px;font-size:12.5px;line-height:1.55;color:#ffd479;background:#2a1d45;border-radius:9px;padding:8px 10px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13.5px;margin-top:12px;background:#1f1533;border-radius:10px;padding:10px 12px}
+dt{color:#c9a8ff;font-weight:800}dd{text-align:right;word-break:break-all}
+.score{text-align:center;font-family:'Black Han Sans',system-ui,sans-serif;font-size:42px;color:#ffd479;margin-top:10px;text-shadow:0 0 16px rgba(255,212,121,.45)}
+.calc{font-size:12px;color:#cbb8ea;text-align:center;line-height:1.6;margin-top:4px}
+a.game{display:block;text-align:center;margin-top:14px;color:#a6ff86;font-weight:800;text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<div class="box">
+ <h1>🔎 마녀의 마지막 잔<br>점수검증기</h1>
+ <div class="sub">🧪 로웬 늪의 연회</div>
+ <p class="help">게임이 끝나고 복사한 기록을 그대로 붙여넣으세요. 검증코드(<b>WS2.</b>로 시작)만 넣어도 됩니다. 이름·순위·점수 중 하나라도 고치면 검증에 실패합니다.</p>
+ <textarea id="inp" placeholder="🧪 마녀의 마지막 잔 — 늪의 연회 기록&#10;👤 플레이어: …&#10;…&#10;🔐 검증코드: WS1.…"></textarea>
+ <div class="btns"><button class="go" id="bGo">🔎 검증하기</button><button class="sec" id="bClr">지우기</button></div>
+ <div id="out"></div>
+ <a class="game" href="https://chillermaster.github.io/flashgame/witch-last-sip.html" target="_blank" rel="noopener">🧪 마녀의 마지막 잔 하러 가기</a>
+</div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const SALT='witchlastsip/luca/v1#a83c-5d2f';
+const MODES={8:{M:1.0,n:'8인 연회'},12:{M:1.4,n:'12인 대연회'}};
+const DIFFS=[{e:'🌱',n:'늪가 손님',M:1.0},{e:'🌿',n:'늪뿌리 연회',M:1.3},{e:'🌑',n:'모르가나의 만찬',M:1.6}];
+const RELICS={crystal:'🔮',crown:'👑',feather:'🪶',mirror:'🧿',honey:'🍯',holy:'💧',stone:'💎',crow:'👁️'};
+function calcScore(mode,diff,rank,drinks,star,relic){const raw=(mode-rank)*100+(rank===1?500:0)+drinks*30+star+(relic||0);return Math.max(0,Math.round(raw*MODES[mode].M*DIFFS[diff].M))}
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,11),b=h53(s+a,173);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder('utf-8',{fatal:true}).decode(u)}
+const fmt=n=>Number(n).toLocaleString('ko-KR');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function fail(msg){$('out').innerHTML=`<div class="verdict bad">❌ 검증 실패<small>${esc(msg)}</small></div>`}
+function line(text,re){const m=text.match(re);return m?m[1].trim():null}
+function verify(){
+ const text=$('inp').value.trim();if(!text){fail('기록을 붙여넣어 주세요.');return}
+ const m=text.match(/WS([12])\.([A-Za-z0-9_-]+)\.([0-9A-Z]{22})/);if(!m){fail('검증코드(WS2.…)를 찾지 못했습니다.');return}
+ let payload;try{payload=b64d(m[2])}catch(e){fail('검증코드가 손상되었습니다.');return}
+ if(sign(payload)!==m[3]){fail('서명이 맞지 않습니다. 기록이 변조되었을 수 있습니다.');return}
+ const f=payload.split('~');let name,modeS,diffS,rankS,drinksS,starS,relS='0',relC='-',hitsS,triesS,secsS,date,nonce,scoreS;
+ if(m[1]==='1'&&f.length===13&&f[0]==='1')[,name,modeS,diffS,rankS,drinksS,starS,hitsS,triesS,secsS,date,nonce,scoreS]=f;
+ else if(m[1]==='2'&&f.length===15&&f[0]==='2')[,name,modeS,diffS,rankS,drinksS,starS,relS,relC,hitsS,triesS,secsS,date,nonce,scoreS]=f;
+ else{fail('지원하지 않는 기록 형식입니다.');return}
+ const mode=+modeS,diff=+diffS,rank=+rankS,drinks=+drinksS,star=+starS,rel=+relS,hits=+hitsS,tries=+triesS,secs=+secsS,score=+scoreS;
+ const rlist=relC==='-'?[]:relC.split('.');if(rlist.some(r=>!RELICS[r])){fail('유물 정보가 올바르지 않습니다.');return}
+ const ints=[mode,diff,rank,drinks,star,rel,hits,tries,secs,score];
+ if(ints.some(x=>!Number.isInteger(x)||x<0)||!MODES[mode]||!DIFFS[diff]||rank<1||rank>mode||hits>tries||!/^\d{8}$/.test(date)){fail('기록 값이 올바르지 않습니다.');return}
+ const re=calcScore(mode,diff,rank,drinks,star,rel);if(re!==score){fail('점수 계산이 맞지 않습니다.');return}
+ const warns=[];
+ const ps=line(text,/💯\s*점수:\s*([\d,]+)/);if(ps!==null&&+ps.replace(/,/g,'')!==score)warns.push(`붙여넣은 글의 점수(${ps})가 검증코드의 점수(${fmt(score)})와 다릅니다.`);
+ const pn=line(text,/👤\s*플레이어:\s*(.+)/);if(pn!==null&&pn!==name)warns.push(`붙여넣은 글의 이름(${pn})이 검증코드의 이름(${name})과 다릅니다.`);
+ const pr=line(text,/🏆\s*순위:\s*(\d+)위/);if(pr!==null&&+pr!==rank)warns.push(`붙여넣은 글의 순위(${pr}위)가 검증코드의 순위(${rank}위)와 다릅니다.`);
+ const D=DIFFS[diff],Mo=MODES[mode],mult=+(Mo.M*D.M).toFixed(2);
+ const ds=date.slice(0,4)+'-'+date.slice(4,6)+'-'+date.slice(6),pt=Math.floor(secs/60)+'분 '+(secs%60)+'초';
+ const bad=warns.length>0;
+ $('out').innerHTML=`<div class="verdict ${bad?'bad':'ok'}">${bad?'⚠️ 코드는 진짜, 본문이 다름':'✅ 진짜 기록입니다'}<small>${bad?'검증코드 기준 값을 믿어 주세요':'마녀의 연회에서 실제로 남긴 기록이에요'}</small></div>
+ ${warns.map(w=>`<div class="warn">⚠️ ${esc(w)}</div>`).join('')}
+ <div class="score">${fmt(score)}점</div>
+ <div class="calc">(순위 ${fmt((mode-rank)*100)} + 1위 보너스 ${rank===1?500:0} + 버틴 잔 ${drinks}×30 + 별빛 ${fmt(star)} + 유물 ${fmt(rel)}) × ${mult}</div>
+ <dl><dt>👤 플레이어</dt><dd>${esc(name)}</dd><dt>🪑 연회</dt><dd>${Mo.n} (×${Mo.M})</dd><dt>🎚️ 난이도</dt><dd>${D.e} ${D.n} (×${D.M})</dd>
+ <dt>🏆 순위</dt><dd>${rank}위 / ${mode}명</dd><dt>🧪 버틴 잔</dt><dd>${drinks}잔</dd><dt>🔮 예언 적중</dt><dd>${hits} / ${tries}회</dd>
+ <dt>✦ 남은 별빛</dt><dd>${fmt(star)}</dd><dt>🏺 유물</dt><dd>${rlist.length?rlist.map(r=>RELICS[r]).join('')+' (✦'+fmt(rel)+')':'없음'}</dd><dt>⌛ 플레이 시간</dt><dd>${pt}</dd><dt>📅 날짜</dt><dd>${ds}</dd></dl>`}
+$('bGo').onclick=verify;
+$('bClr').onclick=()=>{$('inp').value='';$('out').innerHTML='';$('inp').focus()};
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('input,textarea'))return;const n=Date.now();if(n-lt<350){e.preventDefault();const b=e.target.closest('button');if(b)b.click()}lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+</script>
+</body>
+</html>

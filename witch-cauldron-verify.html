@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>마녀솥 회합 — 점수검증기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:radial-gradient(ellipse at 50% 0%,#3a2660,#140f22 70%) fixed;color:#f1e8ff}
+body{font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent;padding:max(16px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom))}
+.box{max-width:520px;margin:0 auto;background:rgba(28,19,50,.94);border:2px solid #8f6cc4;border-radius:16px;padding:18px 16px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+h1{font-family:'Black Han Sans',system-ui,sans-serif;font-weight:400;text-align:center;font-size:clamp(24px,7vw,32px);color:#e9d4ff;text-shadow:0 3px 0 #3b1a6a,0 0 20px rgba(170,110,255,.55);line-height:1.25}
+.sub{text-align:center;font-size:13px;color:#7fffd0;font-weight:800;letter-spacing:.12em;margin-top:4px}
+p.help{font-size:13px;line-height:1.6;color:#d8caef;margin:12px 0 8px}
+textarea{width:100%;height:12em;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#f6efff;color:#2a1a40;border:2px solid #8f6cc4;border-radius:10px;padding:9px;resize:vertical}
+.btns{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:9px}
+button{font-family:inherit;touch-action:manipulation;cursor:pointer;border-radius:11px}
+.go{border:0;background:linear-gradient(#6fd06a,#2f8f3a);color:#fff;font-family:'Black Han Sans',system-ui,sans-serif;font-size:19px;padding:11px;box-shadow:0 4px 0 #1b5a22}
+.sec{border:2px solid #8f6cc4;background:#2a1d45;color:#f1e8ff;font-size:14px;font-weight:800;padding:9px}
+#out{margin-top:14px}
+.verdict{text-align:center;border-radius:12px;padding:14px 10px;font-family:'Black Han Sans',system-ui,sans-serif;font-size:24px;line-height:1.3}
+.verdict small{display:block;font-family:system-ui,sans-serif;font-size:13px;font-weight:700;margin-top:4px;opacity:.92}
+.ok{background:linear-gradient(#2f7a38,#1d4f25);border:2px solid #8fe36b;color:#eaffdf}
+.bad{background:linear-gradient(#7a2f3a,#4f1d25);border:2px solid #ff8f9a;color:#ffe6e9}
+.warn{margin-top:8px;font-size:12.5px;line-height:1.55;color:#ffd479;background:#2a1d45;border-radius:9px;padding:8px 10px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13.5px;margin-top:12px;background:#1f1533;border-radius:10px;padding:10px 12px}
+dt{color:#c9a8ff;font-weight:800}dd{text-align:right;word-break:break-all}
+.score{text-align:center;font-family:'Black Han Sans',system-ui,sans-serif;font-size:42px;color:#ffd479;margin-top:10px;text-shadow:0 0 16px rgba(255,212,121,.45)}
+.calc{font-size:12px;color:#cbb8ea;text-align:center;line-height:1.6;margin-top:4px}
+a.game{display:block;text-align:center;margin-top:14px;color:#7fffd0;font-weight:800;text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<div class="box">
+ <h1>🔎 마녀솥 회합<br>점수검증기</h1>
+ <div class="sub">🥘 스프 속 첩자</div>
+ <p class="help">게임이 끝나고 복사한 기록을 그대로 붙여넣으세요. 검증코드(<b>WC1.</b>로 시작)만 넣어도 됩니다. 이름·역할·점수 중 하나라도 고치면 검증에 실패합니다.</p>
+ <textarea id="inp" placeholder="🥘 마녀솥 회합 — 스프 속 첩자 기록&#10;👤 플레이어: …&#10;…&#10;🔐 검증코드: WC1.…"></textarea>
+ <div class="btns"><button class="go" id="bGo">🔎 검증하기</button><button class="sec" id="bClr">지우기</button></div>
+ <div id="out"></div>
+ <a class="game" href="https://chillermaster.github.io/flashgame/witch-cauldron.html" target="_blank" rel="noopener">🥘 마녀솥 회합 하러 가기</a>
+</div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const SALT='witchcauldron/luca/v1#7e19-c4b2';
+const DIFFS=[{e:'🌱',n:'견습 마녀',M:1.0},{e:'🌿',n:'숙련 마녀',M:1.3},{e:'🌑',n:'대마녀',M:1.6}];
+function h53(str,s){let h1=0xdeadbeef^s,h2=0x41c6ce57^s;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function sign(p){const s=SALT+'|'+p+'|'+SALT.length;const a=h53(s,11),b=h53(s+a,173);return(a.toString(36).padStart(11,'0')+b.toString(36).padStart(11,'0')).toUpperCase()}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder('utf-8',{fatal:true}).decode(u)}
+function calc(n,diff,role,win,ok,fail,hits,miss,alive,cp){const soups=role?fail:ok;const base=win*800+soups*120+hits*100-miss*40+(alive?150:0)+cp;const mult=(1+(n-8)*.08)*DIFFS[diff].M;return{soups,base:Math.max(0,base),mult:+mult.toFixed(2),score:Math.round(Math.max(0,base)*mult)}}
+const fmt=n=>Number(n).toLocaleString('ko-KR');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function fail(msg){$('out').innerHTML=`<div class="verdict bad">❌ 검증 실패<small>${esc(msg)}</small></div>`}
+function line(text,re){const m=text.match(re);return m?m[1].trim():null}
+function verify(){
+ const text=$('inp').value.trim();if(!text){fail('기록을 붙여넣어 주세요.');return}
+ const m=text.match(/WC1\.([A-Za-z0-9_-]+)\.([0-9A-Z]{22})/);if(!m){fail('검증코드(WC1.…)를 찾지 못했습니다.');return}
+ let payload;try{payload=b64d(m[1])}catch(e){fail('검증코드가 손상되었습니다.');return}
+ if(sign(payload)!==m[2]){fail('서명이 맞지 않습니다. 기록이 변조되었을 수 있습니다.');return}
+ const f=payload.split('~');if(f.length!==16||f[0]!=='1'){fail('지원하지 않는 기록 형식입니다.');return}
+ const name=f[1];const [n,diff,role,win,ok,fl,hits,miss,alive,cp,secs]=f.slice(2,13).map(Number);const date=f[13],score=+f[15];
+ const ints=[n,diff,role,win,ok,fl,hits,miss,alive,cp,secs,score];
+ if(ints.some(x=>!Number.isInteger(x)||x<0)||n<8||n>12||diff>2||role>1||win>1||alive>1||ok>3||fl>3||ok+fl<1||ok+fl>5||hits+miss>ok+fl||cp>4000||!/^\d{8}$/.test(date)){fail('기록 값이 올바르지 않습니다.');return}
+ const C=calc(n,diff,role,win,ok,fl,hits,miss,alive,cp);if(C.score!==score){fail('점수 계산이 맞지 않습니다.');return}
+ const warns=[];
+ const ps=line(text,/💯\s*점수:\s*([\d,]+)/);if(ps!==null&&+ps.replace(/,/g,'')!==score)warns.push(`붙여넣은 글의 점수(${ps})가 검증코드의 점수(${fmt(score)})와 다릅니다.`);
+ const pn=line(text,/👤\s*플레이어:\s*(.+)/);if(pn!==null&&pn!==name)warns.push(`붙여넣은 글의 이름(${pn})이 검증코드의 이름(${name})과 다릅니다.`);
+ const pr=line(text,/🎭\s*역할:\s*(.+)/);if(pr!==null&&(pr.includes('첩자')?1:0)!==role)warns.push('붙여넣은 글의 역할이 검증코드의 역할과 다릅니다.');
+ const D=DIFFS[diff];const ds=date.slice(0,4)+'-'+date.slice(4,6)+'-'+date.slice(6),pt=Math.floor(secs/60)+'분 '+(secs%60)+'초';const bad=warns.length>0;
+ $('out').innerHTML=`<div class="verdict ${bad?'bad':'ok'}">${bad?'⚠️ 코드는 진짜, 본문이 다름':'✅ 진짜 기록입니다'}<small>${bad?'검증코드 기준 값을 믿어 주세요':'마녀솥 회합에서 실제로 남긴 기록이에요'}</small></div>
+ ${warns.map(w=>`<div class="warn">⚠️ ${esc(w)}</div>`).join('')}
+ <div class="score">${fmt(score)}점</div>
+ <div class="calc">(승리 ${win*800} + 스프 ${C.soups}×120 + 적중 ${hits}×100 − 오판 ${miss}×40 + 생존 ${alive?150:0} + 기여 ${fmt(cp)}) × ${C.mult}</div>
+ <dl><dt>👤 플레이어</dt><dd>${esc(name)}</dd><dt>🎭 역할</dt><dd>${role?'🕷️ 첩자 마녀':'🧙 선량한 마녀'}</dd><dt>🏆 결과</dt><dd>${win?'승리':'패배'}</dd>
+ <dt>🪑 인원</dt><dd>${n}인 (×${(1+(n-8)*.08).toFixed(2)})</dd><dt>🎚️ 난이도</dt><dd>${D.e} ${D.n} (×${D.M})</dd>
+ <dt>🍲 스프</dt><dd>성공 ${ok} · 실패 ${fl}</dd><dt>🗳️ 투표</dt><dd>적중 ${hits} · 오판 ${miss}</dd><dt>🧡 생존</dt><dd>${alive?'끝까지 생존':'추방됨'}</dd>
+ <dt>✨ 기여 점수</dt><dd>${fmt(cp)}</dd><dt>⌛ 플레이 시간</dt><dd>${pt}</dd><dt>📅 날짜</dt><dd>${ds}</dd></dl>`}
+$('bGo').onclick=verify;
+$('bClr').onclick=()=>{$('inp').value='';$('out').innerHTML='';$('inp').focus()};
+let lt=0;document.addEventListener('touchend',e=>{if(e.target.closest('input,textarea'))return;const n=Date.now();if(n-lt<350){e.preventDefault();const b=e.target.closest('button');if(b)b.click()}lt=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+</script>
+</body>
+</html>
